@@ -23,17 +23,13 @@ namespace Carecoordination\Controller;
 
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
-use Carecoordination\Model\MapperTable;
 
-// TODO: this class appears to be deprecated as nothing else refers to it.  It looks like it does the same thing as the SetupController does...
-// Recomend removing this if it's not used.
 class MapperController extends AbstractActionController
 {
     protected $mapperTable;
     
-    public function __construct(MapperTable $mapperTable)
+    public function __construct()
     {
-        $this->mapperTable = $mapperTable;
     }
     
     public function indexAction()
@@ -133,6 +129,11 @@ class MapperController extends AbstractActionController
     */
     public function getMapperTable()
     {
+        if (!$this->mapperTable) {
+            $sm = $this->getServiceLocator();
+            $this->mapperTable = $sm->get('Carecoordination\Model\MapperTable');
+        }
+
         return $this->mapperTable;
     }
 }

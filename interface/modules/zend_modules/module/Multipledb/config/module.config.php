@@ -16,28 +16,13 @@
  * +------------------------------------------------------------------------------+
  *
  */
-namespace Multipledb;
-
-use Zend\ServiceManager\Factory\InvokableFactory;
-use Zend\Router\Http\Segment;
-use Multipledb\Controller\MultipledbController;
-use Multipledb\Controller\ModuleconfigController;
-use Multipledb\Model\Multipledb;
-use Multipledb\Model\MultipledbTable;
-use Zend\Db\ResultSet\ResultSet;
-use Zend\Db\TableGateway\TableGateway;
-use Interop\Container\ContainerInterface;
-
 return array(
 
     /* declare all controllers */
     'controllers' => array(
-        'factories' => [
-            MultipledbController::class => function (ContainerInterface $container, $requestedName) {
-                return new MultipledbController($container->get(MultipledbTable::class));
-            },
-            ModuleconfigController::class => InvokableFactory::class
-        ],
+        'invokables' => array(
+            'Multipledb\Controller\Multipledb' => 'Multipledb\Controller\MultipledbController',
+        ),
     ),
 
     /**
@@ -47,7 +32,7 @@ return array(
     'router' => array(
         'routes' => array(
             'multipledb' => array(
-                'type'    => Segment::class,
+                'type'    => 'segment',
                 'options' => array(
                     'route'    => '/multipledb[/:action][/:id]',
                     'constraints' => array(
@@ -55,7 +40,7 @@ return array(
                         'id'     => '[0-9]+',
                     ),
                     'defaults' => array(
-                        'controller' => MultipledbController::class,
+                        'controller' => 'Multipledb\Controller\multipledb',
                         'action'     => 'index',
                     ),
                 ),
@@ -70,18 +55,5 @@ return array(
         ),'template_map' => array(
             'multipledb/layout/layout' => __DIR__ . '/../view/layout/layout.phtml',
         )
-    ),
-    'service_manager' => [
-        'factories' => array(
-            MultipledbTable::class =>  function (ContainerInterface $container, $requestedName) {
-                $dbAdapter = $container->get(\Zend\Db\Adapter\Adapter::class);
-                $resultSetPrototype = new ResultSet();
-                $resultSetPrototype->setArrayObjectPrototype(new Multipledb());
-                $tableGateway = new TableGateway('multiple_db', $dbAdapter, null, $resultSetPrototype);
-                $table = new MultipledbTable($tableGateway);
-                return $table;
-            }
-            ,ModuleconfigController::class => InvokableFactory::class
-        ),
-    ]
+    )
 );

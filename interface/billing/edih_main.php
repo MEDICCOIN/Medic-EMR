@@ -1,14 +1,31 @@
 <?php
-/**
+/*
  * edi_history_main.php
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Kevin McCormick Longview, Texas
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2012 Kevin McCormick Longview, Texas
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright 2012 Kevin McCormick Longview, Texas
+ *
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 3 or later.  You should have
+ * received a copy of the GNU General Public License along with this program;
+ * if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *  <http://opensource.org/licenses/gpl-license.php>
+ *
+ *
+ * @author Kevin McCormick
+ * @link: http://www.open-emr.org
+ * @package OpenEMR
+ * @subpackage ediHistory
+ */
+
+/* these lines for OpenEMR
  */
 
 
@@ -124,10 +141,6 @@ if (count($_POST)) {
  * functions called in the if stanzas are now in edih_io.php
  */
 if (strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     //
     // === log user access on POST requests ===========
     csv_edihist_log("User: ".$_SERVER['REMOTE_ADDR'].' - '.date("F j, Y, g:i a"));
@@ -172,10 +185,6 @@ if (strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
     }  // end if (strtolower($_SERVER['REQUEST_METHOD']) == 'post')
     //
 } elseif (strtolower($_SERVER['REQUEST_METHOD']) == 'get') {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     //
     if (isset($_GET['srvinfo']) && $_GET['srvinfo'] == 'yes') {
         // initial ajax request

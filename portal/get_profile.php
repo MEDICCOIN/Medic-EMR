@@ -25,6 +25,7 @@ require_once("verify_session.php");
 require_once("./../library/report.inc");
 require_once("./../library/options.inc.php");
 require_once("./../library/lists.inc");
+require_once("./../library/formatting.inc.php");
 require_once("./../custom/code_types.inc.php");
 require_once("./../library/forms.inc");
 require_once("./../library/patient.inc");

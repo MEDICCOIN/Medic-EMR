@@ -2,14 +2,24 @@
 /**
  * This file contains functions for handling on-site portal mail.
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Derived from existing pnotes library
+ * @author Jerry Padgett <sjpadgett@gmail.com>
+ * @link http://www.open-emr.org
  */
-
-use OpenEMR\Common\Logging\EventAuditLogger;
 
 function addPortalMailboxMail(
     $owner,
@@ -91,7 +101,7 @@ function getPortalPatientDeleted($owner = '', $limit = '', $offset = 0, $search 
 	onsite_mail AS p
 	WHERE p.deleted != 0 AND p.owner = ? AND p.recipient_id = ?
 	$search
-	ORDER BY `date` desc
+	ORDER BY `date` asc
 	$limit
 	";
     $all = $row = array();
@@ -134,7 +144,7 @@ function getPortalPatientNotes($owner = '', $limit = '', $offset = 0, $search = 
 	onsite_mail AS p
 	WHERE p.deleted != 1 AND p.owner = ? AND p.recipient_id = ? 
 	$search
-	ORDER BY `date` desc
+	ORDER BY `date` asc
 	$limit
 	";
     $all = $row = array();
@@ -178,7 +188,7 @@ function getPortalPatientNotifications($owner = '', $limit = '', $offset = 0, $s
 	AND active = 1
 	AND date_created > DATE_SUB(NOW(), INTERVAL 1 MONTH)
 	$search
-	ORDER BY `date` desc
+	ORDER BY `date` asc
 	$limit
 	";
     $all = $row = array();
@@ -220,7 +230,7 @@ function getPortalPatientSentNotes($owner = '', $limit = '', $offset = 0, $searc
 	AND p.owner = ?
 	AND p.message_status != 'Done'
 	$search
-	ORDER BY `date` desc
+	ORDER BY `date` asc
 	$limit
 	";
     $all = $row = array();
@@ -240,20 +250,6 @@ function updatePortalMailMessageStatus($id, $message_status)
         sqlStatement("update onsite_mail set message_status = ?, activity = '1', deleted = '1',delete_date = ? where mail_chain = ? OR id = ?", array($message_status, date('Y-m-d H:i:s'), $id, $id));
     } else {
         sqlStatement("update onsite_mail set message_status = ?, activity = '1' where id = ?", array($message_status, $id));
-    }
-
-    if ($message_status == "Delete") {
-        $stats = sqlQuery("Select * From onsite_mail Where id = ?", array($id));
-        $by = $_SESSION['authUser'] ? $_SESSION['authUser'] : $_SESSION['ptName'];
-        $loguser = $_SESSION['authUser'] ? $_SESSION['authUser'] : $_SESSION['portal_username'];
-        $evt = "secure message soft delete by " . $by . " msg id: $id from " . $stats['sender_name'] . " to recipient: " . $stats['recipient_name'];
-        $log_from = '';
-        $puser = '';
-        if ($_SESSION['patient_portal_onsite_two']) {
-            $log_from = 'patient-portal';
-            $puser = $_SESSION['pid'];
-        }
-        EventAuditLogger::instance()->newEvent("delete", $loguser, 'Portal', 1, $evt, $puser, $log_from, '');
     }
 }
 
@@ -297,7 +293,7 @@ function getMails($owner, $dotype, $nsrch, $nfsrch)
     }
 }
 
-function getMailDetails($id, $owner = '')
+function getMailDetails($id)
 {
     if ($owner) {
         $result = getMailById($id);

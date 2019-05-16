@@ -23,8 +23,6 @@
 
 require_once("$srcdir/forms.inc");
 
-use OpenEMR\Common\Logging\EventAuditLogger;
-
 $rhl7_return = array();
 
 function rhl7LogMsg($msg, $fatal = true)
@@ -33,7 +31,7 @@ function rhl7LogMsg($msg, $fatal = true)
     if ($fatal) {
         $rhl7_return['mssgs'][] = '*' . $msg;
         $rhl7_return['fatal'] = true;
-        EventAuditLogger::instance()->newEvent("lab-results-error", $_SESSION['authUser'], $_SESSION['authProvider'], 0, $msg);
+        newEvent("lab-results-error", $_SESSION['authUser'], $_SESSION['authProvider'], 0, $msg);
     } else {
         $rhl7_return['mssgs'][] = '>' . $msg;
     }
@@ -933,7 +931,7 @@ function receive_hl7_results(&$hl7, &$matchreq, $lab_id = 0, $direction = 'B', $
                 if (!$dryrun) {
                     sqlBeginTrans();
                     $procedure_order_seq = sqlQuery("SELECT IFNULL(MAX(procedure_order_seq),0) + 1 AS increment FROM procedure_order_code WHERE procedure_order_id = ? ", array($in_orderid));
-                    sqlStatement(
+                    sqlInsert(
                         "INSERT INTO procedure_order_code SET " .
                         "procedure_order_id = ?, " .
                         "procedure_order_seq = ?, " .
@@ -1243,7 +1241,7 @@ function poll_hl7_results(&$info)
                 }
 
                 // Ensure that archive directory exists.
-                $prpath = $GLOBALS['OE_SITE_DIR'] . "/documents/procedure_results";
+                $prpath = $GLOBALS['OE_SITE_DIR'] . "/procedure_results";
                 if (!file_exists($prpath)) {
                     mkdir($prpath);
                 }
@@ -1329,7 +1327,7 @@ function poll_hl7_results(&$info)
                 }
 
                 // Ensure that archive directory exists.
-                $prpath = $GLOBALS['OE_SITE_DIR'] . "/documents/procedure_results";
+                $prpath = $GLOBALS['OE_SITE_DIR'] . "/procedure_results";
                 if (!file_exists($prpath)) {
                     mkdir($prpath);
                 }

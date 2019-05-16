@@ -5,7 +5,7 @@
 
 function registerForm($directory, $sql_run = 0, $unpackaged = 1, $state = 0)
 {
-    $check = sqlQuery("select state from registry where directory=?", array($directory));
+    $check = sqlQuery("select state from registry where directory='$directory'");
     if ($check == false) {
         $lines = @file($GLOBALS['srcdir']."/../interface/forms/$directory/info.txt");
         if ($lines) {
@@ -15,13 +15,13 @@ function registerForm($directory, $sql_run = 0, $unpackaged = 1, $state = 0)
         }
 
         return sqlInsert("insert into registry set
-			name=?,
-			state=?,
-			directory=?,
-			sql_run=?,
-			unpackaged=?,
+			name='$name',
+			state='$state',
+			directory='".add_escape_custom($directory)."',
+			sql_run='$sql_run',
+			unpackaged='$unpackaged',
 			date=NOW()
-		", array($name, $state, $directory, $sql_run, $unpackaged));
+		");
     }
 
     return false;
@@ -29,34 +29,22 @@ function registerForm($directory, $sql_run = 0, $unpackaged = 1, $state = 0)
 
 function updateRegistered($id, $mod)
 {
-    return sqlInsert("update registry set $mod, date=NOW() where id=?", array($id));
+    return sqlInsert("update registry set
+		$mod,
+		date=NOW()
+	where
+		id='$id'
+	");
 }
 
-/**
- * @param string $state
- * @param string $limit
- * @param string $offset
- * @param string $encounterType all|patient|therapy_group
- */
-function getRegistered($state = "1", $limit = "unlimited", $offset = "0", $encounterType = 'all')
+function getRegistered($state = "1", $limit = "unlimited", $offset = "0")
 {
-    $sql = "select * from registry where state like ? ";
-    if ($encounterType !== 'all') {
-        switch ($encounterType) {
-            case 'patient':
-                $sql .= 'AND patient_encounter = 1 ';
-                break;
-            case 'therapy_group':
-                $sql .= 'AND therapy_group_encounter = 1 ';
-                break;
-        }
-    }
-    $sql .= "order by priority, name ";
+    $sql = "select * from registry where state like \"$state\" order by priority, name";
     if ($limit != "unlimited") {
-        $sql .= " limit " . escape_limit($limit) . ", " . escape_limit($offset);
+        $sql .= " limit $limit, $offset";
     }
 
-    $res = sqlStatement($sql, array($state));
+    $res = sqlStatement($sql);
     if ($res) {
         for ($iter=0; $row=sqlFetchArray($res); $iter++) {
             $all[$iter] = $row;
@@ -70,13 +58,13 @@ function getRegistered($state = "1", $limit = "unlimited", $offset = "0", $encou
 
 function getRegistryEntry($id, $cols = "*")
 {
-    $sql = "select " . escape_sql_column_name(process_cols_escape($cols), array('registry')) . " from registry where id=?";
+    $sql = "select $cols from registry where id=?";
     return sqlQuery($sql, array($id));
 }
 
 function getRegistryEntryByDirectory($directory, $cols = "*")
 {
-    $sql = "select " . escape_sql_column_name(process_cols_escape($cols), array('registry')) . " from registry where directory = ?";
+    $sql = "select $cols from registry where directory = ?";
     return sqlQuery($sql, $directory);
 }
 
@@ -113,8 +101,10 @@ function installSQL($dir)
  */
 function isRegistered($directory, $state = 1)
 {
-    $sql = "select id from registry where directory=? and state=?";
-    $result = sqlQuery($sql, array($directory, $state));
+    $sql = "select id from registry where ".
+            "directory='".$directory.
+            "' and state=".$state;
+    $result = sqlQuery($sql);
     if ($result['id'] != '') {
         return true;
     }

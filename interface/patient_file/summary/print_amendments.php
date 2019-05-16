@@ -2,20 +2,28 @@
 /**
  * Print Amendments
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Hema Bandaru <hemab@drcloudemr.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2014 Ensoftek
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2014 Ensoftek
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Hema Bandaru <hemab@drcloudemr.com>
+ * @link    http://www.open-emr.org
  */
 
 
-require_once("../../globals.php");
-require_once("$srcdir/options.inc.php");
 
-use OpenEMR\Core\Header;
+include_once("../../globals.php");
+include_once("$srcdir/options.inc.php");
 
 $amendments = $_REQUEST["ids"];
 $amendments = rtrim($amendments, ",");
@@ -79,9 +87,20 @@ function printAmendment($amendmentID, $lastAmendment)
 }
 
 ?>
+
 <html>
 <head>
-    <?php Header::setupHeader(['no_bootstrap', 'no_fontawesome']); ?>
+<?php html_header_show();?>
+
+<!-- supporting javascript code -->
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/textformat.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
+
+
+<!-- page styles -->
+<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
+
 </head>
 
 <body class="body_top">

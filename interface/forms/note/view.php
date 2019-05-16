@@ -1,21 +1,27 @@
 <?php
-/*
- * Work/School Note Form view.php
+/**
+ *  Work/School Note Form created by Nikolai Vitsyn: 2004/02/13 and update 2005/03/30
+ *   Copyright (C) Open Source Medical Software
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Nikolai Vitsyn
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2004-2005 Nikolai Vitsyn
- * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ *   This program is free software; you can redistribute it and/or
+ *   modify it under the terms of the GNU General Public License
+ *   as published by the Free Software Foundation; either version 2
+ *   of the License, or (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 
 
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
-
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
 formHeader("Form: note");
 $returnurl = 'encounter_top.php';
 $provider_results = sqlQuery("select fname, lname from users where username=?", array($_SESSION{"authUser"}));
@@ -35,21 +41,22 @@ if ($obj['date_of_signature'] != "") {
 }
 ?>
 <html><head>
+<?php html_header_show();?>
 
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 
 <!-- supporting javascript code -->
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 
 <script language="JavaScript">
 // required for textbox date verification
-var mypcc = <?php echo js_escape($GLOBALS['phone_country_code']); ?>;
+var mypcc = '<?php echo $GLOBALS['phone_country_code'] ?>';
 
 function PrintForm() {
-    newwin = window.open(<?php echo js_escape($rootdir."/forms/".$form_name."/print.php?id=".urlencode($_GET["id"])); ?>,"mywin");
+    newwin = window.open("<?php echo $rootdir."/forms/".$form_name."/print.php?id=".attr($_GET["id"]); ?>","mywin");
 }
 
 </script>
@@ -57,9 +64,7 @@ function PrintForm() {
 </head>
 <body class="body_top">
 
-<form method=post action="<?php echo $rootdir."/forms/".$form_name."/save.php?mode=update&id=".attr_url($_GET["id"]);?>" name="my_form" id="my_form">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
-
+<form method=post action="<?php echo $rootdir."/forms/".$form_name."/save.php?mode=update&id=".attr($_GET["id"]);?>" name="my_form" id="my_form">
 <span class="title"><?php echo xlt('Work/School Note'); ?></span><br></br>
 
 <div style="margin: 10px;">
@@ -107,7 +112,7 @@ function PrintForm() {
 
 // jQuery stuff to make the page a little easier to use
 
-$(function(){
+$(document).ready(function(){
     $(".save").click(function() { top.restoreSession(); $("#my_form").submit(); });
     $(".dontsave").click(function() { parent.closeTab(window.name, false); });
     $(".printform").click(function() { PrintForm(); });
@@ -131,3 +136,4 @@ $(function(){
 </script>
 
 </html>
+

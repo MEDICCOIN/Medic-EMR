@@ -1,24 +1,16 @@
 <?php
-/**
- * LBF form.
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2009-2019 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
+// Copyright (C) 2009-2017 Rod Roark <rod@sunsetsystems.com>
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 
 require_once("../../globals.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/patient.inc");
 require_once($GLOBALS['fileroot'] . '/custom/code_types.inc.php');
-
-use Mpdf\Mpdf;
 
 // Font size in points for table cell data.
 $FONTSIZE = 9;
@@ -39,7 +31,7 @@ if ($visitid < 0) {
 $formid = empty($_REQUEST['formid']) ? 0 : (0 + $_REQUEST['formid']);
 
 // True if to display as a form to complete, false to display as information.
-$isblankform = empty($_REQUEST['isform']) ? 0 : 1;
+$isform = empty($_REQUEST['isform']) ? 0 : 1;
 
 $CPR = 4; // cells per row
 
@@ -75,34 +67,32 @@ if (!acl_check('admin', 'super') && !empty($LBF_ACO)) {
 
 // Html2pdf fails to generate checked checkboxes properly, so write plain HTML
 // if we are doing a visit-specific form to be completed.
-// TODO - now use mPDF, so should test if still need this fix
-$PDF_OUTPUT = ($formid && $isblankform) ? false : true;
+$PDF_OUTPUT = ($formid && $isform) ? false : true;
 //$PDF_OUTPUT = false; // debugging
 
 if ($PDF_OUTPUT) {
-    $config_mpdf = array(
-        'tempDir' => $GLOBALS['MPDF_WRITE_DIR'],
-        'mode' => $GLOBALS['pdf_language'],
-        'format' => $GLOBALS['pdf_size'],
-        'default_font_size' => '',
-        'default_font' => '',
-        'margin_left' => $GLOBALS['pdf_left_margin'],
-        'margin_right' => $GLOBALS['pdf_right_margin'],
-        'margin_top' => $GLOBALS['pdf_top_margin'],
-        'margin_bottom' => $GLOBALS['pdf_bottom_margin'],
-        'margin_header' => '',
-        'margin_footer' => '',
-        'orientation' => $GLOBALS['pdf_layout'],
-        'shrink_tables_to_fit' => 1,
-        'use_kwt' => true,
-        'autoScriptToLang' => true,
-        'keep_table_proportions' => true
+    $pdf = new mPDF(
+        $GLOBALS['pdf_language'],
+        $GLOBALS['pdf_size'],
+        '', // default font size (pt)
+        '',
+        $GLOBALS['pdf_left_margin'],
+        $GLOBALS['pdf_right_margin'],
+        $GLOBALS['pdf_top_margin'],
+        $GLOBALS['pdf_bottom_margin'],
+        '', // default header margin
+        '', // default footer margin
+        $GLOBALS['pdf_layout']
     );
-    $pdf = new mPDF($config_mpdf);
     $pdf->SetDisplayMode('real');
+    $pdf->shrink_tables_to_fit = 1;
+    $keep_table_proportions = true;
+    $pdf->use_kwt = true;
+    $pdf->autoScriptToLang = true;
     if ($_SESSION['language_direction'] == 'rtl') {
         $pdf->SetDirectionality('rtl');
     }
+    
     ob_start();
 }
 
@@ -118,6 +108,7 @@ $fres = sqlStatement("SELECT * FROM layout_options " .
 <?php if (!$PDF_OUTPUT) { ?>
 <html>
 <head>
+<?php html_header_show();?>
 <?php } ?>
 
 <style>
@@ -164,8 +155,7 @@ div.section {
   // html2pdf screws up the div borders when a div overflows to a second page.
   // Our temporary solution is to turn off the borders in the case where this
   // is likely to happen (i.e. where all form options are listed).
-  // TODO - now use mPDF, so should test if still need this fix
-if (!$isblankform) {
+if (!$isform) {
 ?>
 border-style: solid;
 border-width: 1px;
@@ -179,7 +169,7 @@ div.section table {
 }
 div.section td.stuff {
  vertical-align: bottom;
-<?php if ($isblankform) { ?>
+<?php if ($isform) { ?>
  height: 16pt;
 <?php } ?>
 }
@@ -262,16 +252,15 @@ for ($lcols = 1; $lcols < $CPR; ++$lcols) {
 $logo = '';
 $ma_logo_path = "sites/" . $_SESSION['site_id'] . "/images/ma_logo.png";
 if (is_file("$webserver_root/$ma_logo_path")) {
-    // Would use max-height here but html2pdf does not support it.
-    // TODO - now use mPDF, so should test if still need this fix
-    $logo = "<img src='$web_root/$ma_logo_path' style='height:" . attr(round($FONTSIZE * 5.14)) . "pt' />";
+  // Would use max-height here but html2pdf does not support it.
+    $logo = "<img src='$web_root/$ma_logo_path' style='height:" . round($FONTSIZE * 5.14) . "pt' />";
 } else {
     $logo = "<!-- '$ma_logo_path' does not exist. -->";
 }
 echo genFacilityTitle($formtitle, -1, $logo);
 ?>
 
-<?php if ($isblankform) { ?>
+<?php if ($isform) { ?>
 <span class='subhead'>
     <?php echo xlt('Patient') ?>: ________________________________________ &nbsp;
     <?php echo xlt('Clinic') ?>: ____________________ &nbsp;
@@ -310,7 +299,6 @@ function getContent()
     global $web_root, $webserver_root;
     $content = ob_get_clean();
     // Fix a nasty html2pdf bug - it ignores document root!
-    // TODO - now use mPDF, so should test if still need this fix
     $i = 0;
     $wrlen = strlen($web_root);
     $wsrlen = strlen($webserver_root);
@@ -344,17 +332,15 @@ while ($frow = sqlFetchArray($fres)) {
     $field_id     = $frow['field_id'];
     $list_id      = $frow['list_id'];
     $edit_options = $frow['edit_options'];
-    $jump_new_row      = isOption($edit_options, 'J');
-    $prepend_blank_row = isOption($edit_options, 'K');
 
     $currvalue = '';
     if ($formid || $visitid) {
         $currvalue = lbf_current_value($frow, $formid, $visitid);
     }
 
-    // Skip this field if it's a form with data and skip conditions call for that.
+    // Skip this field if skip conditions call for that.
     // Note this also accumulates info for subsequent skip tests.
-    if (!$isblankform && isSkipped($frow, $currvalue) == 'skip') {
+    if (isSkipped($frow, $currvalue) == 'skip') {
         continue;
     }
 
@@ -402,9 +388,9 @@ while ($frow = sqlFetchArray($fres)) {
 
         $group_levels .= $this_levels[$i++];
         $gname = $grparr[substr($group_levels, 0, $i)]['grp_title'];
-        $subtitle = xl_layout_label($grparr[substr($group_levels, 0, $i)]['grp_subtitle']);
+        $subtitle = $grparr[substr($group_levels, 0, $i)]['grp_subtitle'];
 
-        // This is also for mPDF. Telling it that the following stuff should
+        // This is also for html2pdf. Telling it that the following stuff should
         // start on a new page if there is not otherwise room for it on this page.
         echo "<nobreak>\n";
         echo "<div class='grpheader'>" . text(xl_layout_label($gname)) . "</div>\n";
@@ -413,7 +399,7 @@ while ($frow = sqlFetchArray($fres)) {
         echo "  <tr>";
         for ($i = 1; $i <= $CPR; ++$i) {
             $tmp = $i % 2 ? 'lcols1' : 'dcols1';
-            echo "<td class='" . attr($tmp) . "'></td>";
+            echo "<td class='$tmp'></td>";
         }
         echo "</tr>\n";
         if ($subtitle) {
@@ -425,11 +411,9 @@ while ($frow = sqlFetchArray($fres)) {
     }
 
     // Handle starting of a new row.
-    if (($cell_count + $titlecols + $datacols) > $CPR || $cell_count == 0 || $prepend_blank_row || $jump_new_row) {
+    if (($cell_count + $titlecols + $datacols) > $CPR || $cell_count == 0) {
         end_row();
-        if ($prepend_blank_row) {
-            echo "  <tr><td class='text' colspan='" . attr($CPR) . "'>&nbsp;</td></tr>\n";
-        }
+        // echo "  <tr style='height:30pt'>";
         if (isOption($edit_options, 'RS')) {
             echo " <tr class='RS'>";
         } else if (isOption($edit_options, 'RO')) {
@@ -451,12 +435,11 @@ while ($frow = sqlFetchArray($fres)) {
             $titlecols = $CPR;
         }
         echo "<td colspan='" . attr($titlecols) . "' ";
-        echo "class='lcols" . attr($titlecols) . " stuff " . (($frow['uor'] == 2) ? "required'" : "bold'");
+        echo "class='lcols$titlecols stuff " . (($frow['uor'] == 2) ? "required'" : "bold'");
         if ($cell_count == 2) {
             echo " style='padding-left:10pt'";
         }
         // echo " nowrap>"; // html2pdf misbehaves with this.
-        // TODO - now use mPDF, so should test if still need this fix
         echo ">";
         $cell_count += $titlecols;
     }
@@ -476,13 +459,13 @@ while ($frow = sqlFetchArray($fres)) {
     if ($datacols > 0) {
         end_cell();
         if (isOption($edit_options, 'DS')) {
-            echo "<td colspan='" . attr($datacols) . "' class='dcols" . attr($datacols) . " stuff under RS' style='";
+            echo "<td colspan='" . attr($datacols) . "' class='dcols$datacols stuff under RS' style='";
         } else if (isOption($edit_options, 'DO')) {
-            echo "<td colspan='" . attr($datacols) . "' class='dcols" . attr($datacols) . " stuff under RO' style='";
+            echo "<td colspan='" . attr($datacols) . "' class='dcols$datacols stuff under RO' style='";
         } else {
-            echo "<td colspan='" . attr($datacols) . "' class='dcols" . attr($datacols) . " stuff under' style='";
+            echo "<td colspan='" . attr($datacols) . "' class='dcols$datacols stuff under' style='";
         }
-
+        
         if ($cell_count > 0) {
             echo "padding-left:5pt;";
         }
@@ -496,7 +479,7 @@ while ($frow = sqlFetchArray($fres)) {
 
     ++$item_count;
 
-    if ($isblankform) {
+    if ($isform) {
         generate_print_field($frow, $currvalue);
     } else {
         $s = generate_display_field($frow, $currvalue);
@@ -603,7 +586,7 @@ if ($fs && isset($LBF_DIAGS_SECTION)) {
 <?php
 if ($PDF_OUTPUT) {
     $content = getContent();
-    $pdf->writeHTML($content);
+    $pdf->writeHTML($content, false);
     $pdf->Output('form.pdf', 'I'); // D = Download, I = Inline
 } else {
 ?>

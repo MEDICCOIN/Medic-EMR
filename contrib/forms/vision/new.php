@@ -14,11 +14,12 @@
  */
 ?>
 <?php
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
 formHeader("Form: vision");
 ?>
 <html><head>
+<?php html_header_show();?>
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 </head>
 <body class="body_top">

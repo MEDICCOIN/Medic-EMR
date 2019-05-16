@@ -126,12 +126,12 @@ if ($_GET['group'] == true) {
 if (empty($collectthis)) {
     $collectthis = "undefined";
 } else {
-    $collectthis = json_sanitize($collectthis[array_keys($collectthis)[0]]["rules"]);
+    $collectthis = $collectthis[array_keys($collectthis)[0]]["rules"];
 }
 ?>
-<?php $group_disabled = ($_GET['group'] && !$g_edit && $have_group_global_enabled )?' disabled=true; ':'';?>
-<?php if ($group_disabled) {
-    echo '<script>$(function (){
+<?php $disabled = (!$g_edit && $have_group_global_enabled )?' disabled=true; ':'';?>
+<?php if ($disabled) {
+    echo '<script>$( document ).ready(function(){
     $("input").prop("disabled", true);
     $("select").prop("disabled", true);
 }) </script>';
@@ -212,19 +212,14 @@ if (empty($collectthis)) {
         // Manage tracker status.
         // And auto-create a new encounter if appropriate.
         if (!empty($_POST['form_pid'])) {
-            $is_tracker = is_tracker_encounter_exist($event_date, $appttime, $_POST['form_pid'], $_GET['eid']);
-            $is_checkin = is_checkin($_POST['form_apptstatus']);
-            if ((int)$GLOBALS['auto_create_new_encounters']
-                && $event_date == date('Y-m-d')
-                && $is_checkin == '1'
-                && !$is_tracker) {
+            if ($GLOBALS['auto_create_new_encounters'] && $event_date == date('Y-m-d') && (is_checkin($_POST['form_apptstatus']) == '1') && !is_tracker_encounter_exist($event_date, $appttime, $_POST['form_pid'], $_GET['eid'])) {
                 $encounter = todaysEncounterCheck($_POST['form_pid'], $event_date, $_POST['form_comments'], $_POST['facility'], $_POST['billing_facility'], $_POST['form_provider'], $_POST['form_category'], false);
                 if ($encounter) {
-                    $info_msg .= xl("New encounter created with id");
-                    $info_msg .= " $encounter";
+                        $info_msg .= xl("New encounter created with id");
+                        $info_msg .= " $encounter";
                 }
 
-                # Capture the appt status and room number for patient tracker. This will map the encounter to it also.
+                 # Capture the appt status and room number for patient tracker. This will map the encounter to it also.
                 if (isset($GLOBALS['temporary-eid-for-manage-tracker']) || !empty($_GET['eid'])) {
                     // Note that the temporary-eid-for-manage-tracker is used to capture the eid for new appointments and when separate a recurring
                     // appointment. It is set in the InsertEvent() function. Note that in the case of spearating a recurrent appointment, the get eid
@@ -234,16 +229,16 @@ if (empty($collectthis)) {
                     manage_tracker_status($event_date, $appttime, $temp_eid, $_POST['form_pid'], $_SESSION["authUser"], $_POST['form_apptstatus'], $_POST['form_room'], $encounter);
                 }
             } else {
-                # Capture the appt status and room number for patient tracker.
+                    # Capture the appt status and room number for patient tracker.
                 if (!empty($_GET['eid'])) {
-                    manage_tracker_status($event_date, $appttime, $_GET['eid'], $_POST['form_pid'], $_SESSION["authUser"], $_POST['form_apptstatus'], $_POST['form_room'], $is_tracker);
+                    manage_tracker_status($event_date, $appttime, $_GET['eid'], $_POST['form_pid'], $_SESSION["authUser"], $_POST['form_apptstatus'], $_POST['form_room']);
                 }
             }
         }
 
         // auto create encounter for therapy group
         if (!empty($_POST['form_gid'])) {
-            // status Took Place is the check in of therapy group
+                                                                                // status Took Place is the check in of therapy group
             if ($GLOBALS['auto_create_new_encounters'] && $event_date == date('Y-m-d') && $_POST['form_apptstatus'] == '=') {
                 $encounter = todaysTherapyGroupEncounterCheck($_POST['form_gid'], $event_date, $_POST['form_comments'], $_POST['facility'], $_POST['billing_facility'], $_POST['form_provider'], $_POST['form_category'], false, $pc_eid);
                 if ($encounter) {
@@ -879,8 +874,6 @@ if (empty($collectthis)) {
     $patientid = '';
     if ($_REQUEST['patientid']) {
         $patientid = $_REQUEST['patientid'];
-    } elseif (!empty($_SESSION['pid'])) {
-        $patientid = ($_SESSION['pid']);
     }
 
     $patientname = null;
@@ -1314,28 +1307,16 @@ var weekDays = new Array(
   else f.form_repeat_type.selectedIndex = 5; // Added by epsdky 2016 (details in commit)
  }
 
-    // This is for callback by the find-available popup.
-    function setappt(year,mon,mday,hours,minutes) {
-        var f = document.forms[0];
-        <?php
-        $currentDateFormat = $GLOBALS['date_display_format'];
-        if ($currentDateFormat == 0) { ?>
-        f.form_date.value =  '' + year + '-' +
-            ('' + (mon  + 100)).substring(1) + '-' +
-            ('' + (mday + 100)).substring(1);
-        <?php } elseif ($currentDateFormat == 1) { ?>
-        f.form_date.value = ('' + (mon  + 100)).substring(1) + '/' +
-            ('' + (mday + 100)).substring(1) + '/' +
-            '' + year;
-        <?php } elseif ($currentDateFormat == 2) { ?>
-        f.form_date.value = ('' + (mday + 100)).substring(1) + '/' +
-            ('' + (mon  + 100)).substring(1) + '/' +
-            '' + year;
-        <?php } ?>
-        f.form_ampm.selectedIndex = (hours >= 12) ? 1 : 0;
-        f.form_hour.value = (hours > 12) ? hours - 12 : hours;
-        f.form_minute.value = ('' + (minutes + 100)).substring(1);
-    }
+ // This is for callback by the find-available popup.
+ function setappt(year,mon,mday,hours,minutes) {
+  var f = document.forms[0];
+  f.form_date.value = '' + year + '-' +
+   ('' + (mon  + 100)).substring(1) + '-' +
+   ('' + (mday + 100)).substring(1);
+  f.form_ampm.selectedIndex = (hours >= 12) ? 1 : 0;
+  f.form_hour.value = (hours > 12) ? hours - 12 : hours;
+  f.form_minute.value = ('' + (minutes + 100)).substring(1);
+ }
 
     // Invoke the find-available popup.
     function find_available(extra) {
@@ -2006,7 +1987,7 @@ if ($repeatexdate != "") {
 <script language="javascript">
 // jQuery stuff to make the page a little easier to use
 
-$(function (){
+$(document).ready(function(){
     $("#form_save").click(function(e) { validateform(e,"save"); });
     $("#form_duplicate").click(function(e) { validateform(e,"duplicate"); });
     $("#find_available").click(function() { find_available(''); });
@@ -2032,7 +2013,6 @@ $(function (){
 
 });
 
-
 function are_days_checked(){
     var days = document.getElementById("days").getElementsByTagName('input');
     var counter = 0;
@@ -2048,7 +2028,7 @@ function are_days_checked(){
 * validation on the form with new client side validation (using validate.js).
 * this enable to add new rules for this form in the pageValidation list.
 * */
-var collectvalidation = <?php echo $collectthis; ?>;
+var collectvalidation = <?php echo($collectthis); ?>;
 function validateform(event,valu){
 
     $('#form_save').attr('disabled', true);

@@ -164,7 +164,7 @@
     </div>
 </main>
 <script>
-    $(function(){
+    $(document).ready(function(){
 
         $('.datepicker').datetimepicker({
             <?php $datetimepicker_timepicker = false; ?>

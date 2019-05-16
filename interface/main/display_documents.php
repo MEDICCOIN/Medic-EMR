@@ -3,23 +3,31 @@
  * Displays the documents
  * Only Lab documents for now.
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Hema Bandaru <hemab@drcloudemr.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @author    Harshal Lele <harshallele97@gmail.com>
- * @copyright Copyright (c) 2014 Ensoftek
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Harshal Lele <harshallele97@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2014 Ensoftek
+ * Copyright (C) 2017 Brady Miller <brady.g.miller@gmail.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Hema Bandaru <hemab@drcloudemr.com>
+ * @author  Brady Miller <brady.g.miller@gmail.com>
+ * @link    http://www.open-emr.org
  */
+
 
 
 require_once('../globals.php');
 require_once("$srcdir/patient.inc");
 require_once("$srcdir/payment_jav.inc.php");
-
-use OpenEMR\Core\Header;
 
 $curdate = date_create(date("Y-m-d"));
 date_sub($curdate, date_interval_create_from_date_string("7 days"));
@@ -42,56 +50,52 @@ $display_expand_msg = "display:none;";
 $display_collapse_msg = "display:inline;";
 
 ?>
+
 <html>
 <head>
-<?php Header::setupHeader(['no_bootstrap', 'no_fontawesome', 'datetime-picker', 'common']); ?>
+
+<?php html_header_show();?>
+<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
+<link rel="stylesheet" href='<?php echo $GLOBALS['assets_static_relative'] ?>/qtip2-2-2-1/jquery.qtip.min.css' type='text/css'>
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
+
+
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/common.js?v=<?php echo $v_js_includes; ?>"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-7-2/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-ui-1.8.6.custom.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/qtip2-2-2-1/jquery.qtip.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 
 <script type="text/javascript">
     var global_date_format = '<?php echo DateFormatRead(); ?>';
-    $(function () {
+    $(document).ready(function() {
         $("#docdiv a").each(function() {
-
-            let name = $(this).get(0);
-
-            let tooltip = document.getElementsByClassName('tooltip_container')[0];
-            let tooltipDoc = document.getElementsByClassName('tooltip_doc')[0];
-
-            let tooltipVisible = false;
-
-            name.addEventListener('mouseenter',() => {
-                //check if the document is already visible
-                if(!tooltipVisible){
-
-                    //set the position of tooltip to that of the table cell
-                    let rect = name.getBoundingClientRect();
-                    let nameTop = rect.top + window.pageYOffset;
-                    let nameLeft = rect.left + window.pageXOffset;
-                    tooltip.style.left = nameLeft;
-                    tooltip.style.top = nameTop;
-
-                    tooltipDoc.src = $(this).attr('title');
-                    tooltip.style.display = 'block';
-                    tooltipDoc.style.maxHeight = '100%';
-
-                    tooltipVisible = true;
-                }
-
-            });
-            //hide the tooltip when the cursor goes out of the image
-            tooltip.addEventListener('mouseleave',() => {
-                tooltip.style.display = 'none';
-                tooltipVisible = false;
-            });
-
+            $(this).qtip({
+                content : '<iframe class="qtip-box" src="' + $(this).attr('title') + '" />',
+                hide : {
+                    delay : 20,
+                    fixed : true
+                },
+                position : {
+                    at : 'bottom left',
+                    viewport : $(window),
+                    adjust: {
+                        x: 20
+                    },
+                },
+                style: 'qtip-style'
+            })
         })
 
-        $('.datepicker').datetimepicker({
-            <?php $datetimepicker_timepicker = false; ?>
-            <?php $datetimepicker_showseconds = false; ?>
-            <?php $datetimepicker_formatInput = true; ?>
-            <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'); ?>
-            <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
-        });
+    $('.datepicker').datetimepicker({
+        <?php $datetimepicker_timepicker = false; ?>
+        <?php $datetimepicker_showseconds = false; ?>
+        <?php $datetimepicker_formatInput = true; ?>
+        <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'); ?>
+        <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
+    });
     });
 
     function validateDate(fromDate,toDate){
@@ -99,11 +103,11 @@ $display_collapse_msg = "display:inline;";
         var todate = $("#" + toDate).val();
         if ( (frmdate.length > 0) && (todate.length > 0) ) {
             if ( DateCheckGreater(frmdate, todate, global_date_format) == false ){
-                alert(<?php echo xlj('To date must be later than From date!'); ?>);
+                alert("<?php xl('To date must be later than From date!', 'e'); ?>");
                 return false;
             }
         }
-        document.location='<?php echo $GLOBALS['webroot']; ?>/interface/main/display_documents.php?form_from_doc_date=' + encodeURIComponent(frmdate) + '&form_to_doc_date=' + encodeURIComponent(todate);
+        document.location='<?php echo $GLOBALS['webroot']; ?>/interface/main/display_documents.php?' + fromDate + '='+frmdate+'&' + toDate + '='+todate;
     }
 
     function expandOrCollapse(type,prefixString) {
@@ -123,6 +127,20 @@ $display_collapse_msg = "display:inline;";
 </script>
 
 <style type="text/css">
+.qtip-box{
+    width : 100%;
+    height : 95%;
+}
+
+.qtip-style {
+    width: 75%;
+    max-width: 75%;
+    height: 50%;
+    max-height: 50%;
+}
+.qtip {
+    max-width : 100%;
+}
 
 .linkcell {
     max-width: 250px ;
@@ -131,24 +149,6 @@ $display_collapse_msg = "display:inline;";
     valign : absbottom;
 }
 
-.tooltip_container{
-    background-color:lightgrey;
-    width:75%;
-    height:50%;
-    z-index: 1;
-    display:none;
-    position:absolute;
-    box-sizing:border-box;
-    border:10px solid lightgrey;
-}
-
-
-.tooltip_doc{
-    width:100%;
-    height:100%;
-}
-
-
 </style>
 </head>
 
@@ -156,8 +156,8 @@ $display_collapse_msg = "display:inline;";
 
 <div>
     <span class='title'><?php echo xlt('Lab Documents'); ?></span>
-    <span id='docexpand' onclick='expandOrCollapse(1,"doc")' style='cursor:pointer;<?php echo $display_expand_msg ?>'>(<?php echo xlt('expand'); ?>)</span>
-    <span id='doccollapse' onclick='expandOrCollapse(2,"doc")' style='cursor:pointer;<?php echo $display_collapse_msg ?>'>(<?php echo xlt('collapse'); ?>)</span>
+    <span id='docexpand' onclick='expandOrCollapse(1,"doc")' style='cursor:pointer;<?php echo $display_expand_msg ?>'>(expand)</span>
+    <span id='doccollapse' onclick='expandOrCollapse(2,"doc")' style='cursor:pointer;<?php echo $display_collapse_msg ?>'>(collapse)</span>
     <br><br>
     <div id='docfilterdiv'<?php echo $display_div; ?>>
     <table style="margin-left:10px; " width='40%'>
@@ -223,7 +223,7 @@ $display_collapse_msg = "display:inline;";
     <?php
     if (sqlNumRows($resultSet)) {
         while ($row = sqlFetchArray($resultSet)) {
-            $url = $GLOBALS['webroot'] . "/controller.php?document&retrieve&patient_id=" . attr_url($row["foreign_id"]) . "&document_id=" . attr_url($row["id"]) . '&as_file=false';
+            $url = $GLOBALS['webroot'] . "/controller.php?document&retrieve&patient_id=" . attr($row["foreign_id"]) . "&document_id=" . attr($row["id"]) . '&as_file=false';
             // Get the notes for this document.
             $notes = array();
             $note = '';
@@ -250,10 +250,6 @@ $display_collapse_msg = "display:inline;";
     <?php
     } ?>
     </table>
-    </div>
-
-    <div class="tooltip_container">
-        <iframe class="tooltip_doc"></frame>
-    </div>
+</div>
 </body>
 </html>

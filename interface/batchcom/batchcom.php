@@ -34,10 +34,6 @@ $sort_by_choices = array(xl('Zip Code')=>'patient_data.postal_code', xl('Last Na
 
 // process form
 if ($_POST['form_action']=='process') {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     //validation uses the functions in batchcom.inc.php
     //validate dates
     if (!check_date_format($_POST['app_s'])) {
@@ -188,7 +184,6 @@ if ($_POST['form_action']=='process') {
     }
     ?>
     <form name="select_form" method="post" action="">
-        <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
         <div class="row">
             <div class="col-md-3 well form-group">
                 <label for="process_type"><?php echo xlt("Process") . ":"; ?></label>
@@ -288,7 +283,7 @@ if ($_POST['form_action']=='process') {
         var email = document.querySelector('.email');
         var process = document.querySelector('select[name="process_type"]');
         function hideEmail() {
-            if (process.value !== <?php echo js_escape($process_choices[1]); ?>) { email.style.display = 'none'; } else { email.style.display = ''; }
+            if (process.value !== '<?php echo attr($process_choices[1]); ?>') { email.style.display = 'none'; } else { email.style.display = ''; }
         }
         process.addEventListener('change', hideEmail);
         hideEmail();

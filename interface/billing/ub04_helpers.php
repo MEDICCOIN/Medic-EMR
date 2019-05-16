@@ -2,13 +2,11 @@
 /**
  * Helper for UB04 form.
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @package OpenEMR
+ * @link    http://www.open-emr.org
+ * @author  Jerry Padgett <sjpadgett@gmail.com>
  * @copyright Copyright (c) 2017 Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @license https://www.gnu.org/licenses/agpl-3.0.en.html GNU Affero General Public License 3
  */
 require_once("../globals.php");
 require_once("ub04_codes.inc.php");
@@ -21,14 +19,14 @@ if ($lookup != "") {
 }
 
 // Falling through for user dialog.
-$users = sqlStatementNoLog("SELECT id,fname,lname,npi,taxonomy FROM users WHERE authorized=? AND active=?", array(1,1));
+$users = sqlStatementNoLog("SELECT id,fname,lname,npi,taxonomy FROM users WHERE " . "authorized=? AND active=?", array(1,1));
 ?>
 <html>
 <head>
 <script>
 function sendSelection(value)
 {
-    var parentId = <?php echo js_escape($_GET['formid']); ?>;
+    var parentId = <?php echo json_encode($_GET['formid']); ?>;
     //window.opener.updateValue(parentId, value);
     //window.close();
     updateProvider(parentId, value);
@@ -76,7 +74,7 @@ function lookup_codes($group, $term)
         $label = $v['code'] . " : " . $v['desc'] . ($v['desc1'] ? (" :: " . $v['desc1']) : "");
         if (preg_match($s, $label)) {
             $gotem[] = array(
-                'label' => attr($label),
+                'label' => htmlspecialchars($label, ENT_QUOTES),
                 'value' => $v['code']
             );
         }

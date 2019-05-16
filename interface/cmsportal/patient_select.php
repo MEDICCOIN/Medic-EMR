@@ -25,8 +25,6 @@ require_once("$srcdir/patient.inc");
 require_once("$srcdir/options.inc.php");
 require_once("portal.inc.php");
 
-use OpenEMR\Core\Header;
-
 $postid = intval($_REQUEST['postid']);
 
 if ($postid) {
@@ -38,7 +36,8 @@ if ($postid) {
 ?>
 <html>
 <head>
-<?php Header::setupHeader(['no_bootstrap', 'no_fontawesome', 'no_textformat', 'no_dialog']); ?>
+<?php html_header_show(); ?>
+<link rel=stylesheet href="<?php echo $css_header; ?>" type="text/css">
 <style>
 
 #searchResults {
@@ -63,7 +62,7 @@ if ($postid) {
   cursor: pointer;
 }
 
-.highlight {
+.highlight { 
   background-color: #336699;
   color: white;
 }
@@ -72,11 +71,12 @@ if ($postid) {
 
 </style>
 
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
 <script language="JavaScript">
 
-$(function(){
-  $(".oneresult").on("mouseover", function() {$(this).addClass("highlight");});
-  $(".oneresult").on("mouseout", function() {$(this).removeClass("highlight");});
+$(document).ready(function(){
+  $(".oneresult").mouseover(function() {$(this).addClass("highlight");});
+  $(".oneresult").mouseout(function() {$(this).removeClass("highlight");});
 });
 
 var mypcc = '<?php echo $GLOBALS['phone_country_code'] ?>';

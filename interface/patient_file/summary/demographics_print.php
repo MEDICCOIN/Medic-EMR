@@ -6,12 +6,9 @@
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2009-2015 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-
 
 require_once("../../globals.php");
 
@@ -27,8 +24,6 @@ require_once("$srcdir/acl.inc");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/patient.inc");
 
-use Mpdf\Mpdf;
-
 $patientid = empty($_REQUEST['patientid']) ? 0 : 0 + $_REQUEST['patientid'];
 if ($patientid < 0) {
     $patientid = 0 + $pid; // -1 means current pid
@@ -39,32 +34,13 @@ $isform = empty($_REQUEST['isform']) ? 0 : 1;
 
 // Html2pdf fails to generate checked checkboxes properly, so write plain HTML
 // if we are doing a patient-specific complete form.
-// TODO - now use mPDF, so should test if still need this fix
 $PDF_OUTPUT = ($patientid && $isform) ? false : true;
 
 if ($PDF_OUTPUT) {
-    $config_mpdf = array(
-        'tempDir' => $GLOBALS['MPDF_WRITE_DIR'],
-        'mode' => $GLOBALS['pdf_language'],
-        'format' => 'Letter',
-        'default_font_size' => '9',
-        'default_font' => 'dejavusans',
-        'margin_left' => $GLOBALS['pdf_left_margin'],
-        'margin_right' => $GLOBALS['pdf_right_margin'],
-        'margin_top' => $GLOBALS['pdf_top_margin'],
-        'margin_bottom' => $GLOBALS['pdf_bottom_margin'],
-        'margin_header' => '',
-        'margin_footer' => '',
-        'orientation' => 'P',
-        'shrink_tables_to_fit' => 1,
-        'use_kwt' => true,
-        'autoScriptToLang' => true,
-        'keep_table_proportions' => true
-    );
-    $pdf = new mPDF($config_mpdf);
-    if ($_SESSION['language_direction'] == 'rtl') {
-        $pdf->SetDirectionality('rtl');
-    }
+    require_once("$srcdir/html2pdf/vendor/autoload.php");
+    $pdf = new HTML2PDF('P', 'Letter', 'en');
+    $pdf->setTestTdInOnePage(false); // Turn off error message for TD contents too big.
+    $pdf->pdf->SetDisplayMode('real');
     ob_start();
 }
 
@@ -80,10 +56,10 @@ if ($patientid) {
   // Check authorization.
     $thisauth = acl_check('patients', 'demo');
     if (!$thisauth) {
-        die(xlt('Demographics not authorized'));
+        die(xl('Demographics not authorized'));
     }
     if ($prow['squad'] && ! acl_check('squads', $prow['squad'])) {
-        die(xlt('You are not authorized to access this squad'));
+        die(xl('You are not authorized to access this squad'));
     }
   // $irow = getInsuranceProviders(); // needed?
 }
@@ -100,6 +76,7 @@ $fres = sqlStatement("SELECT * FROM layout_options " .
 <?php if (!$PDF_OUTPUT) { ?>
 <html>
 <head>
+<?php html_header_show();?>
 <?php } ?>
 
 <style>
@@ -134,7 +111,6 @@ div.section {
   // html2pdf screws up the div borders when a div overflows to a second page.
   // Our temporary solution is to turn off the borders in the case where this
   // is likely to happen (i.e. where all form options are listed).
-  // TODO - now use mPDF, so should test if still need this fix
 if (!$isform) {
 ?>
 border-style: solid;
@@ -250,8 +226,7 @@ function getContent()
 {
     global $web_root, $webserver_root;
     $content = ob_get_clean();
-    // Fix a nasty html2pdf bug - it ignores document root!
-    // TODO - now use mPDF, so should test if still need this fix
+  // Fix a nasty html2pdf bug - it ignores document root!
     $i = 0;
     $wrlen = strlen($web_root);
     $wsrlen = strlen($webserver_root);
@@ -301,19 +276,17 @@ while ($frow = sqlFetchArray($fres)) {
         // This replaces the above statement and is an attempt to work around a
         // nasty html2pdf bug. When a table overflows to the next page, vertical
         // positioning for whatever follows it is off and can cause overlap.
-        // TODO - now use mPDF, so should test if still need this fix
         if (strlen($last_group) > 0) {
             echo "</nobreak><br /><div><table><tr><td>&nbsp;</td></tr></table></div><br />\n";
         }
 
         // This is also for html2pdf. Telling it that the following stuff should
         // start on a new page if there is not otherwise room for it on this page.
-        // TODO - now use mPDF, so should test if still need this fix
         echo "<nobreak>\n"; // grasping
 
         $group_name = $grparr[$this_group]['grp_title'];
         $last_group = $this_group;
-        echo "<p class='grpheader'>" . text(xl_layout_label($group_name)) . "</p>\n";
+        echo "<p class='grpheader'>" . xl_layout_label($group_name) . "</p>\n";
               echo "<div class='section'>\n";
         echo " <table border='0' cellpadding='0'>\n";
         echo "  <tr><td class='lcols1'></td><td class='dcols1'></td><td class='lcols1'></td><td class='dcols1'></td></tr>\n";
@@ -332,8 +305,8 @@ while ($frow = sqlFetchArray($fres)) {
   // Handle starting of a new label cell.
     if ($titlecols > 0) {
         end_cell();
-        echo "<td colspan='" . attr($titlecols) . "' ";
-        echo "class='lcols" . attr($titlecols) . " stuff " . (($frow['uor'] == 2) ? "required'" : "bold'");
+        echo "<td colspan='$titlecols' ";
+        echo "class='lcols$titlecols stuff " . (($frow['uor'] == 2) ? "required'" : "bold'");
         if ($cell_count == 2) {
             echo " style='padding-left:10pt'";
         }
@@ -344,9 +317,9 @@ while ($frow = sqlFetchArray($fres)) {
     ++$item_count;
 
     echo "<b>";
-
+    
     if ($frow['title']) {
-        echo text((xl_layout_label($frow['title'])) . ":");
+        echo (xl_layout_label($frow['title']) . ":");
     } else {
         echo "&nbsp;";
     }
@@ -356,7 +329,7 @@ while ($frow = sqlFetchArray($fres)) {
     // Handle starting of a new data cell.
     if ($datacols > 0) {
         end_cell();
-        echo "<td colspan='" . attr($datacols) . "' class='dcols" . attr($datacols) . " stuff under'";
+        echo "<td colspan='$datacols' class='dcols$datacols stuff under'";
         /*****************************************************************
         // Underline is wanted only for fill-in-the-blank data types.
         if ($data_type < 21 && $data_type != 1 && $data_type != 3) {
@@ -386,7 +359,6 @@ while ($frow = sqlFetchArray($fres)) {
 end_group();
 
 // Ending the last nobreak section for html2pdf.
-// TODO - now use mPDF, so should test if still need this fix
 if (strlen($last_group) > 0) {
     echo "</nobreak>\n";
 }
@@ -397,7 +369,8 @@ if (strlen($last_group) > 0) {
 <?php
 if ($PDF_OUTPUT) {
     $content = getContent();
-    $pdf->writeHTML($content);
+  // $pdf->setDefaultFont('Arial');
+    $pdf->writeHTML($content, false);
     $pdf->Output('Demographics_form.pdf', 'D'); // D = Download, I = Inline
 } else {
 ?>
@@ -406,5 +379,4 @@ if ($PDF_OUTPUT) {
 opener.top.printLogPrint(window);
 </script>
 </body>
-</html>
-<?php } ?>
+</html><?php } ?>

@@ -10,15 +10,13 @@
  * @author    Jerry Padgett <sjpadgett@gmail.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (C) 2005-2006 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (C) 2016-2019 Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (C) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
  * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 // continue session
 session_start();
-
-require_once("./../library/pnotes.inc");
 
 //landing page definition -- where to go if something goes wrong
 $landingpage = "index.php?site=".$_SESSION['site_id'];
@@ -293,7 +291,7 @@ if ($_POST['form_action'] == "save") {
             $r2 = array_diff($providers_new, $providers_current);
             if (count($r2)) {
                 foreach ($r2 as $to_be_inserted) {
-                    sqlStatement("INSERT INTO openemr_postcalendar_events ( pc_catid, pc_multiple, pc_aid, pc_pid, pc_title, pc_time, pc_hometext, pc_informant, pc_eventDate, pc_endDate, pc_duration, pc_recurrtype, pc_recurrspec, pc_startTime, pc_endTime, pc_alldayevent, pc_apptstatus, pc_prefcatid, pc_location, pc_eventstatus, pc_sharing, pc_facility)
+                    sqlInsert("INSERT INTO openemr_postcalendar_events ( pc_catid, pc_multiple, pc_aid, pc_pid, pc_title, pc_time, pc_hometext, pc_informant, pc_eventDate, pc_endDate, pc_duration, pc_recurrtype, pc_recurrspec, pc_startTime, pc_endTime, pc_alldayevent, pc_apptstatus, pc_prefcatid, pc_location, pc_eventstatus, pc_sharing, pc_facility)
                 VALUES ( " .
                     "'" . add_escape_custom($_POST['form_category'])         . "', " .
                     "'" . add_escape_custom($row['pc_multiple'])             . "', " .
@@ -353,28 +351,28 @@ if ($_POST['form_action'] == "save") {
             } else {
                 $prov =  $_POST['form_provider_ae'];
             }
-            $insert = false;
+
                 // simple provider case
-            sqlStatement("UPDATE openemr_postcalendar_events SET " .
-            "pc_catid = '"       . add_escape_custom($_POST['form_category'])   . "', " .
-            "pc_aid = '"         . add_escape_custom($prov)                     . "', " .
-            "pc_pid = '"         . add_escape_custom($_POST['form_pid'])        . "', " .
-            "pc_title = '"       . add_escape_custom($_POST['form_title'])      . "', " .
-            "pc_time = NOW(), "                                                 .
-            "pc_hometext = '"    . add_escape_custom($_POST['form_comments'])   . "', " .
-            "pc_informant = '"   . add_escape_custom($_SESSION['providerId'])   . "', " .
-            "pc_eventDate = '"   . add_escape_custom($event_date)               . "', " .
-            "pc_endDate = '"     . add_escape_custom(fixDate($_POST['form_enddate'])) . "', " .
-            "pc_duration = '"    . add_escape_custom(($duration * 60))          . "', " .
-            "pc_recurrtype = '"  . ($_POST['form_repeat'] ? '1' : '0')          . "', " .
-            "pc_recurrspec = '"  . add_escape_custom($recurrspec)               . "', " .
-            "pc_startTime = '"   . add_escape_custom($starttime)                . "', " .
-            "pc_endTime = '"     . add_escape_custom($endtime)                  . "', " .
-            "pc_alldayevent = '" . add_escape_custom($_POST['form_allday'])     . "', " .
-            "pc_apptstatus = '"  . add_escape_custom($_POST['form_apptstatus']) . "', " .
-            "pc_prefcatid = '"   . add_escape_custom($_POST['form_prefcat'])    . "', " .
-            "pc_facility = '"    . (int)$_POST['facility']                       ."' "  . // FF stuff
-            "WHERE pc_eid = '"   . add_escape_custom($eid) . "'");
+                sqlStatement("UPDATE openemr_postcalendar_events SET " .
+                "pc_catid = '"       . add_escape_custom($_POST['form_category'])   . "', " .
+                "pc_aid = '"         . add_escape_custom($prov)                     . "', " .
+                "pc_pid = '"         . add_escape_custom($_POST['form_pid'])        . "', " .
+                "pc_title = '"       . add_escape_custom($_POST['form_title'])      . "', " .
+                "pc_time = NOW(), "                                                 .
+                "pc_hometext = '"    . add_escape_custom($_POST['form_comments'])   . "', " .
+                "pc_informant = '"   . add_escape_custom($_SESSION['providerId'])   . "', " .
+                "pc_eventDate = '"   . add_escape_custom($event_date)               . "', " .
+                "pc_endDate = '"     . add_escape_custom(fixDate($_POST['form_enddate'])) . "', " .
+                "pc_duration = '"    . add_escape_custom(($duration * 60))          . "', " .
+                "pc_recurrtype = '"  . ($_POST['form_repeat'] ? '1' : '0')          . "', " .
+                "pc_recurrspec = '"  . add_escape_custom($recurrspec)               . "', " .
+                "pc_startTime = '"   . add_escape_custom($starttime)                . "', " .
+                "pc_endTime = '"     . add_escape_custom($endtime)                  . "', " .
+                "pc_alldayevent = '" . add_escape_custom($_POST['form_allday'])     . "', " .
+                "pc_apptstatus = '"  . add_escape_custom($_POST['form_apptstatus']) . "', " .
+                "pc_prefcatid = '"   . add_escape_custom($_POST['form_prefcat'])    . "', " .
+                "pc_facility = '"    . (int)$_POST['facility']                       ."' "  . // FF stuff
+                "WHERE pc_eid = '"   . add_escape_custom($eid) . "'");
         }
 
     // =======================================
@@ -400,7 +398,7 @@ if ($_POST['form_action'] == "save") {
             $new_multiple_value = $max['max'] + 1;
 
             foreach ($_POST['form_provider_ae'] as $provider) {
-                sqlStatement("INSERT INTO openemr_postcalendar_events ( " .
+                sqlInsert("INSERT INTO openemr_postcalendar_events ( " .
                 "pc_catid, pc_multiple, pc_aid, pc_pid, pc_title, pc_time, pc_hometext, " .
                 "pc_informant, pc_eventDate, pc_endDate, pc_duration, pc_recurrtype, " .
                 "pc_recurrspec, pc_startTime, pc_endTime, pc_alldayevent, " .
@@ -430,8 +428,7 @@ if ($_POST['form_action'] == "save") {
             } // foreach
         } else {
             $_POST['form_apptstatus'] = '^';
-            $insert = true;
-            sqlStatement("INSERT INTO openemr_postcalendar_events ( " .
+            sqlInsert("INSERT INTO openemr_postcalendar_events ( " .
                 "pc_catid, pc_aid, pc_pid, pc_title, pc_time, pc_hometext, " .
                 "pc_informant, pc_eventDate, pc_endDate, pc_duration, pc_recurrtype, " .
                 "pc_recurrspec, pc_startTime, pc_endTime, pc_alldayevent, " .
@@ -459,6 +456,54 @@ if ($_POST['form_action'] == "save") {
                 "1, " . (int)$_POST['facility'] . ")"); // FF stuff
         } // INSERT single
     } // else - insert
+
+  // Save new DOB if it's there.
+    $patient_dob = trim($_POST['form_dob']);
+    if ($patient_dob && $_POST['form_pid']) {
+        sqlStatement("UPDATE patient_data SET DOB = ? WHERE " .
+        "pid = ?", array($patient_dob, $_POST['form_pid']));
+    }
+
+  // Auto-create a new encounter if appropriate.
+  //
+
+/*  if ($GLOBALS['auto_create_new_encounters'] &&
+    $_POST['form_apptstatus'] == '@' && $event_date == date('Y-m-d'))
+*/
+
+// We decided not to auto-create blank enconter when user arrives. Todd's decision 18 Jun 2010
+// Applied by Cassian Lup (cassian.lup@clinicdr.com)
+
+    if (0) {
+        $tmprow = sqlQuery("SELECT count(*) AS count FROM form_encounter WHERE " .
+        "pid = ? AND date = ?", array($_POST['form_pid'], $event_date." 00:00:00"));
+        if ($tmprow['count'] == 0) {
+              $tmprow = sqlQuery("SELECT username, facility, facility_id FROM users WHERE id = ?", array($_POST['form_provider_ae']));
+              $username = $tmprow['username'];
+              $facility = $tmprow['facility'];
+              $facility_id = $tmprow['facility_id'];
+              $conn = $GLOBALS['adodb']['db'];
+              $encounter = $conn->GenID("sequences");
+              addForm(
+                  $encounter,
+                  "New Patient Encounter",
+                  sqlInsert("INSERT INTO form_encounter SET " .
+                  "date = '" . add_escape_custom($event_date) . "', " .
+                  "onset_date = '" . add_escape_custom($event_date) . "', " .
+                  "reason = '" . add_escape_custom($_POST['form_comments']) . "', " .
+                  "facility = '" . add_escape_custom($facility) . "', " .
+                  "facility_id = '" . add_escape_custom($facility_id) . "', " .
+                  "pid = '" . add_escape_custom($_POST['form_pid']) . "', " .
+                  "encounter = '" . add_escape_custom($encounter) . "'"),
+                  "newpatient",
+                  $_POST['form_pid'],
+                  "1",
+                  "NOW()",
+                  $username
+              );
+              $info_msg .= "New encounter $encounter was created. ";
+        }
+    }
 } else if ($_POST['form_action'] == "delete") {
       // =======================================
       //  multi providers case
@@ -482,15 +527,6 @@ if ($_POST['form_action'] == "save") {
 
 if ($_POST['form_action'] != "") {
   // Leave
-    $type = $insert ? xl("A New Appointment") : xl("An Updated Appointment");
-    $note = $type . " " . xl("request was received from portal patient") . " ";
-    $note .= $_SESSION['ptName'] . " " . xl("regarding appointment dated") . " " . $event_date . " " . $starttime . ". ";
-    $note .= !empty($_POST['form_comments']) ? (xl("Reason") . " " . $_POST['form_comments']) : "";
-    $note .=  ". " . xl("Use Portal Dashboard to confirm with patient.");
-    $title = xl("Patient Reminders");
-    $user = sqlQueryNoLog("SELECT users.username FROM users WHERE authorized = 1 And id = ?", array($_POST['form_provider_ae']));
-    $rtn = addPnote($_POST['form_pid'], $note, 1, 1, $title, $user['username'], '', 'New');
-
     $_SESSION['whereto'] = 'appointmentpanel';
     header('Location:./home.php#appointmentpanel');
     exit();
@@ -948,7 +984,7 @@ while ($crow = sqlFetchArray($cres)) {
  set_display();
 <?php } ?>
 
-    $(function() {
+    $(document).ready(function() {
         $('.datepicker').datetimepicker({
             <?php $datetimepicker_timepicker = false; ?>
             <?php $datetimepicker_showseconds = false; ?>

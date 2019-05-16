@@ -1,52 +1,83 @@
 <?php
-/**
- * coding.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
-
-require_once("../../globals.php");
-require_once("../../../custom/code_types.inc.php");
-
-use OpenEMR\Core\Header;
+include_once("../../globals.php");
+include_once("../../../custom/code_types.inc.php");
 ?>
 <html>
 <head>
-<?php Header::setupHeader(['no_bootstrap', 'no_fontawesome', 'no_textformat', 'no_dialog']); ?>
+<?php html_header_show();?>
+
+<link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
 
 <!-- DBC STUFF ================ -->
 
+<script type="text/javascript">
+$(document).ready(function(){
+
+$('#closeztn').bind('click', function(){
+    if ( confirm("Do you really want to close the ZTN?") ) {
+        $.ajax({ 
+            type: 'POST',
+            url: 'as.php',
+            data: 'cztn=1',
+            async: false
+        }); 
+    }
+    window.location.reload(true);
+});
+
+});
+</script>
+
+<script language="JavaScript">
+<!-- hide from JavaScript-challenged browsers
+
+function selas() {
+  popupWin = window.open('dbc_aschoose.php', 'remote', 'width=800,height=700,scrollbars');
+};
+
+function selcl() {
+  popupWin = window.open('dbc_close.php', 'remote', 'width=960,height=630,left=200,top=100,scrollbars');
+};
+
+function selfl() {
+  popupWin = window.open('dbc_showfollowup.php', 'remote', 'width=500,height=270,left=200,top=100,scrollbars');
+}
+// done hiding --></script>
+
+
+<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 </head>
 <body class="body_bottom">
 
+
+<?php
+$pres = "prescription";
+?>
+
 <dl>
-<dt><span href="coding.php" class="title"><?php echo xlt('Coding'); ?></span></dt>
+<dt><span href="coding.php" class="title"><?php xl('Coding', 'e'); ?></span></dt>
 
 <dd><a class="text" href="superbill_codes.php"
  target="_parent"
  onclick="top.restoreSession()">
-<?php echo xlt('Superbill'); ?></a></dd>
+<?php xl('Superbill', 'e'); ?></a></dd>
 
 <?php foreach ($code_types as $key => $value) { ?>
-<dd><a class="text" href="search_code.php?type=<?php echo attr_url($key); ?>"
+<dd><a class="text" href="search_code.php?type=<?php echo $key ?>"
  target="Codes" onclick="top.restoreSession()">
-<?php echo text($key); ?> <?php echo xlt('Search'); ?></a></dd>
+<?php echo $key; ?> <?php xl('Search', 'e'); ?></a></dd>
 <?php } ?>
 
-<dd><a class="text" href="copay.php" target="Codes" onclick="top.restoreSession()"><?php echo xlt('Copay'); ?></a></dd>
-<dd><a class="text" href="other.php" target="Codes" onclick="top.restoreSession()"><?php echo xlt('Other'); ?></a></dd><br />
+<dd><a class="text" href="copay.php" target="Codes" onclick="top.restoreSession()"><?php xl('Copay', 'e'); ?></a></dd>
+<dd><a class="text" href="other.php" target="Codes" onclick="top.restoreSession()"><?php xl('Other', 'e'); ?></a></dd><br />
 
 <?php if (!$GLOBALS['disable_prescriptions']) { ?>
-<dt><span href="coding.php" class="title"><?php echo xlt('Prescriptions'); ?></span></dt>
-<dd><a class="text" href="<?php echo $GLOBALS['webroot']?>/controller.php?prescription&list&id=<?php echo attr_url($pid); ?>"
- target="Codes" onclick="top.restoreSession()"><?php echo xlt('List Prescriptions'); ?></a></dd>
-<dd><a class="text" href="<?php echo $GLOBALS['webroot']?>/controller.php?prescription&edit&id=&pid=<?php echo attr_url($pid); ?>"
- target="Codes" onclick="top.restoreSession()"><?php echo xlt('Add Prescription'); ?></a></dd>
+<dt><span href="coding.php" class="title"><?php xl('Prescriptions', 'e'); ?></span></dt>
+<dd><a class="text" href="<?php echo $GLOBALS['webroot']?>/controller.php?<?php echo $pres?>&list&id=<?php echo $pid?>"
+ target="Codes" onclick="top.restoreSession()"><?php xl('List Prescriptions', 'e'); ?></a></dd>
+<dd><a class="text" href="<?php echo $GLOBALS['webroot']?>/controller.php?<?php echo $pres?>&edit&id=&pid=<?php echo $pid?>"
+ target="Codes" onclick="top.restoreSession()"><?php xl('Add Prescription', 'e'); ?></a></dd>
 <?php }; // if (!$GLOBALS['disable_prescriptions']) ?>
 </dl>
 

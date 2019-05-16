@@ -1,15 +1,10 @@
 <?php
-/*
- * This program sets the global variables.
- *
- * @package OpenEMR
- * @author Rod Roark <rod@sunsetsystems.com>
- * @author Stephen Waite <stephen.waite@cmsvt.com>
- * @copyright Copyright (c) 2015 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2018 Stephen Waite <stephen.waite@cmsvt.com>
- * @link https://github.com/openemr/openemr/tree/master
- * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+// Copyright (C) 2010-2015 Rod Roark <rod@sunsetsystems.com>
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 
 // $GLOBALS['print_command'] is the
 // Print command for spooling to printers, used by statements.inc.php
@@ -29,7 +24,6 @@
 //   Bahasa Indonesia               // xl('Bahasa Indonesia')
 //   Bengali                        // xl('Bengali')
 //   Bosnian                        // xl('Bosnian')
-//   Bulgarian                      // xl('Bulgarian')
 //   Chinese (Simplified)           // xl('Chinese (Simplified)')
 //   Chinese (Traditional)          // xl('Chinese (Traditional)')
 //   Croatian                       // xl('Croatian')
@@ -70,7 +64,6 @@
 //   Spanish (Spain)                // xl('Spanish (Spain)')
 //   Swedish                        // xl('Swedish')
 //   Tamil                          // xl('Tamil')
-//   Telugu                         // xl('Telugu')
 //   Thai                           // xl('Thai')
 //   Turkish                        // xl('Turkish')
 //   Ukrainian                      // xl('Ukrainian')
@@ -104,8 +97,6 @@ if (stristr(PHP_OS, 'WIN')) {
 // List of user specific tabs and globals
 $USER_SPECIFIC_TABS = array('Appearance',
     'Locale',
-    'Features',
-    'Billing',
     'Report',
     'Calendar',
     'CDR',
@@ -115,7 +106,6 @@ $USER_SPECIFIC_GLOBALS = array('default_top_pane',
     'new_tabs_layout',
     'theme_tabs_layout',
     'css_header',
-    'vertical_responsive_menu',
     'menu_styling_vertical',
     'default_encounter_view',
     'gbl_pt_list_page_size',
@@ -124,10 +114,6 @@ $USER_SPECIFIC_GLOBALS = array('default_top_pane',
     'us_weight_format',
     'date_display_format',
     'time_display_format',
-    'enable_help',
-    'posting_adj_disable',
-    'messages_due_date',
-    'expand_form',
     'ledger_begin_date',
     'print_next_appointment_on_ledger',
     'calendar_view_type',
@@ -188,7 +174,7 @@ $GLOBALS_METADATA = array(
         ),
 
         'new_tabs_layout' => array(
-            xl('Layout (need to logout/login after changing this setting)'),
+            xl('Layout (need to logout/login after change this setting)'),
             array(
                 '0' => xl('Frame'),
                 '1' => xl('Tabs'),
@@ -198,17 +184,17 @@ $GLOBALS_METADATA = array(
         ),
 
         'theme_tabs_layout' => array(
-            xl('Tabs Layout Theme (need to logout/login after changing this setting)'),
+            xl('Tabs Layout Theme (need to logout/login after change this setting)'),
             'tabs_css',
             'tabs_style_full.css',
             xl('Theme of the tabs layout (need to logout and then login to see this new setting). Note this is only applicable if use the Light or Manila general theme below.')
         ),
 
         'css_header' => array(
-            xl('General Theme (need to logout/login after changing this setting)'),
+            xl('General Theme (need to logout/login after change this setting)'),
             'css',
             'style_light.css',
-            xl('Pick a general theme (need to logout/login after changing this setting).')
+            xl('Pick a general theme (need to logout/login after change this setting).')
         ),
 
         'font-family' => array(
@@ -229,7 +215,7 @@ $GLOBALS_METADATA = array(
         ),
 
         'font-size' => array(
-            xl('Default font size (need to logout/login after changing this setting)'),
+            xl('Default font size (need to logout/login after change this setting)'),
             array(
                 '__default__' => 'Use Theme Font Size',
                 '10px' => '10px',
@@ -242,40 +228,14 @@ $GLOBALS_METADATA = array(
             xl("Select the default font size"),
         ),
 
-        'vertical_responsive_menu' => array(
-            xl('Responsive Vertical Menu Style for Tabs (need to logout/login after changing this setting)'),
-            array(
-                '736' => xl('iPhone 6/7/8 Plus') . " -  736 X 414" . xl('px'),
-                '740' => xl('Galaxy S9/S9 Plus') . " -  740 X 360" . xl('px'),
-                '812' => xl('iPhone X/XS') . " -  812 X 375" . xl('px'),
-                '896' => xl('iPhone XR/XS Max') . " -  896 X 414" . xl('px'),
-                '1024' => xl('iPad/iPad Mini, XGA') . " -  1024 X 768" . xl('px'),
-                '1112' => xl('iPad Pro 10.5 inches') . " -  1112 X 834" . xl('px'),
-                '1280' => xl('Kindle Fire HDX, Laptop MDPI , WXGA') . " -  1280 X 800" . xl('px'),
-                '1336' => xl('iPad Pro 12.5 inches') . " -  1336 X 1024" . xl('px'),
-                '1366' => xl('HD') . " -  1366 X 768" . xl('px'),
-                '1440' => xl('Laptop HiDPI, WXGA+') . " -  1440 X 900" . xl('px'),
-                '1600' => xl('HD+') . " -  1600 X 900" . xl('px'),
-                '1680' => xl('WSXGA+') . " -  1680 X 1050" . xl('px'),
-                '1920' => xl('FHD, WUXGA') . " -  1920 X 1080, 1920 X 1200" . xl('px'),
-                '2048' => xl('QWXGA') . " -  2048 X 1152" . xl('px'),
-                '2560' => xl('QHD') . " -  2560 X 1440" . xl('px'),
-                '3840' => xl('4K UHD') . " -  3840 X 2160" . xl('px'),
-
-            ),
-
-            '1024', //default iPad/iPad mini
-            xl('Selecting the width for responsive vertical style menus in tab based layout (need to logout/login after change this setting)')
-        ),
-
         'menu_styling_vertical' => array(
-            xl('Vertical Menu Style for Frames'),
+            xl('Vertical Menu Style'),
             array(
                 '0' => xl('Tree'),
                 '1' => xl('Sliding'),
             ),
             '1',
-            xl('Vertical Menu Style for frame based layouts')
+            xl('Vertical Menu Style')
         ),
 
         'default_encounter_view' => array(
@@ -289,10 +249,10 @@ $GLOBALS_METADATA = array(
         ),
 
         'gbl_nav_area_width' => array(
-            xl('Navigation Area Width for Frames'),
+            xl('Navigation Area Width'),
             'num',
             '175',
-            xl('Width in pixels of the left navigation frame in frame based layout.')
+            xl('Width in pixels of the left navigation frame.')
         ),
 
         'openemr_name' => array(
@@ -461,13 +421,6 @@ $GLOBALS_METADATA = array(
             xl('Default state of New Window checkbox in the patient list.')
         ),
 
-        'num_of_messages_displayed' => array(
-            xl('Number of Messages Displayed in Patient Summary'),
-            'num',
-            '3',
-            xl('This is the number of messages that will be displayed in the messages widget in the patient summary screen.')
-        ),
-
         'gbl_vitals_options' => array(
             xl('Vitals Form Options'),
             array(
@@ -561,7 +514,7 @@ $GLOBALS_METADATA = array(
         'allow_debug_language' => array(
             xl('Allow Debugging Language'),
             'bool',                           // data type
-            '1',                              // default = true during development and false for production releases
+            '0',                              // default = true during development and false for production releases
             xl('This will allow selection of the debugging (\'dummy\') language.')
         ),
 
@@ -774,13 +727,6 @@ $GLOBALS_METADATA = array(
             xl('Define a default visit category'),
         ),
 
-        'disable_eligibility_log' => array(
-            xl('Disable Insurance Eligibility Reports Download'),
-            'bool',
-            '0',
-            xl('Do not allow insurance eligibility report log download')
-        ),
-
         'disable_chart_tracker' => array(
             xl('Disable Chart Tracker'),
             'bool',                           // data type
@@ -865,13 +811,6 @@ $GLOBALS_METADATA = array(
             xl('Set a facility cookie to remember the selected facility between logins.')
         ),
 
-        'login_into_facility' => array(
-            xl('Login Into Facility'),
-            'bool',                           // data type
-            '0',                              // default
-            xl('Select your current facility in the login page')
-        ),
-
         'receipts_by_provider' => array(
             xl('Print Receipts by Provider'),
             'bool',
@@ -935,17 +874,10 @@ $GLOBALS_METADATA = array(
             xl('This will activate the CCR(Continuity of Care Record) and CCD(Continuity of Care Document) reporting.')
         ),
 
-        'drive_encryption' => array(
-            xl('Enable Encryption of Items Stored on Drive'),
-            'bool',                           // data type
-            '1',                              // default = true
-            xl('This will enable enable encryption of items that are stored on the drive.')
-        ),
-
         'hide_document_encryption' => array(
             xl('Hide Encryption/Decryption Options In Document Management'),
             'bool',                           // data type
-            '0',                              // default = true
+            '1',                              // default = true
             xl('This will deactivate document the encryption and decryption features, and hide them in the UI.')
         ),
 
@@ -976,31 +908,8 @@ $GLOBALS_METADATA = array(
             'bool',                           // data type
             '1',                              // default
             xl('Observation Results in Immunization')
-        ),
-
-        'enable_help' => array(
-           xl('Enable Help Modal'),
-            array(
-                '0' => xl('Hide Help Modal'),
-                '1' => xl('Show Help Modal'),
-                '2' => xl('Disable Help Modal'),
-            ),                       // data type
-            '1',                     // default = Print End of Day Report 1
-            xl('This will allow the display of help modal on help enabled pages')
-        ),
-        'messages_due_date' => array(
-            xl('Messages - due date'),
-            'bool',                           // data type
-            '0',                              // default false
-            xl('Enables choose due date to message')
-        ),
-
-        'expand_form' => array(
-            xl('Expand Form'),
-            'bool',                           // data type
-            '0',                              // default false
-            xl('Open all expandable forms in expanded state')
         )
+
     ),
     // Report Tab
     //
@@ -1118,6 +1027,16 @@ $GLOBALS_METADATA = array(
             xl('Overlay CMS 1500 on the Preprinted form')
         ),
 
+        'cms_1500' => array(
+            xl('CMS 1500 Paper Form Format'),
+            array(
+                '0' => xl('08/05{{CMS 1500 format date revision setting in globals}}'),
+                '1' => xl('02/12{{CMS 1500 format date revision setting in globals}}'),
+            ),
+            '1',                              // default
+            xl('This specifies which revision of the form the billing module should generate')
+        ),
+
         'cms_1500_box_31_format' => array(
             xl('CMS 1500: Box 31 Format'),
             array(
@@ -1156,13 +1075,6 @@ $GLOBALS_METADATA = array(
             ),
             '1',
             xl('Default selection for rendering provider in fee sheet.')
-        ),
-
-        'posting_adj_disable' => array(
-            xl('Disable Auto Adjustment Calculations in EOB Posting'),
-            'bool',                           // data type
-            '0',                              // default = false
-            xl('Turn off auto calculations of adjustments in EOB')
         ),
 
         'show_payment_history' => array(
@@ -1216,21 +1128,14 @@ $GLOBALS_METADATA = array(
             xl('Set POS code in encounter'),
             'bool',                           // data type
             '0',                              // default = false
-            xl('This feature will allow the default POS facility code to be overridden from the encounter.')
-        ),
-
-        'statement_logo' => array(
-            xl('Statement Logo GIF Filename'),
-            'text',                           // data type
-            'practice_logo.gif',                               // data type
-            xl('Place your logo in sites/default/images and type the filename including gif extension here.')
+            xl('This feature will allow the default POS facility code to be overriden from the encounter.')
         ),
 
         'use_custom_statement' => array(
             xl('Use Custom Statement'),
             'bool',                           // data type
             '0',                              // default = false
-            xl('This will use the custom Statement showing the description instead of the codes.')
+            xl('This will use the custom Statment showing the description instead of the codes.')
         ),
 
         'statement_appearance' => array(
@@ -1375,20 +1280,12 @@ $GLOBALS_METADATA = array(
             '',
             xl('Text for fifth account message.')
         ),
-
         'save_codes_history' => array(
             xl('Save codes history'),
             'bool',                           // data type
             '1',                              // default
             xl('Save codes history')
         ),
-
-        'update_mbi' => array(
-            xl('Update policy number from ERA'),
-            'bool',                           // data type
-            '0',                              // default
-            xl('Update policy number from ERA')
-        )
     ),
 
     // E-Sign Tab
@@ -1465,7 +1362,7 @@ $GLOBALS_METADATA = array(
         ),
         'couchdb_pass' => array(
             xl('CouchDB Password'),
-            'encrypted',                     // data type
+            'text',
             '',
             xl('Password to connect to CouchDB'),
         ),
@@ -1585,7 +1482,6 @@ $GLOBALS_METADATA = array(
             'day',                              // default
             xl('This sets the Default Calendar View, Default is Day.')
         ),
-
         'first_day_week' => array(
             xl('First day in the week'),
             array(
@@ -1596,7 +1492,6 @@ $GLOBALS_METADATA = array(
             '1',
             xl('Your first day of the week.')
         ),
-
         'calendar_appt_style' => array(
             xl('Appointment Display Style'),
             array(
@@ -1632,12 +1527,19 @@ $GLOBALS_METADATA = array(
             '10',
             xl('Number of Appointments to display in the Group Summary')
         ),
-
         'number_of_ex_appts_to_show' => array(
             xl('Excluded Appointments - Tooltip - Number to Display'),
             'num',
             '15',
             xl('Number of Excluded Appointments to display in the Tooltip')
+        ),
+
+
+        'patient_portal_appt_display_num' => array(
+            xl('Appointments - Onsite Patient Portal - Number to Display'),
+            'num',
+            '20',
+            xl('Number of Appointments to display in the Onsite Patient Portal')
         ),
 
         'appt_display_sets_option' => array(
@@ -1698,15 +1600,9 @@ $GLOBALS_METADATA = array(
 
         'auto_create_new_encounters' => array(
             xl('Auto-Create New Encounters'),
-            array(
-                '0' => xl('Off'),
-                '1' => xl('One Encounter Per Day'),
-                '2' => xl('Allow Encounter For Each Appointment')
-            ),
-            '1',
-            xl('Automatically create a new encounter when an appointment check in status is selected.') . " " .
-            xl('The Each Appointment option will allow a new encounter regardless of same day visit.') . " " .
-            xl('The appointment status changes and encounter creations are managed through the Patient Tracker.')
+            'bool',                           // data type
+            '1',                              // default
+            xl('Automatically create a new encounter when an appointment check in status is selected.')
         ),
 
         'allow_early_check_in' => array(
@@ -1864,7 +1760,7 @@ $GLOBALS_METADATA = array(
         'secure_upload' => array(
             xl('Secure Upload Files with White List'),
             'bool',                           // data type
-            '1',                              // default
+            '0',                              // default
             xl('Block all files types that are not found in the White List. Can find interface to edit the White List at Administration->Files.')
         ),
         'secure_password' => array(
@@ -1898,13 +1794,6 @@ $GLOBALS_METADATA = array(
             'num',                            // data type
             '0',                              // default
             xl('Period in days where a user may login with an expired password.')
-        ),
-
-        'password_max_failed_logins' => array(
-            xl('Maximum Failed Login Attempts'),
-            'num',                            // data type
-            '0',                              // default
-            xl('Maximum Failed Login Attempts (0 for no maximum).')
         ),
 
         'is_client_ssl_enabled' => array(
@@ -2052,7 +1941,7 @@ $GLOBALS_METADATA = array(
 
         'SMTP_PASS' => array(
             xl('SMTP Password for Authentication'),
-            'encrypted',                           // data type
+            'text',                           // data type
             '',                               // default
             xl('Must be empty if SMTP authentication is not used.')
         ),
@@ -2119,7 +2008,7 @@ $GLOBALS_METADATA = array(
 
         'phone_gateway_password' => array(
             xl('Phone Gateway Password'),
-            'encrypted',                      // data type
+            'text',                           // data type
             '',                               // default
             xl('Password for Phone Gateway.')
         ),
@@ -2285,8 +2174,7 @@ $GLOBALS_METADATA = array(
             array(
                 '0' => xl('No alert'),
                 '1' => xl('Alert only on birthday'),
-                '2' => xl('Alert on and after birthday'),
-                '3' => xl('Alert on and up to 28 days after birthday')
+                '2' => xl('Alert on and after birthday')
             ),
             '1',                              // default
             xl('Alert on patient birthday')
@@ -2302,18 +2190,6 @@ $GLOBALS_METADATA = array(
     // Logging
     //
     'Logging' => array(
-
-        'user_debug' => array(
-            xl('User Debugging Options'),
-            array(
-                '0' => xl('None'),
-                '1' => xl('Display Window Errors Only'),
-                '2' => xl('Display Application Errors Only'),
-                '3' => xl('All'),
-            ),
-            '0',                               // default
-            xl('User Debugging Mode.')
-        ),
 
         'enable_auditlog' => array(
             xl('Enable Audit Logging'),
@@ -2413,6 +2289,7 @@ $GLOBALS_METADATA = array(
             xl('CA Certificate for verifying the RFC 5425 TLS syslog server.')
         ),
 
+        //July 1, 2014: Ensoftek: Flag to enable/disable audit log encryption
         'enable_auditlog_encryption' => array(
             xl('Enable Audit Log Encryption'),
             'bool',                           // data type
@@ -2532,6 +2409,13 @@ $GLOBALS_METADATA = array(
             xl('You may put text here as the default complaint in the New Patient Encounter form.')
         ),
 
+        'default_new_encounter_form' => array(
+            xl('Default Encounter Form ID'),
+            'text',                           // data type
+            '',
+            xl('To automatically open the specified form. Some sports teams use football_injury_audit here.')
+        ),
+
         'MedicareReferrerIsRenderer' => array(
             xl('Medicare Referrer Is Renderer'),
             'bool',                           // data type
@@ -2594,17 +2478,17 @@ $GLOBALS_METADATA = array(
     'Portal' => array(
 
         'portal_onsite_two_enable' => array(
-            xl('Enable Onsite Patient Portal'),
+            xl('Enable Version 2 Onsite Patient Portal'),
             'bool',                           // data type
             '0',
-            xl('Enable Onsite Patient Portal')
+            xl('Enable Version 2 Onsite Patient Portal')
         ),
 
         'portal_onsite_two_address' => array(
-            xl('Onsite Patient Portal Site Address'),
+            xl('Version 2 Onsite Patient Portal Site Address'),
             'text',                           // data type
             'https://your_web_site.com/openemr/portal',
-            xl('Website link for the Onsite Patient Portal.')
+            xl('Website link for the Version 2 Onsite Patient Portal.')
         ),
 
         'portal_onsite_two_basepath' => array(
@@ -2614,53 +2498,39 @@ $GLOBALS_METADATA = array(
             xl('Use servers protocol and host in urls (portal internal only).')
         ),
 
-        'enforce_signin_email' => array(
-            xl('Enforce E-Mail in Portal Log On Dialog'),
-            'bool',                           // data type
-            '1',
-            xl('Patient is required to enter their contact e-mail if present in Demographics Contact.')
-        ),
-
         'portal_onsite_two_register' => array(
-            xl('Allow Onsite New Patient Registration Widget'),
+            xl('Allow Version 2 Onsite New Patient Registration Widget'),
             'bool',                           // data type
             '1',
-            xl('Enable Onsite Patient Portal new patient to self register.')
-        ),
-
-        'allow_portal_appointments' => array(
-            xl('Allow Onsite Online Appointments'),
-            'bool',                           // data type
-            '1',
-            xl('Allow Onsite Patient to make and view appointments online.')
-        ),
-
-        'allow_portal_chat' => array(
-            xl('Allow Onsite Online Secure Chat'),
-            'bool',                           // data type
-            '1',
-            xl('Allow 2 Onsite Patient to use Secure Chat Application.')
-        ),
-
-        'portal_two_ledger' => array(
-            xl('Allow Onsite Patient Ledger'),
-            'bool',                           // data type
-            '1',
-            xl('Allow Onsite Patient to view their accounting ledger online.')
+            xl('Enable Version 2 Onsite Patient Portal new patient to self register.')
         ),
 
         'portal_two_payments' => array(
-            xl('Allow Onsite Online Payments'),
+            xl('Allow Version 2 Onsite Online Payments'),
             'bool',                           // data type
             '0',
-            xl('Allow Onsite Patient to make payments online.')
+            xl('Allow Version 2 Onsite Patient to make payments online.')
         ),
 
         'portal_two_pass_reset' => array(
-            xl('Allow Onsite Patients to Reset Credentials'),
+            xl('Allow Version 2 Patients to Reset Credentials'),
             'bool',                           // data type
             '0',
             xl('Patient may change their logon from portal login dialog.')
+        ),
+
+        'portal_onsite_enable' => array(
+            xl('Enable Version 1 Onsite Patient Portal'),
+            'bool',                           // data type
+            '0',
+            xl('Enable Version 1 Onsite Patient Portal')
+        ),
+
+        'portal_onsite_address' => array(
+            xl('Version 1 Onsite Patient Portal Site Address'),
+            'text',                           // data type
+            'https://your_web_site.com/openemr/patients',
+            xl('Website link for the Version 1 Onsite Patient Portal.')
         ),
 
         'portal_onsite_document_download' => array(
@@ -2737,7 +2607,7 @@ $GLOBALS_METADATA = array(
 
         'gbl_portal_cms_password' => array(
             xl('CMS Portal Password'),
-            'encrypted',                      // data type
+            'text',                           // data type
             '',
             xl('Password for the above user')
         ),
@@ -2763,60 +2633,7 @@ $GLOBALS_METADATA = array(
             xl('FHIR Server Base Address'),
             'text',
             'https://hapi.fhir.org/baseDstu3/',
-            xl('Base URL for FHIR Server.')
-        ),
-
-        'rest_api' => array(
-            xl('Enable OpenEMR REST API'),
-            'bool',
-            '0',
-            xl('Enable OpenEMR RESTful API. SSL Required')
-        ),
-
-        'enable_oa' => array(
-            xl('Enable Office Ally Insurance Eligibility'),
-            'bool',
-            '0',
-            xl('Allow insurance eligibility checks using Office Ally')
-        ),
-
-        'payment_gateway' => array(
-            xl('Select Credit Card Payment Gateway'),
-            array(
-                'InHouse' => xl('In House'),
-                'AuthorizeNet' => xl('Authorize.Net'),
-                'Stripe' => xl('Stripe')
-            ),
-            'InHouse',
-            xl('Enable a Payment Gateway Service for processing credit card transactions')
-        ),
-
-        'gateway_mode_production' => array(
-            xl('Set Gateway to Production Mode'),
-            'bool',                           // data type
-            '0',
-            xl('Check this to go live. Not checked is testing mode.')
-        ),
-
-        'gateway_public_key' => array(
-            xl('Gateway Publishable Key'),
-            'encrypted',
-            '',
-            xl('The public access key for secure tokenize of credit or debit card authorization. PCI compliance')
-        ),
-
-        'gateway_api_key' => array(
-            xl('Gateway API Login Auth Name or Secret'),
-            'encrypted',
-            '',
-            xl('The Auth Name or API key for selected account.Auth Name for Authorize.Net and API Secret for Stripe')
-        ),
-
-        'gateway_transaction_key' => array(
-            xl('Gateway Transaction Key'),
-            'encrypted',
-            '',
-            xl('Mainly Authorize.Net uses two keys')
+            xl('Base URL for FHIR Server. Url should end with /')
         ),
 
         'medex_enable' => array(
@@ -2878,7 +2695,7 @@ $GLOBALS_METADATA = array(
 
         'erx_account_password' => array(
             xl('NewCrop eRx Password'),
-            'encrypted',
+            'pass',
             '',
             xl('Account Password issued for NewCrop eRx service.')
         ),
@@ -2958,7 +2775,7 @@ $GLOBALS_METADATA = array(
 
         'weno_account_pass' => array(
             xl('Weno eRx Account Pass'),
-            'encrypted',                      // data type
+            'text',
             '7C84773D5063B20BC9E41636A091C6F17E9C1E34',
             xl('Account Id issued for Weno eRx service.')
         ),
@@ -3005,7 +2822,7 @@ $GLOBALS_METADATA = array(
 
         'phimail_password' => array(
             xl('phiMail Password'),
-            'encrypted',                      // data type
+            'pass',                           // data type
             '',
             xl('Contact EMR Direct to subscribe to the phiMail Direct messaging service')
         ),
@@ -3076,7 +2893,7 @@ $GLOBALS_METADATA = array(
             '0',
             xl('Rx Show State Lic. #')
         ),
-        'rx_show_drug_drug' => array(
+        'rx_show_drug-drug' => array(
             xl('Rx NLM Drug-Drug'),
             'bool',                           // data type
             '0',
@@ -3162,37 +2979,8 @@ $GLOBALS_METADATA = array(
             '30',
             xl('Rx Bottom Margin (px)')
         ),
-        'rx_use_fax_template' => array(
-            xl('Show button for download fax template'),
-            'bool',                           // data type
-            '1',                              // default = true
-            xl('Show button in the prescription list for download fax template')
-        ),
-        'rx_zend_html_template' => array(
-            xl('Rx html print - zend module'),
-            'bool',                           // data type
-            '0',                              // default = false
-            xl('Use an html template from zend module')
-        ),
-        'rx_zend_html_action' => array(
-            xl('Name of zend template for html print'),
-            'text',                           // data type
-            'default',
-            xl('Name of zend template for html print, possible to add custom template in the PrescriptionTemplate module')
-        ),
-        'rx_zend_pdf_template' => array(
-            xl('Rx pdf - zend template'),
-            'bool',                           // data type
-            '0',                              // default = false
-            xl('Use a pdf template from zend module')
-        ),
-        'rx_zend_pdf_action' => array(
-            xl('Name of zend template for pdf export'),
-            'text',                           // data type
-            'default',
-            xl('Name of zend template for pdf export, possible to add custom template in the PrescriptionTemplate module')
-        ),
     ),
+
     'PDF' => array(
         'pdf_layout' => array(
             xl('Layout'),
@@ -3559,4 +3347,22 @@ $GLOBALS_METADATA = array(
         ),
 
     ),
+    ### Begin Medic Coin Module ###
+    'MedicCoin' => array(
+        'medic_address' => array(
+            xl('Medic Coin Receive Address'),
+            'text',
+            'MWFwbBLJeicbDqQWLbGBCgPmiLLcPzrgro',
+            xl('Setup Default Medic Coin Receive Address')
+        ),
+        'medic_currency' => array(
+            xl('Currency In Medic'),
+            array(
+                'USD' => xl('USD'),
+            ),
+            'USD',
+            xl('Convert selected currency to Medic Coin')
+        ),
+    ),
+    ### End Medic Coin Module ###
 );

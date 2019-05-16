@@ -1,36 +1,32 @@
 <?php
 /**
- * contacts new.php
+ * Generated DocBlock
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    andres_paglayan <andres_paglayan>
- * @author    sunsetsystems <sunsetsystems>
- * @author    cornfeed <jdough823@gmail.com>
- * @author    fndtn357 <fndtn357@gmail.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @author    Daniel Ehrlich <daniel.ehrlich1@gmail.com>
+ * @package OpenEMR
+ * @link    http://www.open-emr.org
+ * @author  andres_paglayan <andres_paglayan>
+ * @author  cornfeed <jdough823@gmail.com>
+ * @author  fndtn357 <fndtn357@gmail.com>
+ * @author  sunsetsystems <sunsetsystems>
  * @copyright Copyright (c) 2005 andres_paglayan <andres_paglayan>
- * @copyright Copyright (c) 2007 sunsetsystems <sunsetsystems>
  * @copyright Copyright (c) 2011 cornfeed <jdough823@gmail.com>
  * @copyright Copyright (c) 2012 fndtn357 <fndtn357@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Daniel Ehrlich <daniel.ehrlich1@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @copyright Copyright (c) 2007 sunsetsystems <sunsetsystems>
+ * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 ?>
 <!-- Form generated from formsWiz -->
 <?php
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
 formHeader("Form: contacts");
 ?>
 <html><head>
+<?php html_header_show();?>
 <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
 </head>
 <body <?php echo $top_bg_line;?> topmargin=0 rightmargin=0 leftmargin=2 bottommargin=0 marginwidth=2 marginheight=0>
 <form method=post action="<?php echo $rootdir;?>/forms/contacts/save.php?mode=new" name="my_form">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 <span class="title">Contacts</span><br><br>
 <table>
 <tr>

@@ -24,11 +24,9 @@
  * @link    http://www.open-emr.org
  */
 
+require_once(dirname(__FILE__) . "/../library/log.inc");
 require_once(dirname(__FILE__) . "/../library/patient.inc");
 require_once(dirname(__FILE__) . "/../library/direct_message_check.inc");
-
-use OpenEMR\Common\Crypto\CryptoGen;
-use OpenEMR\Common\Logging\EventAuditLogger;
 
 /*
  * Connect to a phiMail Direct Messaging server and transmit
@@ -39,6 +37,7 @@ use OpenEMR\Common\Logging\EventAuditLogger;
  * @param string requested_by user | patient
  * @return string result of operation
  */
+
 function transmitCCD($ccd, $recipient, $requested_by, $xml_type = "CCD")
 {
     global $pid;
@@ -68,8 +67,7 @@ function transmitCCD($ccd, $recipient, $requested_by, $xml_type = "CCD")
     }
 
     $phimail_username = $GLOBALS['phimail_username'];
-    $cryptoGen = new CryptoGen();
-    $phimail_password = $cryptoGen->decryptStandard($GLOBALS['phimail_password']);
+    $phimail_password = $GLOBALS['phimail_password'];
     $ret = phimail_write_expect_OK($fp, "AUTH $phimail_username $phimail_password\n");
     if ($ret!==true) {
         return("$config_err 4");
@@ -138,8 +136,7 @@ function transmitCCD($ccd, $recipient, $requested_by, $xml_type = "CCD")
 
     if (substr($ret, 5)=="ERROR") {
         //log the failure
-
-        EventAuditLogger::instance()->newEvent("transmit-ccd", $reqBy, $_SESSION['authProvider'], 0, $ret, $pid);
+        newEvent("transmit-ccd", $reqBy, $_SESSION['authProvider'], 0, $ret, $pid);
         return( xl("The message could not be sent at this time."));
     }
 
@@ -151,11 +148,11 @@ function transmitCCD($ccd, $recipient, $requested_by, $xml_type = "CCD")
     $msg_id=explode(" ", trim($ret), 4);
     if ($msg_id[0]!="QUEUED" || !isset($msg_id[2])) { //unexpected response
         $ret = "UNEXPECTED RESPONSE: " . $ret;
-        EventAuditLogger::instance()->newEvent("transmit-ccd", $reqBy, $_SESSION['authProvider'], 0, $ret, $pid);
+        newEvent("transmit-ccd", $reqBy, $_SESSION['authProvider'], 0, $ret, $pid);
         return( xl("There was a problem sending the message."));
     }
 
-    EventAuditLogger::instance()->newEvent("transmit-".$xml_type, $reqBy, $_SESSION['authProvider'], 1, $ret, $pid);
+    newEvent("transmit-".$xml_type, $reqBy, $_SESSION['authProvider'], 1, $ret, $pid);
     $adodb=$GLOBALS['adodb']['db'];
     $sql="INSERT INTO direct_message_log (msg_type,msg_id,sender,recipient,status,status_ts,patient_id,user_id) " .
     "VALUES ('S', ?, ?, ?, 'S', NOW(), ?, ?)";

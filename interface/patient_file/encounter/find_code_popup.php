@@ -1,27 +1,19 @@
 <?php
-/**
- * find_code_popup.php
+/* Copyright (C) 2008-2014 Rod Roark <rod@sunsetsystems.com>
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2008-2014 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
  */
+
+
 
 
 require_once('../../globals.php');
 require_once($GLOBALS['srcdir'].'/patient.inc');
 require_once($GLOBALS['srcdir'].'/csv_like_join.php');
 require_once($GLOBALS['fileroot'].'/custom/code_types.inc.php');
-
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
 
 $info_msg = "";
 $codetype = $_REQUEST['codetype'];
@@ -48,8 +40,9 @@ $target_element = $_GET['target_element'];
 ?>
 <html>
 <head>
+<?php html_header_show(); ?>
 <title><?php echo xlt('Code Finder'); ?></title>
-<link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
+<link rel="stylesheet" href='<?php echo attr($css_header) ?>' type='text/css'>
 
 <style>
 td { font-size:10pt; }
@@ -61,7 +54,7 @@ td { font-size:10pt; }
  // Standard function
  function selcode(codetype, code, selector, codedesc) {
   if (opener.closed || ! opener.set_related) {
-   alert(<?php echo xlj('The destination form was closed; I cannot act on your selection.'); ?>);
+   alert('<?php echo xls('The destination form was closed; I cannot act on your selection.'); ?>');
   }
   else {
    var msg = opener.set_related(codetype, code, selector, codedesc);
@@ -79,7 +72,7 @@ td { font-size:10pt; }
  // element on the target page to place the selected code into.
  function selcode_target(codetype, code, selector, codedesc, target_element) {
   if (opener.closed || ! opener.set_related_target)
-   alert(<?php echo xlj('The destination form was closed; I cannot act on your selection.'); ?>);
+   alert('<?php echo xls('The destination form was closed; I cannot act on your selection.'); ?>');
   else
    opener.set_related_target(codetype, code, selector, codedesc, target_element);
      dlgclose();
@@ -97,17 +90,16 @@ td { font-size:10pt; }
 <?php
 $string_target_element = "";
 if (!empty($target_element)) {
-    $string_target_element = "?target_element=" . attr_url($target_element) . "&";
+    $string_target_element = "?target_element=" . urlencode($target_element) . "&";
 } else {
     $string_target_element = "?";
 }
 ?>
 <?php if (!empty($allowed_codes)) { ?>
-  <form method='post' name='theform' action='find_code_popup.php<?php echo $string_target_element ?>codetype=<?php echo attr_url($codetype) ?>'>
+  <form method='post' name='theform' action='find_code_popup.php<?php echo $string_target_element ?>codetype=<?php echo urlencode($codetype) ?>'>
 <?php } else { ?>
   <form method='post' name='theform' action='find_code_popup.php<?php echo $string_target_element ?>'>
 <?php } ?>
-  <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <center>
 
@@ -170,7 +162,7 @@ foreach ($allowed_codes as $code) {
    <input type='submit' name='bn_search' value='<?php echo xla('Search'); ?>' />
    &nbsp;&nbsp;&nbsp;
     <?php if (!empty($target_element)) { ?>
-     <input type='button' value='<?php echo xla('Erase'); ?>' onclick="selcode_target('', '', '', '', <?php echo attr_js($target_element); ?>)" />
+     <input type='button' value='<?php echo xla('Erase'); ?>' onclick="selcode_target('', '', '', '', '<?php echo attr(addslashes($target_element)); ?>')" />
     <?php } else { ?>
      <input type='button' value='<?php echo xla('Erase'); ?>' onclick="selcode('', '', '', '')" />
     <?php } ?>
@@ -206,7 +198,7 @@ if ($form_code_type == 'PROD') { // Special case that displays search for produc
         $selector = $row['selector'];
         $desc = $row['name'];
         $anchor = "<a href='' " .
-        "onclick='return selcode(\"PROD\", " . attr_js($drug_id) . ", " . attr_js($selector) . ", " . attr_js($desc) . ")'>";
+        "onclick='return selcode(\"PROD\", \"" . attr(addslashes($drug_id)) . "\", \"" . attr(addslashes($selector)) . "\", \"" . attr(addslashes($desc)) . "\")'>";
         echo " <tr>";
         echo "  <td>$anchor" . text($drug_id.":".$selector) . "</a></td>\n";
         echo "  <td>$anchor" . text($desc) . "</a></td>\n";
@@ -219,10 +211,10 @@ if ($form_code_type == 'PROD') { // Special case that displays search for produc
         if (!empty($target_element)) {
             // add a 5th parameter to function to select the target element on the form for placing the code.
             $anchor = "<a href='' " .
-            "onclick='return selcode_target(" . attr_js($form_code_type) . ", " . attr_js($itercode) . ", \"\", " . attr_js($itertext) . ", " . attr_js($target_element) . ")'>";
+            "onclick='return selcode_target(\"" . attr(addslashes($form_code_type)) . "\", \"" . attr(addslashes($itercode)) . "\", \"\", \"" . attr(addslashes($itertext)) . "\", \"" . attr(addslashes($target_element)) . "\")'>";
         } else {
             $anchor = "<a href='' " .
-            "onclick='return selcode(" . attr_js($form_code_type) . ", " . attr_js($itercode) . ", \"\", " . attr_js($itertext) . ")'>";
+            "onclick='return selcode(\"" . attr(addslashes($form_code_type)) . "\", \"" . attr(addslashes($itercode)) . "\", \"\", \"" . attr(addslashes($itertext)) . "\")'>";
         }
 
         echo " <tr>";

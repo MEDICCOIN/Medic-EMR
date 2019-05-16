@@ -2,40 +2,34 @@
 /**
  * Document Helper Functions for New Documents Module.
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2017-2018 Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2017-2018 Jerry Padgett <sjpadgett@gmail.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>.
+ *
+ * @package OpenEMR
+ * @author Jerry Padgett <sjpadgett@gmail.com>
+ * @link    http://www.open-emr.org
  */
 
 
 require_once(dirname(__FILE__) . "/../../interface/globals.php");
 
-//verify csrf
-if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-    csrfNotVerified();
-}
+$term = isset($_GET["term"]) ? filter_input(INPUT_GET, 'term') : '';
 
-$req = array(
-    'term' => (isset($_GET["term"]) ? filter_input(INPUT_GET, 'term') : ''),
-    'sql_limit' => (isset($_GET["limit"]) ? filter_input(INPUT_GET, 'limit') : 20),
-);
-
-function get_patients_list($req)
+function get_patients_list($term)
 {
-    $term = "%" . $req['term'] . "%";
+    $term = "%" . $term . "%";
     $clear = "- " . xl("Reset to no patient") . " -";
-    $response = sqlStatement(
-        "SELECT CONCAT(fname, ' ',lname,IF(IFNULL(deceased_date,0)=0,'','*')) as label, pid as value
-            FROM patient_data
-            HAVING label LIKE ?
-            ORDER BY IF(IFNULL(deceased_date,0)=0, 0, 1) ASC, IFNULL(deceased_date,0) DESC, lname ASC, fname ASC
-            LIMIT " . escape_limit($req['sql_limit']),
-        array($term)
-    );
+    $response = sqlStatement("SELECT Concat(patient_data.fname, ' ',patient_data.lname) as label, patient_data.pid as value FROM patient_data HAVING label LIKE ? ORDER BY patient_data.lname ASC", array($term));
     $resultpd[] = array(
         'label' => $clear,
         'value' => '00'
@@ -52,4 +46,4 @@ function get_patients_list($req)
     echo json_encode($resultpd);
 }
 
-get_patients_list($req);
+get_patients_list($term);

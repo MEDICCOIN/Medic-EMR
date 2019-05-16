@@ -1,17 +1,12 @@
 <?php
-/**
- * C_Document.class.php
- *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 
 require_once(dirname(__FILE__) . "/../library/forms.inc");
+require_once(dirname(__FILE__) . "/../library/crypto.php");
 
-use OpenEMR\Common\Crypto\CryptoGen;
 use OpenEMR\Services\FacilityService;
 use OpenEMR\Services\PatientService;
 
@@ -37,10 +32,6 @@ class C_Document extends Controller
         $this->assign("FORM_ACTION", $GLOBALS['webroot']."/controller.php?" . attr($_SERVER['QUERY_STRING']));
         $this->assign("CURRENT_ACTION", $GLOBALS['webroot']."/controller.php?" . "document&");
 
-        $this->assign("CSRF_TOKEN_FORM", collectCsrfToken());
-
-        $this->assign("IMAGES_STATIC_RELATIVE", $GLOBALS['images_static_relative']);
-
         //get global config options for this namespace
         $this->_config = $GLOBALS['oer_config']['documents'];
 
@@ -51,9 +42,6 @@ class C_Document extends Controller
         //print_r($t->tree);
         $this->tree = $t;
         $this->Document = new Document();
-
-        // Create a crypto object that will be used for for encryption/decryption
-        $this->cryptoGen = new CryptoGen();
     }
 
     function upload_action($patient_id, $category_id)
@@ -195,11 +183,7 @@ class C_Document extends Controller
                     $filetext = fread($tmpfile, $_FILES['file']['size'][$key]);
                     fclose($tmpfile);
                     if ($doDecryption) {
-                        $filetext = $this->cryptoGen->decryptStandard($filetext, $passphrase);
-                        if ($filetext === false) {
-                            error_log("OpenEMR Error: Unable to decrypt a document since decryption failed.");
-                            $filetext = "";
-                        }
+                        $filetext = $this->decrypt($filetext, $passphrase);
                     }
                     if ($_POST['destination'] != '') {
                         $fname = $_POST['destination'];
@@ -357,12 +341,10 @@ class C_Document extends Controller
         $d = new Document($doc_id);
         $notes = $d->get_notes();
 
-        $this->assign("csrf_token_form", collectCsrfToken());
-
         $this->assign("file", $d);
-        $this->assign("web_path", $this->_link("retrieve") . "document_id=" . urlencode($d->get_id()) . "&");
+        $this->assign("web_path", $this->_link("retrieve") . "document_id=" . $d->get_id() . "&");
         $this->assign("NOTE_ACTION", $this->_link("note"));
-        $this->assign("MOVE_ACTION", $this->_link("move") . "document_id=" . urlencode($d->get_id()) . "&process=true");
+        $this->assign("MOVE_ACTION", $this->_link("move") . "document_id=" . $d->get_id() . "&process=true");
         $this->assign("hide_encryption", $GLOBALS['hide_document_encryption']);
         $this->assign("assets_static_relative", $GLOBALS['assets_static_relative']);
         $this->assign("webroot", $GLOBALS['webroot']);
@@ -370,8 +352,8 @@ class C_Document extends Controller
         // Added by Rod to support document delete:
         $delete_string = '';
         if (acl_check('patients', 'docs_rm')) {
-            $delete_string = "<a href='' class='css_button' onclick='return deleteme(" . attr_js($d->get_id()) .
-                ")'><span><font color='red'>" . xlt('Delete') . "</font></span></a>";
+            $delete_string = "<a href='' class='css_button' onclick='return deleteme(" . $d->get_id() .
+                ")'><span><font color='red'>" . xl('Delete') . "</font></span></a>";
         }
         $this->assign("delete_string", $delete_string);
         $this->assign("REFRESH_ACTION", $this->_link("list"));
@@ -402,7 +384,7 @@ class C_Document extends Controller
 
         // For tagging to encounter
         // Populate the dropdown with patient's encounter list
-        $this->assign("TAG_ACTION", $this->_link("tag") . "document_id=" . urlencode($d->get_id()) . "&process=true");
+        $this->assign("TAG_ACTION", $this->_link("tag") . "document_id=" . $d->get_id() . "&process=true");
         $encOptions = "<option value='0'>-- " . xlt('Select Encounter') . " --</option>";
         $result_docs = sqlStatement("SELECT fe.encounter,fe.date,openemr_postcalendar_categories.pc_catname FROM form_encounter AS fe " .
             "LEFT JOIN openemr_postcalendar_categories ON fe.pc_catid=openemr_postcalendar_categories.pc_catid  WHERE fe.pid = ? ORDER BY fe.date desc", array($patient_id));
@@ -416,7 +398,7 @@ class C_Document extends Controller
 
         //clear encounter tag
         if ($d->get_encounter_id() != 0) {
-            $this->assign('clear_encounter_tag', $this->_link('clear_encounter_tag')."document_id=" . urlencode($d->get_id()));
+            $this->assign('clear_encounter_tag', $this->_link('clear_encounter_tag')."document_id=" . $d->get_id());
         } else {
             $this->assign('clear_encounter_tag', 'javascript:void(0)');
         }
@@ -435,7 +417,7 @@ class C_Document extends Controller
 
         $this->assign("notes", $notes);
 
-        $this->assign("IMG_PROCEDURE_TAG_ACTION", $this->_link("image_procedure") . "document_id=" . urlencode($d->get_id()));
+        $this->assign("IMG_PROCEDURE_TAG_ACTION", $this->_link("image_procedure") . "document_id=" . $d->get_id());
             // Populate the dropdown with image procedure order list
         $imgOptions = "<option value='0'>-- " . xlt('Select Image Procedure') . " --</option>";
         $imgOrders  = sqlStatement("select procedure_name,po.procedure_order_id,procedure_code from procedure_order po inner join procedure_order_code poc on poc.procedure_order_id = po.procedure_order_id where po.patient_id = ?  and poc.procedure_order_title = 'imaging'", array($patient_id));
@@ -452,7 +434,7 @@ class C_Document extends Controller
 
         $this->assign('IMAGE_PROCEDURE_LIST', $imgOptions);
 
-        $this->assign('clear_procedure_tag', $this->_link('clear_procedure_tag')."document_id=" . urlencode($d->get_id()));
+        $this->assign('clear_procedure_tag', $this->_link('clear_procedure_tag')."document_id=" . $d->get_id());
 
         $this->_last_node = null;
 
@@ -469,6 +451,16 @@ class C_Document extends Controller
         $this->assign("activity", $activity);
 
         return $this->list_action($patient_id);
+    }
+
+    function encrypt($plaintext, $key)
+    {
+        return aes256Encrypt($plaintext, $key, false);
+    }
+
+    function decrypt($crypttext, $key)
+    {
+        return aes256Decrypt($crypttext, $key, false);
     }
 
     /**
@@ -526,7 +518,6 @@ class C_Document extends Controller
         $couch_revid = $d->get_couch_revid();
 
         if ($couch_docid && $couch_revid && $original_file) {
-            // standard case for collecting a document from couchdb
             $couch = new CouchDB();
             $data = array($GLOBALS['couchdb_dbase'],$couch_docid);
             $resp = $couch->retrieve_doc($data);
@@ -544,95 +535,47 @@ class C_Document extends Controller
                 $log_content .= date('Y-m-d H:i:s')." ==> Failed to fetch document content from CouchDB.\r\n";
                 $log_content .= date('Y-m-d H:i:s')." ==> Will try to download file from HardDisk if exists.\r\n\r\n";
                 $this->document_upload_download_log($d->get_foreign_id(), $log_content);
-                die(xlt("File retrieval from CouchDB failed"));
+                die(xl("File retrieval from CouchDB failed"));
             }
-            $filetext = base64_decode($content);
             if ($disable_exit == true) {
-                return $filetext;
+                return base64_decode($content);
             }
             header('Content-Description: File Transfer');
             header('Content-Transfer-Encoding: binary');
             header('Expires: 0');
             header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
             header('Pragma: public');
+            $tmpcouchpath = $GLOBALS['OE_SITE_DIR'].'/documents/temp/couch_'.date("YmdHis").$d->get_url_file();
+            $fh = fopen($tmpcouchpath, "w");
+            fwrite($fh, base64_decode($content));
+            fclose($fh);
+            $f = fopen($tmpcouchpath, "r");
             if ($doEncryption) {
-                $ciphertext = $this->cryptoGen->encryptStandard($filetext, $passphrase);
-                header('Content-Disposition: attachment; filename="' . basename_international("/encrypted_aes_".$d->get_url_file()) . '"');
-                header("Content-Type: application/octet-stream");
-                header("Content-Length: " . strlen($ciphertext));
-                echo $ciphertext;
+                $filetext = fread($f, filesize($tmpcouchpath));
+                    $ciphertext = $this->encrypt($filetext, $passphrase);
+                    $tmpfilepath = $GLOBALS['temporary_files_dir'];
+                    $tmpfilename = "/encrypted_aes_".$d->get_url_file();
+                    $tmpfile = fopen($tmpfilepath.$tmpfilename, "w+");
+                fwrite($tmpfile, $ciphertext);
+                fclose($tmpfile);
+                header('Content-Disposition: attachment; filename='.$tmpfilename);
+                    header("Content-Type: application/octet-stream");
+                    header("Content-Length: " . filesize($tmpfilepath.$tmpfilename));
+                    ob_clean();
+                flush();
+                readfile($tmpfilepath.$tmpfilename);
+                unlink($tmpfilepath.$tmpfilename);
             } else {
                 header("Content-Disposition: " . ($as_file ? "attachment" : "inline") . "; filename=\"" . basename_international($d->get_url()) . "\"");
-                header("Content-Type: " . $d->get_mimetype());
-                header("Content-Length: " . strlen($filetext));
-                echo $filetext;
+                    header("Content-Type: " . $d->get_mimetype());
+                    header("Content-Length: " . filesize($tmpcouchpath));
+                    fpassthru($f);
+            }
+            fclose($f);
+            if ($content!='') {
+                unlink($tmpcouchpath);
             }
             exit;//exits only if file download from CouchDB is successfull.
-        }
-        if ($couch_docid && $couch_revid) {
-            //special case when retrieving a document from couchdb that has been converted to a jpg and not directly referenced in openemr documents table
-            //try to convert it if it has not yet been converted
-            //first, see if the converted jpg already exists
-            $couch = new CouchDB();
-            $data = array($GLOBALS['couchdb_dbase'], "converted_".$couch_docid);
-            $resp = $couch->retrieve_doc($data);
-            $content = $resp->data;
-            if ($content == '') {
-                //create the converted jpg
-                $couchM = new CouchDB();
-                $dataM = array($GLOBALS['couchdb_dbase'], $couch_docid);
-                $respM = $couchM->retrieve_doc($dataM);
-                $contentM = $respM->data;
-                if ($contentM=='' && $GLOBALS['couchdb_log']==1) {
-                    $log_content = date('Y-m-d H:i:s')." ==> Retrieving document\r\n";
-                    $log_content = date('Y-m-d H:i:s')." ==> URL: ".$url."\r\n";
-                    $log_content .= date('Y-m-d H:i:s')." ==> CouchDB Document Id: ".$couch_docid."\r\n";
-                    $log_content .= date('Y-m-d H:i:s')." ==> CouchDB Revision Id: ".$couch_revid."\r\n";
-                    $log_content .= date('Y-m-d H:i:s')." ==> Failed to fetch document content from CouchDB.\r\n";
-                    $log_content .= date('Y-m-d H:i:s')." ==> Will try to download file from HardDisk if exists.\r\n\r\n";
-                    $this->document_upload_download_log($d->get_foreign_id(), $log_content);
-                    die(xlt("File retrieval from CouchDB failed"));
-                }
-                // place the from-file into a temporary file
-                $from_file_tmp_name = tempnam($GLOBALS['temporary_files_dir'], "oer");
-                file_put_contents($from_file_tmp_name, base64_decode($contentM));
-                // prepare a temporary file for the to-file
-                $to_file_tmp = tempnam($GLOBALS['temporary_files_dir'], "oer");
-                $to_file_tmp_name = $to_file_tmp . ".jpg";
-                // convert file to jpg
-                exec("convert -density 200 " . escapeshellarg($from_file_tmp_name) . " -append -resize 850 " . escapeshellarg($to_file_tmp_name));
-                // remove from tmp file
-                unlink($from_file_tmp_name);
-                // save the to-file if a to-file was created in above convert call
-                if (is_file($to_file_tmp_name)) {
-                    $couchI = new CouchDB();
-                    $json = json_encode(base64_encode(file_get_contents($to_file_tmp_name)));
-                    $couchdata = array($GLOBALS['couchdb_dbase'], "converted_" . $couch_docid, $d->get_foreign_id(), "", "image/jpeg", $json);
-                    $couchI->check_saveDOC($couchdata);
-                    // remove to tmp files
-                    unlink($to_file_tmp);
-                    unlink($to_file_tmp_name);
-                } else {
-                    error_log("ERROR: Document '" . basename_international($url) . "' cannot be converted to JPEG. Perhaps ImageMagick is not installed?");
-                }
-                // now collect the newly created converted jpg
-                $couchF = new CouchDB();
-                $dataF = array($GLOBALS['couchdb_dbase'], "converted_".$couch_docid);
-                $respF = $couchF->retrieve_doc($dataF);
-                $content = $respF->data;
-            }
-            $filetext = base64_decode($content);
-            if ($disable_exit == true) {
-                return $filetext;
-            }
-            header("Pragma: public");
-            header("Expires: 0");
-            header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-            header("Content-Disposition: " . ($as_file ? "attachment" : "inline") . "; filename=\"" . basename_international($url) . "\"");
-            header("Content-Type: image/jpeg");
-            header("Content-Length: " . strlen($filetext));
-            echo $filetext;
-            exit;
         }
 
         //Take thumbnail file when is not null and file is presented online
@@ -653,13 +596,13 @@ class C_Document extends Controller
                 // etc.
         // NOTE that $from_filename and basename($url) are the same thing
         $from_all = explode("/", $url);
-        $from_filename = array_pop($from_all);
-        $from_pathname_array = array();
+            $from_filename = array_pop($from_all);
+            $from_pathname_array = array();
         for ($i=0; $i<$d->get_path_depth(); $i++) {
             $from_pathname_array[] = array_pop($from_all);
         }
-        $from_pathname_array = array_reverse($from_pathname_array);
-        $from_pathname = implode("/", $from_pathname_array);
+                $from_pathname_array = array_reverse($from_pathname_array);
+                $from_pathname = implode("/", $from_pathname_array);
         if ($couch_docid && $couch_revid) {
             //for couchDB no URL is available in the table, hence using the foreign_id which is patientID
             $temp_url = $GLOBALS['OE_SITE_DIR'] . '/documents/temp/' . $d->get_foreign_id() . '_' . $from_filename;
@@ -671,90 +614,71 @@ class C_Document extends Controller
             $url = $temp_url;
         }
 
+
         if (!file_exists($url)) {
             echo xl('The requested document is not present at the expected location on the filesystem or there are not sufficient permissions to access it.', '', '', ' ') . $url;
         } else {
             if ($original_file) {
                 //normal case when serving the file referenced in database
-                if ($d->get_encrypted() == 1) {
-                    $filetext = $this->cryptoGen->decryptStandard(file_get_contents($url), null, 'database');
-                } else {
-                    $filetext = file_get_contents($url);
-                }
                 if ($disable_exit == true) {
+                    $f = fopen($url, "r");
+                    $filetext = fread($f, filesize($url));
                     return $filetext;
                 }
-                header('Content-Description: File Transfer');
-                header('Content-Transfer-Encoding: binary');
-                header('Expires: 0');
-                header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-                header('Pragma: public');
+                    header('Content-Description: File Transfer');
+                    header('Content-Transfer-Encoding: binary');
+                    header('Expires: 0');
+                    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+                    header('Pragma: public');
+                    $f = fopen($url, "r");
                 if ($doEncryption) {
-                    $ciphertext = $this->cryptoGen->encryptStandard($filetext, $passphrase);
-                    header('Content-Disposition: attachment; filename="' . basename_international("/encrypted_aes_".$d->get_url_file()) . '"');
-                    header("Content-Type: application/octet-stream");
-                    header("Content-Length: " . strlen($ciphertext));
-                    echo $ciphertext;
+                            $filetext = fread($f, filesize($url));
+                    $ciphertext = $this->encrypt($filetext, $passphrase);
+                    $tmpfilepath = $GLOBALS['temporary_files_dir'];
+                    $tmpfilename = "/encrypted_aes_".$d->get_url_file();
+                    $tmpfile = fopen($tmpfilepath.$tmpfilename, "w+");
+                        fwrite($tmpfile, $ciphertext);
+                        fclose($tmpfile);
+                        header('Content-Disposition: attachment; filename='.$tmpfilename);
+                        header("Content-Type: application/octet-stream");
+                        header("Content-Length: " . filesize($tmpfilepath.$tmpfilename));
+                        ob_clean();
+                        flush();
+                        readfile($tmpfilepath.$tmpfilename);
+                        unlink($tmpfilepath.$tmpfilename);
                 } else {
                     header("Content-Disposition: " . ($as_file ? "attachment" : "inline") . "; filename=\"" . basename_international($d->get_url()) . "\"");
                     header("Content-Type: " . $d->get_mimetype());
-                    header("Content-Length: " . strlen($filetext));
-                    echo $filetext;
+                    header("Content-Length: " . filesize($url));
+                    fpassthru($f);
                 }
-                exit;
+                    exit;
             } else {
                 //special case when retrieving a document that has been converted to a jpg and not directly referenced in database
-                //try to convert it if it has not yet been converted
-                $originalUrl = $url;
                 $convertedFile = substr(basename_international($url), 0, strrpos(basename_international($url), '.')) . '_converted.jpg';
-                $url = $GLOBALS['OE_SITE_DIR'] . '/documents/' . $from_pathname . '/' . $convertedFile;
-                if (!is_file($url)) {
-                    if ($d->get_encrypted() == 1) {
-                        // decrypt the from-file into a temporary file
-                        $from_file_unencrypted = $this->cryptoGen->decryptStandard(file_get_contents($originalUrl), null, 'database');
-                        $from_file_tmp_name = tempnam($GLOBALS['temporary_files_dir'], "oer");
-                        file_put_contents($from_file_tmp_name, $from_file_unencrypted);
-                        // prepare a temporary file for the unencrypted to-file
-                        $to_file_tmp = tempnam($GLOBALS['temporary_files_dir'], "oer");
-                        $to_file_tmp_name = $to_file_tmp . ".jpg";
-                        // convert file to jpg
-                        exec("convert -density 200 " . escapeshellarg($from_file_tmp_name) . " -append -resize 850 " . escapeshellarg($to_file_tmp_name));
-                        // remove unencrypted tmp file
-                        unlink($from_file_tmp_name);
-                        // make the encrypted to-file if a to-file was created in above convert call
-                        if (is_file($to_file_tmp_name)) {
-                            $to_file_encrypted = $this->cryptoGen->encryptStandard(file_get_contents($to_file_tmp_name), null, 'database');
-                            file_put_contents($url, $to_file_encrypted);
-                            // remove unencrypted tmp files
-                            unlink($to_file_tmp);
-                            unlink($to_file_tmp_name);
-                        }
-                    } else {
-                        // convert file to jpg
-                        exec("convert -density 200 " . escapeshellarg($originalUrl) . " -append -resize 850 " . escapeshellarg($url));
-                    }
-                }
-                if (is_file($url)) {
-                    if ($d->get_encrypted() == 1) {
-                        $filetext = $this->cryptoGen->decryptStandard(file_get_contents($url), null, 'database');
-                    } else {
-                        $filetext = file_get_contents($url);
-                    }
+                if ($couch_docid && $couch_revid) {
+                    $url = $GLOBALS['OE_SITE_DIR'] . '/documents/temp/' . $convertedFile;
                 } else {
-                    $filetext = '';
-                    error_log("ERROR: Document '" . basename_international($url) . "' cannot be converted to JPEG. Perhaps ImageMagick is not installed?");
+                    $url = $GLOBALS['OE_SITE_DIR'] . '/documents/' . $from_pathname . '/' . $convertedFile;
                 }
                 if ($disable_exit == true) {
-                    return $filetext;
+                    return ;
                 }
-                header("Pragma: public");
-                header("Expires: 0");
-                header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-                header("Content-Disposition: " . ($as_file ? "attachment" : "inline") . "; filename=\"" . basename_international($url) . "\"");
-                header("Content-Type: image/jpeg");
-                header("Content-Length: " . strlen($filetext));
-                echo $filetext;
-                exit;
+                        header("Pragma: public");
+                        header("Expires: 0");
+                        header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+                        header("Content-Disposition: " . ($as_file ? "attachment" : "inline") . "; filename=\"" . basename_international($url) . "\"");
+                        header("Content-Type: image/jpeg");
+                        header("Content-Length: " . filesize($url));
+                        $f = fopen($url, "r");
+                        fpassthru($f);
+                if ($couch_docid && $couch_revid) {
+                    fclose($f);
+                    unlink($url);
+                    $url=str_replace("_converted.jpg", '.pdf', $url);
+                    unlink($url);
+                }
+                        exit;
             }
         }
     }
@@ -780,7 +704,7 @@ class C_Document extends Controller
                     preg_match("/^([0-9]+)_/", basename_international($file), $patient_match);
                     $file_info['patient_id'] = $patient_match[1];
                     $file_info['document_id'] = $d->get_id();
-                    $file_info['web_path'] = $this->_link("retrieve", true) . "document_id=" . urlencode($d->get_id()) . "&";
+                    $file_info['web_path'] = $this->_link("retrieve", true) . "document_id=" . $d->get_id() . "&";
 
                     //merge the tmp array into the larger array
                     $queue_files[] = $file_info;
@@ -985,14 +909,19 @@ class C_Document extends Controller
     function validate_action_process($patient_id = "", $document_id)
     {
 
-        $d = new Document($document_id);
+                $d = new Document($document_id);
         if ($d->couch_docid && $d->couch_revid) {
             $file_path = $GLOBALS['OE_SITE_DIR'].'/documents/temp/';
             $url = $file_path.$d->get_url();
             $couch = new CouchDB();
             $data = array($GLOBALS['couchdb_dbase'],$d->couch_docid);
             $resp = $couch->retrieve_doc($data);
-            $content = base64_decode($resp->data);
+            $content = $resp->data;
+            //--------Temporarily writing the file for calculating the hash--------//
+            //-----------Will be removed after calculating the hash value----------//
+            $temp_file = fopen($url, "w");
+            fwrite($temp_file, base64_decode($content));
+            fclose($temp_file);
         } else {
                 $url =  $d->get_url();
 
@@ -1022,18 +951,12 @@ class C_Document extends Controller
             }
 
             if ($_POST['process'] != "true") {
-                die("process is '" . text($_POST['process']) . "', expected 'true'");
+                die("process is '" . $_POST['process'] . "', expected 'true'");
                 return;
             }
-
-            if ($d->get_encrypted() == 1) {
-                $content = $this->cryptoGen->decryptStandard(file_get_contents($url), null, 'database');
-            } else {
-                $content = file_get_contents($url);
-            }
         }
-
-        $current_hash = sha1($content);
+        $d = new Document($document_id);
+        $current_hash = sha1_file($url);
         $messages = xl('Current Hash').": ".$current_hash."<br>";
         $messages .= xl('Stored Hash').": ".$d->get_hash()."<br>";
         if ($d->get_hash() == '') {
@@ -1048,6 +971,10 @@ class C_Document extends Controller
         }
         $this->_state = false;
         $this->assign("messages", $messages);
+        if ($d->couch_docid && $d->couch_revid) {
+            //Removing the temporary file which is used to create the hash
+            unlink($GLOBALS['OE_SITE_DIR'].'/documents/temp/'.$d->get_url());
+        }
         return $this->view_action($patient_id, $document_id);
     }
 
@@ -1127,7 +1054,7 @@ class C_Document extends Controller
         $menu  = new HTML_TreeMenu();
         $rnode = $this->_array_recurse($this->tree->tree, $categories_list);
         $menu->addItem($rnode);
-        $treeMenu = new HTML_TreeMenu_DHTML($menu, array('images' => 'public/images', 'defaultClass' => 'treeMenuDefault'));
+        $treeMenu = new HTML_TreeMenu_DHTML($menu, array('images' => 'images', 'defaultClass' => 'treeMenuDefault'));
         $treeMenu_listbox  = new HTML_TreeMenu_Listbox($menu, array('linkTarget' => '_self'));
         $this->assign("tree_html", $treeMenu->toHTML());
 
@@ -1252,7 +1179,7 @@ class C_Document extends Controller
             $icon = "file3.png";
             if (is_array($categories[$id])) {
                 foreach ($categories[$id] as $doc) {
-                    $link = $this->_link("view") . "doc_id=" . urlencode($doc['document_id']) . "&";
+                    $link = $this->_link("view") . "doc_id=" . $doc['document_id'] . "&";
           // If user has no access then there will be no link.
                     if (!acl_check_aco_spec($doc['aco_spec'])) {
                         $link = '';
@@ -1263,7 +1190,7 @@ class C_Document extends Controller
                         'link' => $link,
                         'icon' => $icon,
                         'expandedIcon' => $expandedIcon,
-                        'events' => array('Onclick' => "javascript:newwindow=window.open('ccr/display.php?type=CCR&doc_id=" . attr_url($doc['document_id']) . "','_blank');")
+                        'events' => array('Onclick' => "javascript:newwindow=window.open('ccr/display.php?type=CCR&doc_id=" . $doc['document_id'] . "','_blank');")
                                 )));
                     } elseif ($this->tree->get_node_name($id) == "CCD") {
                                 $current_node->addItem(new HTML_TreeNode(array(
@@ -1271,7 +1198,7 @@ class C_Document extends Controller
                         'link' => $link,
                         'icon' => $icon,
                         'expandedIcon' => $expandedIcon,
-                        'events' => array('Onclick' => "javascript:newwindow=window.open('ccr/display.php?type=CCD&doc_id=" . attr_url($doc['document_id']) . "','_blank');")
+                        'events' => array('Onclick' => "javascript:newwindow=window.open('ccr/display.php?type=CCD&doc_id=" . $doc['document_id'] . "','_blank');")
                                 )));
                     } else {
                                 $current_node->addItem(new HTML_TreeNode(array(
@@ -1295,21 +1222,9 @@ class C_Document extends Controller
         if (!is_dir($log_path)) {
             mkdir($log_path, 0777, true);
         }
-
-        $LOG = file_get_contents($log_path.$log_file);
-
-        if ($this->cryptoGen->cryptCheckStandard($LOG)) {
-            $LOG = $this->cryptoGen->decryptStandard($LOG, null, 'database');
-        }
-
-        $LOG .= $content;
-
-        if (!empty($LOG)) {
-            if ($GLOBALS['drive_encryption']) {
-                $LOG = $this->cryptoGen->encryptStandard($LOG, null, 'database');
-            }
-            file_put_contents($log_path.$log_file, $LOG);
-        }
+        $LOG = fopen($log_path.$log_file, 'a');
+        fwrite($LOG, $content);
+        fclose($LOG);
     }
 
     function document_send($email, $body, $attfile, $pname)
@@ -1434,7 +1349,7 @@ class C_Document extends Controller
 
             $img_result = sqlQuery("select * from procedure_result where procedure_report_id = ? and document_id = ?", array($img_report_id,$document_id));
             if (empty($img_result)) {
-                sqlStatement("INSERT INTO procedure_result(procedure_report_id,date,document_id,result_status) values(?,?,?,'final')", array($img_report_id,date('Y-m-d H:i:s'),$document_id));
+                sqlInsert("INSERT INTO procedure_result(procedure_report_id,date,document_id,result_status) values(?,?,?,'final')", array($img_report_id,date('Y-m-d H:i:s'),$document_id));
             }
 
             $this->image_result_indication($document_id, 0, $img_procedure_id);

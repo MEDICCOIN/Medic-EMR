@@ -3,21 +3,18 @@
  * Trending script for graphing objects in track anything module.
  *
  * @package OpenEMR
- * @link    https://www.open-emr.org
+ * @link    http://www.open-emr.org
  * @author  Brady Miller <brady.g.miller@gmail.com>
  * @author  Rod Roark <rod@sunsetsystems.com>
  * @author  Joe Slam <joe@produnis.de>
  * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- * @copyright Copyright (c) 2010-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2010-2017 Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2011 Rod Roark <rod@sunsetsystems.com>
  * @copyright Copyright (c) 2014 Joe Slam <joe@produnis.de>
  */
 
-require_once(dirname(__FILE__) . "/../../interface/globals.php");
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
-}
+require_once(dirname(__FILE__) . "/../../interface/globals.php");
 
 // get $_POSTed data
 $titleGraph       = json_decode($_POST['track'], true);

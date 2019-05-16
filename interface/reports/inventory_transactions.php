@@ -7,7 +7,7 @@
  * @author    Rod Roark <rod@sunsetsystems.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2010-2016 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -15,12 +15,6 @@
 require_once("../globals.php");
 require_once("$srcdir/patient.inc");
 require_once("$srcdir/acl.inc");
-
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
 
 function bucks($amount)
 {
@@ -93,34 +87,34 @@ function thisLineItem($row, $xfer = false)
 
      <tr bgcolor="<?php echo $bgcolor; ?>">
   <td class="detail">
-        <?php echo text(oeFormatShortDate($row['sale_date'])); ?>
+        <?php echo htmlspecialchars(oeFormatShortDate($row['sale_date'])); ?>
   </td>
   <td class="detail">
-        <?php echo text($ttype); ?>
+        <?php echo htmlspecialchars($ttype); ?>
   </td>
   <td class="detail">
-        <?php echo text($row['name']); ?>
+        <?php echo htmlspecialchars($row['name']); ?>
   </td>
   <td class="detail">
-        <?php echo text($row['lot_number']); ?>
+        <?php echo htmlspecialchars($row['lot_number']); ?>
   </td>
   <td class="detail">
-        <?php echo text($row['warehouse']); ?>
+        <?php echo htmlspecialchars($row['warehouse']); ?>
   </td>
   <td class="detail">
-        <?php echo text($dpname); ?>
+        <?php echo htmlspecialchars($dpname); ?>
   </td>
   <td class="detail" align="right">
-        <?php echo text(0 - $row['quantity']); ?>
+        <?php echo htmlspecialchars(0 - $row['quantity']); ?>
   </td>
   <td class="detail" align="right">
-        <?php echo text(bucks($row['fee'])); ?>
+        <?php echo htmlspecialchars(bucks($row['fee'])); ?>
   </td>
   <td class="detail" align="center">
         <?php echo empty($row['billed']) ? '&nbsp;' : '*'; ?>
   </td>
   <td class="detail">
-        <?php echo text($row['notes']); ?>
+        <?php echo htmlspecialchars($row['notes']); ?>
   </td>
  </tr>
 <?php
@@ -142,14 +136,14 @@ function thisLineItem($row, $xfer = false)
 } // end function
 
 if (! acl_check('acct', 'rep')) {
-    die(xlt("Unauthorized access."));
+    die(htmlspecialchars(xl("Unauthorized access."), ENT_NOQUOTES));
 }
 
 // this is "" or "submit" or "export".
 $form_action = $_POST['form_action'];
 
-$form_from_date = (isset($_POST['form_from_date'])) ? DateToYYYYMMDD($_POST['form_from_date']) : date('Y-m-d');
-$form_to_date   = (isset($_POST['form_to_date'])) ? DateToYYYYMMDD($_POST['form_to_date']) : date('Y-m-d');
+$form_from_date  = fixDate($_POST['form_from_date'], date('Y-m-d'));
+$form_to_date    = fixDate($_POST['form_to_date'], date('Y-m-d'));
 $form_trans_type = isset($_POST['form_trans_type']) ? $_POST['form_trans_type'] : '0';
 
 $encount = 0;
@@ -177,9 +171,10 @@ else {
 ?>
 <html>
 <head>
-<title><?php echo xlt('Inventory Transactions'); ?></title>
+<?php html_header_show(); ?>
+<title><?php echo htmlspecialchars(xl('Inventory Transactions'), ENT_NOQUOTES) ?></title>
 <link rel='stylesheet' href='<?php echo $css_header ?>' type='text/css'>
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 
 <style type="text/css">
  /* specifically include & exclude from printing */
@@ -203,13 +198,13 @@ else {
  }
 </style>
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-1-9-1/jquery.min.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-9-1/index.js"></script>
+    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 <script type="text/javascript" src="../../library/js/report_helper.js?v=<?php echo $v_js_includes; ?>"></script>
 
 <script language='JavaScript'>
 
-    $(function() {
+    $(document).ready(function() {
         oeFixedHeaderSetup(document.getElementById('mymaintable'));
         var win = top.printLogSetup ? top : opener.top;
         win.printLogSetup(document.getElementById('printbutton'));
@@ -217,7 +212,7 @@ else {
         $('.datepicker').datetimepicker({
             <?php $datetimepicker_timepicker = false; ?>
             <?php $datetimepicker_showseconds = false; ?>
-            <?php $datetimepicker_formatInput = true; ?>
+            <?php $datetimepicker_formatInput = false; ?>
             <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'); ?>
             <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
         });
@@ -237,10 +232,9 @@ else {
 <body leftmargin='0' topmargin='0' marginwidth='0' marginheight='0' class='body_top'>
 <center>
 
-<h2><?php echo xlt('Inventory Transactions'); ?></h2>
+<h2><?php echo htmlspecialchars(xl('Inventory Transactions'), ENT_NOQUOTES) ?></h2>
 
-<form method='post' action='inventory_transactions.php' onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<form method='post' action='inventory_transactions.php'>
 
 <div id="report_parameters">
 <!-- form_action is set to "submit" or "export" at form submit time -->
@@ -251,7 +245,7 @@ else {
    <table class='text'>
     <tr>
      <td class='label_custom'>
-        <?php echo xlt('Type'); ?>:
+        <?php echo htmlspecialchars(xl('Type'), ENT_NOQUOTES); ?>:
      </td>
      <td nowrap>
       <select name='form_trans_type' onchange='trans_type_changed()'>
@@ -264,29 +258,31 @@ foreach (array(
   '4' => xl('Transfer'),
   '5' => xl('Adjustment'),
 ) as $key => $value) {
-    echo "       <option value='" . attr($key) . "'";
+    echo "       <option value='$key'";
     if ($key == $form_trans_type) {
         echo " selected";
     }
 
-    echo ">" . text($value) . "</option>\n";
+    echo ">" . htmlspecialchars($value, ENT_NOQUOTES) . "</option>\n";
 }
 ?>
       </select>
      </td>
      <td class='label_custom'>
-        <?php echo xlt('From'); ?>:
+        <?php echo htmlspecialchars(xl('From'), ENT_NOQUOTES); ?>:
      </td>
      <td nowrap>
       <input type='text' class='datepicker' name='form_from_date' id="form_from_date" size='10'
-       value='<?php echo attr(oeFormatShortDate($form_from_date)); ?>'>
+       value='<?php echo htmlspecialchars($form_from_date, ENT_QUOTES) ?>'
+       title='<?php echo htmlspecialchars(xl('yyyy-mm-dd'), ENT_QUOTES) ?>'>
      </td>
      <td class='label_custom'>
         <?php xl('To', 'e'); ?>:
      </td>
      <td nowrap>
       <input type='text' class='datepicker' name='form_to_date' id="form_to_date" size='10'
-       value='<?php echo attr(oeFormatShortDate($form_to_date)); ?>''>
+       value='<?php echo htmlspecialchars($form_to_date, ENT_QUOTES) ?>'
+       title='<?php echo htmlspecialchars(xl('yyyy-mm-dd'), ENT_QUOTES) ?>'>
      </td>
     </tr>
    </table>
@@ -296,14 +292,14 @@ foreach (array(
     <tr>
      <td valign='middle'>
       <a href='#' class='css_button' onclick='mysubmit("submit")' style='margin-left:1em'>
-       <span><?php echo xlt('Submit'); ?></span>
+       <span><?php echo htmlspecialchars(xl('Submit'), ENT_NOQUOTES); ?></span>
       </a>
 <?php if ($form_action) { ?>
       <a href='#' class='css_button' id='printbutton' style='margin-left:1em'>
-       <span><?php echo xlt('Print'); ?></span>
+       <span><?php echo htmlspecialchars(xl('Print'), ENT_NOQUOTES); ?></span>
       </a>
       <a href='#' class='css_button' onclick='mysubmit("export")' style='margin-left:1em'>
-       <span><?php echo xlt('CSV Export'); ?></span>
+       <span><?php echo htmlspecialchars(xl('CSV Export'), ENT_NOQUOTES); ?></span>
       </a>
 <?php } ?>
      </td>
@@ -321,34 +317,34 @@ foreach (array(
  <thead>
  <tr bgcolor="#dddddd">
   <td class="dehead">
-    <?php echo xlt('Date'); ?>
+    <?php echo htmlspecialchars(xl('Date'), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead">
-    <?php echo xlt('Transaction'); ?>
+    <?php echo htmlspecialchars(xl('Transaction'), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead">
-    <?php echo xlt('Product'); ?>
+    <?php echo htmlspecialchars(xl('Product'), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead">
-    <?php echo xlt('Lot'); ?>
+    <?php echo htmlspecialchars(xl('Lot'), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead">
-    <?php echo xlt('Warehouse'); ?>
+    <?php echo htmlspecialchars(xl('Warehouse'), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead">
-    <?php echo xlt('Who'); ?>
+    <?php echo htmlspecialchars(xl('Who'), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead" align="right">
-    <?php echo xlt('Qty'); ?>
+    <?php echo htmlspecialchars(xl('Qty'), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead" align="right">
-    <?php echo xlt('Amount'); ?>
+    <?php echo htmlspecialchars(xl('Amount'), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead" align="Center">
-    <?php echo xlt('Billed'); ?>
+    <?php echo htmlspecialchars(xl('Billed'), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead">
-    <?php echo xlt('Notes'); ?>
+    <?php echo htmlspecialchars(xl('Notes'), ENT_NOQUOTES); ?>
   </td>
  </tr>
  </thead>
@@ -408,13 +404,13 @@ if ($form_action) { // if submit or export
 
    <tr bgcolor="#dddddd">
     <td class="dehead" colspan="6">
-        <?php echo xlt('Grand Total'); ?>
+        <?php echo htmlspecialchars(xl('Grand Total'), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead" align="right">
-        <?php echo text($grandqty); ?>
+        <?php echo htmlspecialchars($grandqty, ENT_NOQUOTES); ?>
   </td>
   <td class="dehead" align="right">
-        <?php echo text(bucks($grandtotal)); ?>
+        <?php echo htmlspecialchars(bucks($grandtotal), ENT_NOQUOTES); ?>
   </td>
   <td class="dehead" colspan="2">
 

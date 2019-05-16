@@ -2,7 +2,7 @@
 /** @package    verysimple::HTTP */
 
 /**
- * Context Persistence Storage
+ * Context Persistance Storage
  *
  * The context provides an object that can be uses globally for
  * dependency injection when passing information that should be

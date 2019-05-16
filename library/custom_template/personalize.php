@@ -3,7 +3,7 @@
  * personalize.php
  *
  * @package   OpenEMR
- * @link      https://www.open-emr.org
+ * @link      http://www.open-emr.org
  * @author    Eldho Chacko <eldho@zhservices.com>
  * @author    Jacob T Paul <jacob@zhservices.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
@@ -78,7 +78,7 @@ if (isset($_REQUEST['submitform']) && $_REQUEST['submitform'] == 'save') {
             document.location.reload();
         }
 
-        $(function () {
+        $(document).ready(function () {
 
             tabbify();
 

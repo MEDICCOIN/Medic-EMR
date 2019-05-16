@@ -12,9 +12,12 @@
 
 // Checks if the server's PHP version is compatible with OpenEMR:
 require_once(dirname(__FILE__) . "/common/compatibility/Checker.php");
-$response = OpenEMR\Common\Compatibility\Checker::checkPhpVersion();
+
+use OpenEMR\Common\Checker;
+
+$response = Checker::checkPhpVersion();
 if ($response !== true) {
-    die(htmlspecialchars($response));
+    die($response);
 }
 
 // Disable PHP timeout.  This will not work in safe mode.
@@ -147,8 +150,8 @@ if (!empty($_POST['form_submit'])) {
 <?php
 foreach ($versions as $version => $filename) {
     echo " <option value='$version'";
-  // Defaulting to most recent version, which is now 5.0.1.
-    if ($version === '5.0.1') {
+  // Defaulting to most recent version, which is now 5.0.0.
+    if ($version === '5.0.0') {
         echo " selected";
     }
 

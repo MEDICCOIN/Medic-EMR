@@ -61,20 +61,25 @@ if ($_POST['bn_save']) {
  // If updating an existing form...
  //
     if ($formid) {
-        $query = "UPDATE form_specialist_notes SET
-          notes = ?      
-          followup_required = ?
-          followup_timing = ?                  
-          followup_location = ?
-          WHERE id = ?";
-        sqlStatement($query, array($_POST['form_notes'], cbvalue('fu_required'), $fu_timing, $fu_location, $formid));
+        $query = "UPDATE form_specialist_notes SET " .
+         "notes = '"            . $_POST['form_notes']       . "', " .
+         "followup_required = " . cbvalue('fu_required')     . ", "  .
+         "followup_timing = '$fu_timing'"                    . ", "  .
+         "followup_location = '$fu_location'"                . " "   .
+         "WHERE id = '$formid'";
+        sqlStatement($query);
     } // If adding a new form...
  //
     else {
         $query = "INSERT INTO form_specialist_notes ( " .
          "notes, followup_required, followup_timing, followup_location " .
-         ") VALUES ( ?, ?, ?, ? )";
-        $newid = sqlInsert($query, array($_POST['form_notes'], cbvalue('fu_required'), $fu_timing, $fu_location));
+         ") VALUES ( " .
+         "'" . $_POST['form_notes']       . "', " .
+         cbvalue('fu_required')           . ", "  .
+         "'$fu_timing'"                   . ", "  .
+         "'$fu_location'"                 . " "   .
+         ")";
+        $newid = sqlInsert($query);
         addForm($encounter, "Specialist Notes", $newid, "specialist_notes", $pid, $userauthorized);
     }
 
@@ -86,11 +91,12 @@ if ($_POST['bn_save']) {
 
 if ($formid) {
     $row = sqlQuery("SELECT * FROM form_specialist_notes WHERE " .
-    "id = ? AND activity = '1'", array($formid)) ;
+    "id = '$formid' AND activity = '1'") ;
 }
 ?>
 <html>
 <head>
+<?php html_header_show();?>
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 <script type="text/javascript" src="../../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
 <script language='JavaScript'>

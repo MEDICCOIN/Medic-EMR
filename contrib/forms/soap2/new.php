@@ -1,6 +1,6 @@
 <?php
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
 
 require("C_FormSOAP.class.php");
 

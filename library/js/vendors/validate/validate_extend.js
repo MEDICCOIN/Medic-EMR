@@ -90,34 +90,12 @@ validate.extend(validate.validators.datetime, {
 
 /**
 * validate that date is past date, recommended to put it after {date: {dateOnly: true}}
-* you can specify the message option {pastDate:{message:'text example'}}
+* you can specify the message option {onlyPast:{message:'text example'}}
 * optional options -
 * 1)(string) massage
 * 2)(boolean) onlyYear
 */
 validate.validators.pastDate = function(value, options) {
-    return dateValidation(value, options, '1');
-};
-
-/**
- * validate that date is future date, recommended to put it after {date: {dateOnly: true}}
- * you can specify the message option {futureDate:{message:'text example'}}
- * optional options -
- * 1)(string) massage
- * 2)(boolean) onlyYear
- */
-validate.validators.futureDate = function(value, options) {
-    return dateValidation(value, options, '2');
-};
-
-/**
- * date validation helper method
- * @param value
- * @param options
- * @param type  =>  1 to check date is past, 2 to check date is future
- * @returns {*}
- */
-function dateValidation(value, options, type){
     //exit if empty value
     if(validate.isEmpty(value)) { return;}
     // exit if options = false
@@ -127,20 +105,13 @@ function dateValidation(value, options, type){
         return;
     }
     var now = new Date().getTime();
-
     //if set onlyYear option
-    if(value < 1800 || value > 9999 ){
-        return throwError('Year must be between 1800 and 9999');
-    }
-
     if (options.onlyYear != undefined && options.onlyYear) {
-        if(type === '1' && value > now.getFullYear) {
-            return throwError('Must be past date');
+        if(value < 1800 || value > now.getFullYear ) {
+
+            return throwError('Must be year format');
         }
-        if(type === '2' && value < now.getFullYear){
-            return throwError('Must be future date');
-        }
-        return; // passed validation
+        else return; // passed only year validation
     }
 
     var format=0;
@@ -150,33 +121,25 @@ function dateValidation(value, options, type){
 
     var date = '';
 
-    switch(format) {
-        // case date format is dd/mm/YYYY
-        case "2":
-            var datetimeParts = value.split(" ");
-            var dateParts = datetimeParts[0].split("/");
-            if(typeof datetimeParts[1] === 'undefined') {
+        switch(format) {
+            // case date format is dd/mm/YYYY
+            case "2":
+                var dateParts = value.split("/");
                 var date = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-            } else {
-                var hoursMinutesParts = datetimeParts[1].split(":");
-                var date = new Date(dateParts[2], dateParts[1] - 1, dateParts[0], hoursMinutesParts[0], hoursMinutesParts[1] + 1);
-            }
-            break;
-        default:
-            date =  new Date(value);
-    }
+                break;
+            default:
+                date =  new Date(value);
+        }
 
 
     var mls_date = date.getTime();
     if(isNaN(mls_date)) {
-        return throwError('Must be valid date');
+       return throwError('Must be valid date');
     }
 
-    if(type === '1' && mls_date > now) {
-        return throwError('Must be past date');
-    }
-    if(type === '2' && mls_date < now){
-        return throwError('Must be future date');
+    if(now < mls_date) {
+
+       return throwError( 'Must be past date');
     }
 
     // throw error
@@ -187,7 +150,8 @@ function dateValidation(value, options, type){
             return message;
         }
     }
-}
+};
+
 
 /**
  * Luhn algorithm in JavaScript: validate credit card number supplied as string of numbers

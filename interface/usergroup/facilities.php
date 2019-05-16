@@ -7,7 +7,7 @@
  * @author    Ranganath Pathak <pathak01@hotmail.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2017 Ranganath Pathak <pathak01@hotmail.com>
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -16,12 +16,6 @@ require_once("../../library/acl.inc");
 
 use OpenEMR\Core\Header;
 use OpenEMR\Services\FacilityService;
-
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
 
 $facilityService = new FacilityService();
 
@@ -52,13 +46,7 @@ if (isset($_POST["mode"]) && $_POST["mode"] == "facility" && $_POST["newmode"] !
       "primary_business_entity" => trim(isset($_POST["primary_business_entity"]) ? $_POST["primary_business_entity"] : ''),
       "facility_npi" => trim(isset($_POST["facility_npi"]) ? $_POST["facility_npi"] : ''),
       "facility_taxonomy" => trim(isset($_POST["facility_taxonomy"]) ? $_POST["facility_taxonomy"] : ''),
-      "facility_code" => trim(isset($_POST["facility_id"]) ? $_POST["facility_id"] : ''),
-      "mail_street" => trim(isset($_POST["mail_street"]) ? $_POST["mail_street"] : ''),
-        "mail_street2" => trim(isset($_POST["mail_street2"]) ? $_POST["mail_street2"] : ''),
-        "mail_city" => trim(isset($_POST["mail_city"]) ? $_POST["mail_city"] : ''),
-        "mail_state" => trim(isset($_POST["mail_state"]) ? $_POST["mail_state"] : ''),
-        "mail_zip" => trim(isset($_POST["mail_zip"]) ? $_POST["mail_zip"] : ''),
-        "oid" => trim(isset($_POST["oid"]) ? $_POST["oid"] : '')
+      "facility_code" => trim(isset($_POST["facility_id"]) ? $_POST["facility_id"] : '')
     );
 
     $insert_id = $facilityService->insert($newFacility);
@@ -91,13 +79,7 @@ if (isset($_POST["mode"]) && $_POST["mode"] == "facility" && $_POST["newmode"] =
       "primary_business_entity" => trim(isset($_POST["primary_business_entity"]) ? $_POST["primary_business_entity"] : ''),
       "facility_npi" => trim(isset($_POST["facility_npi"]) ? $_POST["facility_npi"] : ''),
       "facility_taxonomy" => trim(isset($_POST["facility_taxonomy"]) ? $_POST["facility_taxonomy"] : ''),
-      "facility_code" => trim(isset($_POST["facility_id"]) ? $_POST["facility_id"] : ''),
-        "mail_street" => trim(isset($_POST["mail_street"]) ? $_POST["mail_street"] : ''),
-        "mail_street2" => trim(isset($_POST["mail_street2"]) ? $_POST["mail_street2"] : ''),
-        "mail_city" => trim(isset($_POST["mail_city"]) ? $_POST["mail_city"] : ''),
-        "mail_state" => trim(isset($_POST["mail_state"]) ? $_POST["mail_state"] : ''),
-        "mail_zip" => trim(isset($_POST["mail_zip"]) ? $_POST["mail_zip"] : ''),
-        "oid" => trim(isset($_POST["oid"]) ? $_POST["oid"] : '')
+      "facility_code" => trim(isset($_POST["facility_id"]) ? $_POST["facility_id"] : '')
     );
 
     $facilityService->update($newFacility);
@@ -124,7 +106,7 @@ function refreshme() {
     top.restoreSession();
     document.location.reload();
 }
-$(function(){
+$(document).ready(function(){
 
     $(".medium_modal").on('click', function(e) {
         e.preventDefault();e.stopPropagation();
@@ -170,8 +152,7 @@ $(function(){
                         <thead>
                             <tr>
                                 <th><?php echo xlt('Name'); ?></th>
-                                <th><?php echo xlt('Billing Address'); ?></th>
-                                <th><?php echo xlt('Mailing Address'); ?></th>
+                                <th><?php echo xlt('Address'); ?></th>
                                 <th><?php echo xlt('Phone'); ?></th>
                             </tr>
                         </thead>
@@ -189,9 +170,6 @@ $(function(){
                                     $varstreet="";//these are assigned conditionally below,blank assignment is done so that old values doesn't get propagated to next level.
                                     $varcity="";
                                     $varstate="";
-                                    $varmstreet="";
-                                    $varmcity="";
-                                    $varmstate="";
                                     $varstreet=$iter3["street"];
                                     if ($iter3["street"]!="") {
                                         $varstreet=$iter3["street"].",";
@@ -204,24 +182,10 @@ $(function(){
                                     if ($iter3["state"]!="") {
                                         $varstate=$iter3["state"].",";
                                     }
-
-                                    $varmstreet=$iter3["mail_street"];
-                                    if ($iter3["mail_street"] !="") {
-                                        $varmstreet=$iter3["mail_street"].",";
-                                    }
-
-                                    if ($iter3["mail_city"]!="") {
-                                        $varmcity=$iter3["mail_city"].",";
-                                    }
-
-                                    if ($iter3["mail_state"]!="") {
-                                        $varmstate=$iter3["mail_state"].",";
-                                    }
                             ?>
                             <tr height="22">
-                                 <td valign="top" class="text"><b><a href="facility_admin.php?fid=<?php echo attr_url($iter3["id"]); ?>" class="medium_modal"><span><?php echo xlt($iter3["name"]);?></span></a></b>&nbsp;</td>
+                                 <td valign="top" class="text"><b><a href="facility_admin.php?fid=<?php echo attr($iter3["id"]); ?>" class="medium_modal"><span><?php echo text($iter3["name"]);?></span></a></b>&nbsp;</td>
                                  <td valign="top" class="text"><?php echo text($varstreet.$varcity.$varstate.$iter3["country_code"]." ".$iter3["postal_code"]); ?>&nbsp;</td>
-                                 <td valign="top" class="text"><?php echo text($varmstreet.$varmcity.$varmstate.$iter3['mail_zip']); ?></td>
                                  <td><?php echo text($iter3["phone"]);?>&nbsp;</td>
                             </tr>
                             <?php
@@ -243,7 +207,7 @@ $(function(){
     <script language="JavaScript">
     <?php
     if ($alertmsg = trim($alertmsg)) {
-        echo "alert(" . js_escape($alertmsg) . ");\n";
+        echo "alert('$alertmsg');\n";
     }
     ?>
     </script>

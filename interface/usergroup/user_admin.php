@@ -2,13 +2,12 @@
 /**
  * Edit user.
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @package OpenEMR
+ * @link    http://www.open-emr.org
+ * @author  Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
+ * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-
 
 require_once("../globals.php");
 require_once("../../library/acl.inc");
@@ -20,12 +19,6 @@ use OpenEMR\Core\Header;
 use OpenEMR\Menu\MainMenuRole;
 use OpenEMR\Menu\PatientMenuRole;
 use OpenEMR\Services\FacilityService;
-
-if (!empty($_GET)) {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
 
 $facilityService = new FacilityService();
 
@@ -60,7 +53,7 @@ $collectthis = collectValidationPageRules("/interface/usergroup/user_admin.php")
 if (empty($collectthis)) {
     $collectthis = "undefined";
 } else {
-    $collectthis = json_sanitize($collectthis["user_form"]["rules"]);
+    $collectthis = $collectthis["user_form"]["rules"];
 }
 ?>
 
@@ -70,11 +63,11 @@ if (empty($collectthis)) {
  * validation on the form with new client side validation (using validate.js).
  * this enable to add new rules for this form in the pageValidation list.
  * */
-var collectvalidation = <?php echo $collectthis; ?>;
+var collectvalidation = <?php echo($collectthis); ?>;
 
     function checkChange()
 {
-  alert(<?php echo xlj('If you change e-RX Role for ePrescription, it may affect the ePrescription workflow. If you face any difficulty, contact your ePrescription vendor.'); ?>);
+  alert("<?php echo addslashes(xl('If you change e-RX Role for ePrescription, it may affect the ePrescription workflow. If you face any difficulty, contact your ePrescription vendor.'));?>");
 }
 function submitform() {
 
@@ -92,24 +85,23 @@ function submitform() {
                     var pwdresult = passwordvalidate(document.forms[0].clearPass.value);
                     if(pwdresult == 0) {
                             flag=1;
-                            alert(<?php echo xlj('The password must be at least eight characters, and should'); ?> +
-                            '\n' +
-                            <?php echo xlj('contain at least three of the four following items:'); ?> +
-                            '\n' +
-                            <?php echo xlj('A number'); ?> +
-                            '\n' +
-                            <?php echo xlj('A lowercase letter'); ?> +
-                            '\n' +
-                            <?php echo xlj('An uppercase letter'); ?> +
-                            '\n' +
-                            <?php echo xlj('A special character'); ?> +
-                            '\n' +
-                            '(' +
-                            <?php echo xlj('not a letter or number'); ?> +
-                            ').' +
-                            '\n' +
-                            <?php echo xlj('For example:'); ?> +
-                            ' healthCare@09');
+                            alert("<?php echo xls('The password must be at least eight characters, and should');
+                            echo '\n';
+                            echo xls('contain at least three of the four following items:');
+                            echo '\n';
+                            echo xls('A number');
+                            echo '\n';
+                            echo xls('A lowercase letter');
+                            echo '\n';
+                            echo xls('An uppercase letter');
+                            echo '\n';
+                            echo xls('A special character');
+                            echo '(';
+                            echo xls('not a letter or number');
+                            echo ').';
+                            echo '\n';
+                            echo xls('For example:');
+                            echo ' healthCare@09'; ?>");
                             return false;
                     }
         }
@@ -121,7 +113,7 @@ function submitform() {
         if((document.forms[0].user_type.value != "Emergency Login") && (document.forms[0].pre_active.value == 0) && (document.forms[0].active.checked == 1) && (document.forms[0].grace_time.value != "") && (document.forms[0].current_date.value) > (document.forms[0].grace_time.value))
         {
             flag=1;
-            document.getElementById('error_message').innerHTML=<?php echo xlj('Please reset the password.') ?>;
+            document.getElementById('error_message').innerHTML="<?php echo xla('Please reset the password.') ?>";
         }
     }
 
@@ -228,34 +220,16 @@ function authorized_clicked() {
 <body class="body_top">
 
 <div class="container">
-    <?php
-    /*  Get the list ACL for the user */
-    $is_super_user = acl_check('admin', 'super');
-    $acl_name=acl_get_group_titles($iter["username"]);
-    $bg_name='';
-    $bg_count=count($acl_name);
-    $selected_user_is_superuser = false;
-    for ($i=0; $i<$bg_count; $i++) {
-        if ($acl_name[$i] == "Emergency Login") {
-            $bg_name=$acl_name[$i];
-        }
-        //check if user member on group with superuser rule
-        if (is_group_include_superuser($acl_name[$i])) {
-            $selected_user_is_superuser = true;
-        }
-    }
-    $disabled_save = !$is_super_user && $selected_user_is_superuser ? 'disabled' : '';
-    ?>
+
 <table><tr><td>
 <span class="title"><?php echo xlt('Edit User'); ?></span>&nbsp;
 </td><td>
-    <a class="btn btn-default btn-save" name='form_save' id='form_save' href='#' onclick='return submitform()' <?php echo $disabled_save; ?>> <span><?php echo xlt('Save');?></span> </a>
+    <a class="btn btn-default btn-save" name='form_save' id='form_save' href='#' onclick='return submitform()'> <span><?php echo xlt('Save');?></span> </a>
     <a class="btn btn-link btn-cancel" id='cancel' href='#'><span><?php echo xlt('Cancel');?></span></a>
 </td></tr>
 </table>
 <br>
 <FORM NAME="user_form" id="user_form" METHOD="POST" ACTION="usergroup_admin.php">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <input type=hidden name="pwd_expires" value="<?php echo attr($GLOBALS['password_expiration_days']); ?>" >
 <input type=hidden name="pre_active" value="<?php echo attr($iter["active"]); ?>" >
@@ -271,8 +245,19 @@ if ($password_exp != "0000-00-00") {
     $grace_time1 = date("Y-m-d", strtotime($password_exp . "+".$GLOBALS['password_grace_time'] ."days"));
 }
 ?>
-<input type=hidden name="current_date" value="<?php echo attr(strtotime($current_date)); ?>" >
-<input type=hidden name="grace_time" value="<?php echo attr(strtotime($grace_time1)); ?>" >
+<input type=hidden name="current_date" value="<?php echo strtotime($current_date); ?>" >
+<input type=hidden name="grace_time" value="<?php echo strtotime($grace_time1); ?>" >
+<!--  Get the list ACL for the user -->
+<?php
+$acl_name=acl_get_group_titles($iter["username"]);
+$bg_name='';
+$bg_count=count($acl_name);
+for ($i=0; $i<$bg_count; $i++) {
+    if ($acl_name[$i] == "Emergency Login") {
+        $bg_name=$acl_name[$i];
+    }
+}
+?>
 <input type=hidden name="user_type" value="<?php echo attr($bg_name); ?>" >
 
 <TABLE border=0 cellpadding=0 cellspacing=0>
@@ -294,12 +279,7 @@ if ($password_exp != "0000-00-00") {
     <?php } ?>
 
 <TR height="30" style="valign:middle;">
-  <td class='text'>
-    <?php echo xlt('Clear 2FA'); ?>:
-  </td>
-  <td title='<?php echo xla('Remove multi-factor authentications for this person.'); ?>'>
-    <input type="checkbox" name="clear_2fa" value='1' />
-  </td>
+<td><span class="text">&nbsp;</span></td><td>&nbsp;</td>
 <td colspan="2"><span class=text><?php echo xlt('Provider'); ?>:
  <input type="checkbox" name="authorized" onclick="authorized_clicked()"<?php
     if ($iter["authorized"]) {
@@ -377,7 +357,7 @@ if ($fres) {
 
 <TR>
 <TD><span class=text><?php echo xlt('Federal Tax ID'); ?>: </span></TD><TD><input type=text name=taxid style="width:150px;"  class="form-control" value="<?php echo attr($iter["federaltaxid"]); ?>"></td>
-<TD><span class=text><?php echo xlt('DEA Number'); ?>: </span></TD><TD><input type=text name=drugid style="width:150px;"  class="form-control" value="<?php echo attr($iter["federaldrugid"]); ?>"></td>
+<TD><span class=text><?php echo xlt('Federal Drug ID'); ?>: </span></TD><TD><input type=text name=drugid style="width:150px;"  class="form-control" value="<?php echo attr($iter["federaldrugid"]); ?>"></td>
 </TR>
 
 <tr>
@@ -476,9 +456,9 @@ echo generate_select_list(
 <td class='text'><?php echo xlt('Access Control'); ?>:</td>
  <td><select id="access_group_id" name="access_group[]" multiple style="width:150px;" class="form-control">
 <?php
-// Collect the access control group of user
-$list_acl_groups = acl_get_group_title_list($is_super_user || $selected_user_is_superuser);
-$username_acl_groups = acl_get_group_titles($iter["username"]);
+  // Collect the access control group of user
+  $list_acl_groups = acl_get_group_title_list();
+  $username_acl_groups = acl_get_group_titles($iter["username"]);
 foreach ($list_acl_groups as $value) {
     if (($username_acl_groups) && in_array($value, $username_acl_groups)) {
         // Modified 6-2009 by BM - Translate group name if applicable
@@ -496,12 +476,7 @@ foreach ($list_acl_groups as $value) {
   </tr>
   <tr height="20" valign="bottom">
   <td colspan="4" class="text">
-      <p>*<?php echo xlt('You must enter your own password to change user passwords. Leave blank to keep password unchanged.'); ?></p>
-    <?php
-    if (!$is_super_user && $selected_user_is_superuser) {
-        echo '<p class="redtext">*' . xlt('View mode - only administrator can edit another administrator user') . '.</p>';
-    }
-    ?>
+  *<?php echo xlt('You must enter your own password to change user passwords. Leave blank to keep password unchanged.'); ?>
 <!--
 Display red alert if entered password matched one of last three passwords/Display red alert if user password was expired and the user was inactivated previously
 -->
@@ -518,7 +493,7 @@ Display red alert if entered password matched one of last three passwords/Displa
 <INPUT TYPE="HIDDEN" NAME="secure_pwd" VALUE="<?php echo attr($GLOBALS['secure_password']); ?>">
 </FORM>
 <script language="JavaScript">
-$(function(){
+$(document).ready(function(){
     $("#cancel").click(function() {
           dlgclose();
      });
@@ -531,3 +506,7 @@ $(function(){
 </BODY>
 
 </HTML>
+
+<?php
+//  d41d8cd98f00b204e9800998ecf8427e == blank
+?>

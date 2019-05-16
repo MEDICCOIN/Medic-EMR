@@ -12,8 +12,6 @@
 
 namespace OpenEMR\Rx\Weno;
 
-use OpenEMR\Common\Http\oeHttp;
-
 class TransmitData
 {
 
@@ -60,9 +58,7 @@ class TransmitData
 
     public function oneDrug($id)
     {
-        $sql = "SELECT p.date_Added, p.date_Modified,p.drug, p.drug_id, p.dosage, p.refills, p.quantity, p.note,".
-               "ew.strength, ew.route, ew.potency_unit_code, ew.drug_db_code_qualifier,ew.dea_schedule FROM prescriptions AS p ".
-               "RIGHT JOIN erx_weno_drugs AS ew ON p.drug_id = ew.rxcui_drug_coded WHERE p.id = ?";
+        $sql = "SELECT date_Added,date_Modified,drug,drug_id,dosage,refills,quantity,note FROM prescriptions WHERE id = ?";
         $res = sqlQuery($sql, array($id));
         return $res;
     }
@@ -70,7 +66,7 @@ class TransmitData
 
     public function patientPharmacyInfo($pid)
     {
-        $sql = "SELECT a.pharmacy_id, b.name, b.npi, b.ncpdp FROM patient_data AS a, pharmacies AS b WHERE a.pid = ? AND a.pharmacy_id = b.id";
+        $sql = "SELECT a.pharmacy_id, b.name FROM patient_data AS a, pharmacies AS b WHERE a.pid = ? AND a.pharmacy_id = b.id";
         $res = sqlQuery($sql, $pid);
         return $res;
     }
@@ -89,32 +85,5 @@ class TransmitData
          $val = array($pid);
          $patientRes = sqlQuery($patientInfo, $val);
          return $patientRes;
-    }
-
-    public function validateNPI($npi)
-    {
-        $query = [
-            'number' => $npi,
-            'enumeration_type' => '',
-            'taxonomy_description' => '',
-            'first_name' => '',
-            'last_name' => '',
-            'organization_name'  => '',
-            'address_purpose' => '',
-            'city' => '',
-            'state' => '',
-            'postal_code' => '',
-            'country_code' => '',
-            'limit' => '',
-            'skip' => '',
-            'version' => '2.0',
-        ];
-        $response = oeHttp::get('https://npiregistry.cms.hhs.gov/api/', $query);
-
-        $body = $response->body(); // already should be json.
-
-        $validated = json_decode($body);
-
-        return $validated->result_count;
     }
 }

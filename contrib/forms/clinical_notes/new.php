@@ -1,22 +1,26 @@
 <?php
-/**
- * clinical_notes new.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @author    Daniel Ehrlich <daniel.ehrlich1@gmail.com>
- * @copyright Copyright (c) 2005 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Daniel Ehrlich <daniel.ehrlich1@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+//////////////////////////////////////////////////////////////////////
+// ------------------ DO NOT MODIFY VIEW.PHP !!! ---------------------
+// View.php is an exact duplicate of new.php.  If you wish to make
+// any changes, then change new.php and either (recommended) make
+// view.php a symbolic link to new.php, or copy new.php to view.php.
+//
+// And if you check in a change to either module, be sure to check
+// in the other (identical) module also.
+//
+// This nonsense will go away if we ever move to subversion.
+//////////////////////////////////////////////////////////////////////
 
+// Copyright (C) 2005 Rod Roark <rod@sunsetsystems.com>
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
-require_once("$srcdir/forms.inc");
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
+include_once("$srcdir/forms.inc");
 
 $row = array();
 
@@ -31,7 +35,7 @@ function rbvalue($rbname)
         $tmp = '0';
     }
 
-    return "$tmp";
+    return "'$tmp'";
 }
 
 function cbvalue($cbname)
@@ -42,12 +46,12 @@ function cbvalue($cbname)
 function rbinput($name, $value, $desc, $colname)
 {
     global $row;
-    $ret  = "<input type='radio' name='" . attr($name) . "' value='" . attr($value) . "'";
+    $ret  = "<input type='radio' name='$name' value='$value'";
     if ($row[$colname] == $value) {
         $ret .= " checked";
     }
 
-    $ret .= " />" . text($desc);
+    $ret .= " />$desc";
     return $ret;
 }
 
@@ -59,7 +63,7 @@ function rbcell($name, $value, $desc, $colname)
 function cbinput($name, $colname)
 {
     global $row;
-    $ret  = "<input type='checkbox' name='" . attr($name) . "' value='1'";
+    $ret  = "<input type='checkbox' name='$name' value='1'";
     if ($row[$colname]) {
         $ret .= " checked";
     }
@@ -70,7 +74,7 @@ function cbinput($name, $colname)
 
 function cbcell($name, $desc, $colname)
 {
-    return "<td width='25%' nowrap>" . cbinput($name, $colname) . text($desc) . "</td>\n";
+    return "<td width='25%' nowrap>" . cbinput($name, $colname) . "$desc</td>\n";
 }
 
 $formid = $_GET['id'];
@@ -79,30 +83,36 @@ $formid = $_GET['id'];
 //
 if ($_POST['bn_save']) {
     $fu_timing = $_POST['fu_timing'];
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
 
  // If updating an existing form...
  //
     if ($formid) {
-        $query = "UPDATE form_clinical_notes SET
-         history = ?, 
-         examination = ?,      
-         plan = ?,           
-         followup_required = ?,
-         followup_timing = ?,                  
-         WHERE id = ?";
-
-        sqlStatement($query, array($_POST['form_history'], $_POST['form_examination'], $_POST['form_plan'], rbvalue('fu_required'), $fu_timing, $formid));
+        $query = "UPDATE form_clinical_notes SET "      .
+         "history = '"          . $_POST['form_history']     . "', " .
+         "examination = '"      . $_POST['form_examination'] . "', " .
+         "plan = '"             . $_POST['form_plan']        . "', " .
+         "followup_required = " . rbvalue('fu_required')     . ", "  .
+         "followup_timing = '$fu_timing'"                    . " "   .
+      // "outcome = "           . rbvalue('outcome')         . ", "  .
+      // "destination = "       . rbvalue('destination')     . " "   .
+         "WHERE id = '$formid'";
+        sqlStatement($query);
     } // If adding a new form...
  //
     else {
         $query = "INSERT INTO form_clinical_notes ( " .
-         "history, examination, plan, followup_required, followup_timing 
-         ) VALUES ( ?, ?, ?, ?, ? )";
-
-        $newid = sqlInsert($query, array($_POST['form_history'], $_POST['form_examination'], $_POST['form_plan'], rbvalue('fu_required'), $fu_timing));
+         "history, examination, plan, followup_required, followup_timing " .
+      // ",outcome, destination " .
+         ") VALUES ( " .
+         "'" . $_POST['form_history']     . "', " .
+         "'" . $_POST['form_examination'] . "', " .
+         "'" . $_POST['form_plan']        . "', " .
+         rbvalue('fu_required')           . ", "  .
+         "'$fu_timing'"                   . " "   .
+      // rbvalue('outcome')               . ", "  .
+      // rbvalue('destination')           . " "   .
+         ")";
+        $newid = sqlInsert($query);
         addForm($encounter, "Clinical Notes", $newid, "clinical_notes", $pid, $userauthorized);
     }
 
@@ -114,20 +124,21 @@ if ($_POST['bn_save']) {
 
 if ($formid) {
     $row = sqlQuery("SELECT * FROM form_clinical_notes WHERE " .
-    "id = ? AND activity = '1'", array($formid));
+    "id = '$formid' AND activity = '1'") ;
 }
 ?>
 <html>
 <head>
+<?php html_header_show();?>
 <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
-
+<script language="JavaScript">
+</script>
 </head>
 
 <body <?php echo $top_bg_line;?> topmargin="0" rightmargin="0" leftmargin="2"
  bottommargin="0" marginwidth="2" marginheight="0">
-<form method="post" action="<?php echo $rootdir ?>/forms/clinical_notes/new.php?id=<?php echo attr_url($formid) ?>"
+<form method="post" action="<?php echo $rootdir ?>/forms/clinical_notes/new.php?id=<?php echo $formid ?>"
  onsubmit="return top.restoreSession()">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <center>
 
@@ -141,21 +152,21 @@ if ($formid) {
  <tr>
   <td width='5%'  nowrap> History </td>
   <td width='95%' nowrap>
-   <textarea name='form_history' rows='7' style='width:100%'><?php echo text($row['history']) ?></textarea>
+   <textarea name='form_history' rows='7' style='width:100%'><?php echo $row['history'] ?></textarea>
   </td>
  </tr>
 
  <tr>
   <td nowrap> Examination </td>
   <td nowrap>
-   <textarea name='form_examination' rows='7' style='width:100%'><?php echo text($row['examination']) ?></textarea>
+   <textarea name='form_examination' rows='7' style='width:100%'><?php echo $row['examination'] ?></textarea>
   </td>
  </tr>
 
  <tr>
   <td nowrap> Plan </td>
   <td nowrap>
-   <textarea name='form_plan' rows='7' style='width:100%'><?php echo text($row['plan']) ?></textarea>
+   <textarea name='form_plan' rows='7' style='width:100%'><?php echo $row['plan'] ?></textarea>
   </td>
  </tr>
 
@@ -170,7 +181,7 @@ if ($formid) {
      <td nowrap>
       <input type='text' name='fu_timing' size='10' style='width:100%'
        title='When to follow up'
-       value='<?php echo attr($row['followup_timing']) ?>' />
+       value='<?php echo addslashes($row['followup_timing']) ?>' />
      </td>
     </tr>
     <tr>
@@ -186,6 +197,42 @@ if ($formid) {
    </table>
   </td>
  </tr>
+
+ <!--
+
+ <tr bgcolor='#dddddd'>
+  <td colspan='2' align='center'><b>Final Discharge</b></td>
+ </tr>
+
+ <tr>
+  <td nowrap>Outcome</td>
+  <td nowrap>
+   <table width='100%'>
+    <tr>
+        <?php // echo rbcell('outcome', '1', 'Resolved'  , 'outcome') ?>
+        <?php // echo rbcell('outcome', '2', 'Improved'  , 'outcome') ?>
+        <?php // echo rbcell('outcome', '3', 'Status Quo', 'outcome') ?>
+        <?php // echo rbcell('outcome', '4', 'Worse'     , 'outcome') ?>
+    </tr>
+   </table>
+  </td>
+ </tr>
+
+ <tr>
+  <td nowrap>Destination</td>
+  <td nowrap>
+   <table width='100%'>
+    <tr>
+        <?php // echo rbcell('destination', '1', 'GP'                 , 'destination') ?>
+        <?php // echo rbcell('destination', '2', 'Hospital Specialist', 'destination') ?>
+     <td width='25%'>&nbsp;</td>
+     <td width='25%'>&nbsp;</td>
+    </tr>
+   </table>
+  </td>
+ </tr>
+
+ -->
 
 </table>
 

@@ -4,19 +4,34 @@
  *
  * The page shown when the user requests a new form
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Ray Magauran <magauran@MedFetch.com>
- * @copyright Copyright (c) 2016 Raymond Magauran <magauran@MedFetch.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016 Raymond Magauran <magauran@MedFetch.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Ray Magauran <magauran@MedFetch.com>
+ * @link http://www.open-emr.org
  */
+
+
 
 
 include_once("../../globals.php");
 include_once("$srcdir/api.inc");
 
 $form_name = "Eye Exam";
-$table_name = "form_eye_base";
+$table_name = "form_eye_mag";
 $form_folder = "eye_mag";
 include_once("../../forms/".$form_folder."/php/".$form_folder."_functions.php");
 formHeader("Form: ".$form_name);
@@ -51,31 +66,23 @@ $encounter_date = $encounter_data['date'];
 $query = "SELECT * " .
     "FROM form_encounter AS fe, forms AS f WHERE " .
     "fe.pid = ? AND fe.date = ? AND " .
-    "f.formdir = ? AND f.encounter = fe.encounter AND f.encounter=? AND f.deleted = 0";
-$erow = sqlQuery($query, array($pid, $encounter_date, $form_folder, $encounter));
-
+    "f.formdir = ? AND f.encounter = fe.encounter AND f.deleted = 0";
+$erow = sqlQuery($query, array($pid,$encounter_date,$form_folder));
+    
 if ($erow['form_id'] > '0') {
     formHeader("Redirecting....");
     formJump('./view_form.php?formname='.$form_folder.'&id='.attr($erow['form_id']).'&pid='.attr($pid));
     formFooter();
     exit;
 } else {
-    $id = $erow2['count']++; //erow2['count'] is not defined and formSubmit doesn't use it since we are inserting...
+    $id = $erow2['count']++;
     $providerid = findProvider(attr($pid), $encounter);
     $newid = formSubmit($table_name, $_POST, $id, $providerid);
-    $tables = array('form_eye_hpi','form_eye_ros','form_eye_vitals',
-        'form_eye_acuity','form_eye_refraction','form_eye_biometrics',
-        'form_eye_external', 'form_eye_antseg','form_eye_postseg',
-        'form_eye_neuro','form_eye_locking');
-    foreach ($tables as $table) {
-        $sql = "INSERT INTO ". $table ." set id=?, pid=?";
-        sqlStatement($sql, array($newid, $pid));
-    }
     $sql = "insert into forms (date, encounter, form_name, form_id, pid, " .
-            "user, groupname, authorized, formdir) values (NOW(),?,?,?,?,?,?,?,?)";
+            "user, groupname, authorized, formdir) values (NOW(),?,?,?,?,?,?,?,?)";//activity=1, date = NOW()
     $answer = sqlInsert($sql, array($encounter,$form_name,$newid,$pid,$user,$group,$providerid,$form_folder));
 }
-
+ 
     formHeader("Redirecting....");
     formJump('./view_form.php?formname='.$form_folder.'&id='.attr($newid).'&pid='.attr($pid));
     formFooter();

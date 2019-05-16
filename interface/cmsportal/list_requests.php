@@ -13,6 +13,7 @@
 
 
 require_once("../globals.php");
+require_once("$srcdir/log.inc");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/options.inc.php");
 require_once("portal.inc.php");
@@ -114,9 +115,10 @@ if (!empty($_POST['bn_delete'])) {
 ?>
 <html>
 <head>
+<?php html_header_show();?>
 
 <link rel="stylesheet" href='<?php  echo $css_header ?>' type='text/css'>
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 
 <title><?php echo xlt('Portal Requests'); ?></title>
 
@@ -128,8 +130,8 @@ a, a:visited, a:hover { color:#0000cc; }
 
 </style>
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 <script type="text/javascript" src="../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
 <script type="text/javascript" src="../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
 
@@ -150,7 +152,7 @@ function openRequest(postid, type) {
  //
  // To open results in the same frame:
  if (type.indexOf('Demographics') == 0) {
-  document.location.href = 'patient_select.php?postid=' + postid + '&csrf_token_form=<?php echo attr_url(collectCsrfToken()); ?>';
+  document.location.href = 'patient_select.php?postid=' + postid;
  } else
  if (type.indexOf('Insurance') == 0) {
   document.location.href = 'insurance_form.php?postid=' + postid;
@@ -186,7 +188,7 @@ function openMessage(messageid) {
  document.location.href = 'upload_form.php?messageid=' + messageid;
 }
 
-$(function() {
+$(document).ready(function() {
     $('.datepicker').datetimepicker({
         <?php $datetimepicker_timepicker = false; ?>
         <?php $datetimepicker_showseconds = false; ?>

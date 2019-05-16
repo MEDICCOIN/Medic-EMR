@@ -35,6 +35,7 @@ ob_start();
 require_once("../../interface/globals.php");
 require_once(dirname(__FILE__)."/../../controllers/C_Document.class.php");
 require_once(dirname(__FILE__)."/../../library/options.inc.php");
+require_once(dirname(__FILE__) . "/../../library/log.inc");
 require_once(dirname(__FILE__) . "/../../library/patient.inc");
 require_once(dirname(__FILE__) . "/../../library/direct_message_check.inc");
 
@@ -640,7 +641,7 @@ class UserService extends Userforms
             $username=$var['username'];
             $authPass=$var['authPass'];
             $query="insert into patient_access_offsite(pid,portal_username,portal_pwd) values (?,?,?)";
-            sqlStatement($query, array($pid,$username,$authPass));
+            sqlInsert($query, array($pid,$username,$authPass));
         } else {
             throw new SoapFault("Server", "credentials failed");
         }
@@ -825,7 +826,7 @@ class UserService extends Userforms
     {
          global $pid,$auditmasterid;
         if (UserService::valid($data[0])=='existingpatient' || UserService::valid($data[0])=='newpatient') {
-            sqlStatement("INSERT INTO documents_legal_detail (dld_pid,dld_signed,dld_filepath,dld_master_docid,dld_filename,dld_encounter,dld_file_for_pdf_generation) ".
+            sqlInsert("INSERT INTO documents_legal_detail (dld_pid,dld_signed,dld_filepath,dld_master_docid,dld_filename,dld_encounter,dld_file_for_pdf_generation) ".
             " VALUES (?,?,?,?,?,?,?)", array($pid,$data[2],$data[3],$data[4],$data[5],$data[6],$data[7]));
         } elseif (UserService::valid($data[0])=='newpatienttoapprove') {
             $param=array($data[0],'audit_master_id_to_delete'=>"",'pid'=>"$pid",'approval_status'=>'1',
@@ -1062,7 +1063,7 @@ class UserService extends Userforms
         if (UserService::valid($data_credentials)) {
             $authorizenetid=$var['authorizenetid'];
             $query="UPDATE patient_access_offsite SET authorize_net_id = ? WHERE pid = ?";
-            sqlStatement($query, array($authorizenetid,$pid));
+            sqlInsert($query, array($authorizenetid,$pid));
         } else {
             throw new SoapFault("Server", "credentials failed");
         }

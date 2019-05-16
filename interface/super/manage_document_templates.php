@@ -15,16 +15,11 @@
 require_once('../globals.php');
 require_once($GLOBALS['srcdir'].'/acl.inc');
 
-use OpenEMR\Common\Crypto\CryptoGen;
-
 if (!acl_check('admin', 'super')) {
-    die(xlt('Not authorized'));
+    die(htmlspecialchars(xl('Not authorized')));
 }
 
-// Set up crypto object
-$cryptoGen = new CryptoGen();
-
-$form_filename = convert_safe_file_dir_name($_REQUEST['form_filename']);
+$form_filename = strip_escape_custom($_REQUEST['form_filename']);
 
 $templatedir = "$OE_SITE_DIR/documents/doctemplates";
 
@@ -32,41 +27,24 @@ $templatedir = "$OE_SITE_DIR/documents/doctemplates";
 // Thus the current browser page should remain displayed.
 //
 if (!empty($_POST['bn_download'])) {
-    //verify csrf
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $templatepath = "$templatedir/$form_filename";
-
-    // Place file in variable
-    $fileData = file_get_contents($templatepath);
-
-    // Decrypt file, if applicable
-    if ($cryptoGen->cryptCheckStandard($fileData)) {
-        $fileData = $cryptoGen->decryptStandard($fileData, null, 'database');
-    }
-
     header('Content-Description: File Transfer');
     header('Content-Transfer-Encoding: binary');
     header('Expires: 0');
     header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
     header('Pragma: public');
-    // attachment, not inline
+  // attachment, not inline
     header("Content-Disposition: attachment; filename=\"$form_filename\"");
-    // Note we avoid providing a mime type that suggests opening the file.
+  // Note we avoid providing a mime type that suggests opening the file.
     header("Content-Type: application/octet-stream");
-    header("Content-Length: " . strlen($fileData));
-    echo $fileData;
+    header("Content-Length: " . filesize($templatepath));
+    ob_clean();
+    flush();
+    readfile($templatepath);
     exit;
 }
 
 if (!empty($_POST['bn_delete'])) {
-    //verify csrf
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $templatepath = "$templatedir/$form_filename";
     if (is_file($templatepath)) {
         unlink($templatepath);
@@ -74,12 +52,7 @@ if (!empty($_POST['bn_delete'])) {
 }
 
 if (!empty($_POST['bn_upload'])) {
-    //verify csrf
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
-    // Handle uploads.
+  // Handle uploads.
     $tmp_name = $_FILES['form_file']['tmp_name'];
     if (is_uploaded_file($tmp_name) && $_FILES['form_file']['size']) {
         // Choose the destination path/filename.
@@ -88,13 +61,9 @@ if (!empty($_POST['bn_upload'])) {
             $form_dest_filename = $_FILES['form_file']['name'];
         }
 
-        $form_dest_filename = convert_safe_file_dir_name(basename($form_dest_filename));
+        $form_dest_filename = preg_replace("/[^a-zA-Z0-9_.]/", "_", basename($form_dest_filename));
         if ($form_dest_filename == '') {
-            die(xlt('Cannot determine a destination filename'));
-        }
-        $path_parts = pathinfo($form_dest_filename);
-        if (!in_array(strtolower($path_parts['extension']), array('odt', 'txt', 'docx', 'zip'))) {
-            die(text(strtolower($path_parts['extension'])) . ' ' . xlt('filetype is not accepted'));
+            die(htmlspecialchars(xl('Cannot determine a destination filename')));
         }
 
         $templatepath = "$templatedir/$form_dest_filename";
@@ -108,19 +77,9 @@ if (!empty($_POST['bn_upload'])) {
             unlink($templatepath);
         }
 
-        // Place uploaded file in variable.
-        $fileData = file_get_contents($tmp_name);
-
-        // Encrypt uploaded file, if applicable.
-        if ($GLOBALS['drive_encryption']) {
-            $storedData = $cryptoGen->encryptStandard($fileData, null, 'database');
-        } else {
-            $storedData = $fileData;
-        }
-
-        // Store the uploaded file.
-        if (file_put_contents($templatepath, $storedData) === false) {
-            die(xlt('Unable to create') . " '" . text($templatepath) . "'");
+        // Put the new file in its desired location.
+        if (!move_uploaded_file($tmp_name, $templatepath)) {
+            die(htmlspecialchars(xl('Unable to create') . " '$templatepath'"));
         }
     }
 }
@@ -142,7 +101,6 @@ if (!empty($_POST['bn_upload'])) {
 <body class="body_top">
 <form method='post' action='manage_document_templates.php' enctype='multipart/form-data'
  onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <center>
 
@@ -157,13 +115,13 @@ if (!empty($_POST['bn_upload'])) {
 
  <tr>
   <td valign='top' class='detail' style='padding:10pt;' nowrap>
-    <?php echo xlt('Source File'); ?>:
+    <?php echo htmlspecialchars(xl('Source File')); ?>:
    <input type="hidden" name="MAX_FILE_SIZE" value="250000000" />
    <input type="file" name="form_file" size="40" />&nbsp;
-    <?php echo xlt('Destination Filename'); ?>:
+    <?php echo htmlspecialchars(xl('Destination Filename')) ?>:
    <input type='text' name='form_dest_filename' size='30' />
    &nbsp;
-   <input type='submit' name='bn_upload' value='<?php echo xla('Upload') ?>' />
+   <input type='submit' name='bn_upload' value='<?php echo xlt('Upload') ?>' />
   </td>
  </tr>
 
@@ -200,16 +158,16 @@ if ($dh) {
     closedir($dh);
     ksort($templateslist);
     foreach ($templateslist as $sfname) {
-        echo "    <option value='" . attr($sfname) . "'";
-        echo ">" . text($sfname) . "</option>\n";
+        echo "    <option value='" . htmlspecialchars($sfname, ENT_QUOTES) . "'";
+        echo ">" . htmlspecialchars($sfname) . "</option>\n";
     }
 }
 ?>
    </select>
    &nbsp;
-   <input type='submit' name='bn_download' value='<?php echo xla('Download') ?>' />
+   <input type='submit' name='bn_download' value='<?php echo xlt('Download') ?>' />
    &nbsp;
-   <input type='submit' name='bn_delete' value='<?php echo xla('Delete') ?>' />
+   <input type='submit' name='bn_delete' value='<?php echo xlt('Delete') ?>' />
   </td>
  </tr>
 
@@ -221,3 +179,4 @@ if ($dh) {
 </form>
 </body>
 </html>
+

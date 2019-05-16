@@ -1,14 +1,28 @@
 <?php
+
 /**
  * forms/eye_mag/help.php
  *
  * Help File for Shorthand Entry Technique on the Eye Form
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Ray Magauran <magauran@MedFetch.com>
- * @copyright Copyright (c) 2016 Raymond Magauran <magauran@MedFetch.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016 Raymond Magauran <magauran@MedFetch.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Ray Magauran <magauran@MedFetch.com>
+ * @link http://www.open-emr.org
  */
 
 
@@ -30,12 +44,12 @@ if ($showit=='ext') {
 ?>
 <html>
     <head>
-    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap-3-3-4/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?php echo $GLOBALS['css_header']; ?>" type="text/css">
-    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-themes-1-10-4/themes/ui-lightness/jquery-ui.min.css">
-    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/pure/0.5.0/pure-min.css">
-
-    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-1-10-4/themes/ui-lightness/jquery-ui.min.css">
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/pure-0-5-0/pure-min.css">
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/qtip2-2-2-1/jquery.qtip.min.css" />
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/font-awesome-4-6-3/css/font-awesome.min.css">
     <link rel="stylesheet" href="../../forms/<?php echo $form_folder; ?>/css/style.css" type="text/css">
 
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -44,11 +58,11 @@ if ($showit=='ext') {
     <meta name="author" content="openEMR: ophthalmology help">
     <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- jQuery library -->
-    <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-1-10-2/jquery.js"></script>
+    <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-min-1-10-2/index.js"></script>
     <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-1-11-4/jquery-ui.js"></script>
-    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-themes-1-11-4/themes/excite-bike/jquery-ui.css">
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-1-11-4/themes/excite-bike/jquery-ui.css">
     <!-- Latest compiled JavaScript -->
-    <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap-3-3-4/dist/js/bootstrap.min.js"></script>
     <script>
      $(function() {
         $("[id^='accordion_']" ).accordion({
@@ -58,7 +72,7 @@ if ($showit=='ext') {
         active: 0
         });
     });
-    $(function() {
+    $(document).ready(function() {
         $("[name^='accordion_']").hide();
         $("#accordion_<?php echo attr($showit); ?>_group").show()
         $("#<?php echo attr($showit); ?>_button").css("color","red");

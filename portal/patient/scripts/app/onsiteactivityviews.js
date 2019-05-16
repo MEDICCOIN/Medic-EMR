@@ -3,11 +3,24 @@
  *
  * application logic specific to the OnsiteActivityView listing page
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Jerry Padgett <sjpadgett@gmail.com>
+ * @link http://www.open-emr.org
  */
 var actpage = {
 
@@ -84,26 +97,10 @@ var actpage = {
 		        return eModal.ajax(params)
 		            .then(function () { });
 		 };
-		// @todo below for emodal refactor
-        /*function showProfileModal(cpid) {
-            var title = 'Demographics Legend Red: Charted Values. Blue: Patient Edits Provider Audit.';
 
-            var params = {
-                buttons: [
-                    { text: 'Help', close: false, style: 'info btn-sm',id: 'formHelp'},
-                    { text: 'Cancel', close: true, style: 'default btn-sm'},
-                    { text: 'Revert Edits', close: false, style: 'success btn-sm',id:'replaceAllButton'},
-                    { text: 'Commit to Chart', style: 'danger btn-sm', close: false,id:'savePatientButton'}],
-                //onClosed: 'reload',
-                type: 'GET',
-                url: './patientdata?pid='+cpid+'&user='+cuser
-            };
-            dlgopen('','','modal-xl', 500, '', title, params);
-        }*/
-
-        $(document.body).on('hidden.bs.modal', function () {
-            window.location.href = './onsiteactivityviews';
-        });
+		 $(document.body).on('hidden.bs.modal', function (){
+			 	window.location.href = './onsiteactivityviews';
+			});
 
 		// initialize the collection view
 		this.collectionView = new view.CollectionView({
@@ -127,17 +124,13 @@ var actpage = {
 				var m = actpage.onsiteActivityViews.get(this.id);
 				var cpid = m.get('patientId');
 				var activity = m.get('activity');
-				if(activity == 'document') {
-                    let recid = m.get('tableArgs');
-                    showDocumentModal(cpid, recid);
-                }
-				else if(activity == 'profile') {
-                    showProfileModal(cpid);
-                }
-				else if(activity == 'payment') {
-                    let recid = m.get('id');
-                    showPaymentModal(cpid, recid);
-                }
+				var recid = m.get('tableArgs');
+				if(activity == 'document')
+					showDocumentModal(cpid,recid);
+				else if(activity == 'profile')
+					showProfileModal(cpid);
+				else if(activity == 'payment')
+					showPaymentModal(cpid);
 			});
 
 			// make the headers clickable for sorting

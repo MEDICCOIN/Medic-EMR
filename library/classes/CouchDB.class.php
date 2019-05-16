@@ -25,16 +25,13 @@
 //
 // +------------------------------------------------------------------------------+
 
-use OpenEMR\Common\Crypto\CryptoGen;
-
 class CouchDB
 {
     function __construct()
     {
         $this->host = $GLOBALS['couchdb_host'];
         $this->user = ($GLOBALS['couchdb_user'] != '') ? $GLOBALS['couchdb_user'] : null;
-        $cryptoGen = new CryptoGen();
-        $this->pass = ($cryptoGen->decryptStandard($GLOBALS['couchdb_pass']) != '') ? $cryptoGen->decryptStandard($GLOBALS['couchdb_pass']) : null;
+        $this->pass = ($GLOBALS['couchdb_pass'] != '') ? $GLOBALS['couchdb_pass'] : null;
         $this->port = $GLOBALS['couchdb_port'];
         $this->dbase = $GLOBALS['couchdb_dbase'];
     }

@@ -24,11 +24,10 @@
 
 //----------THINGS WE ALWAYS DO
 
+require_once("{$GLOBALS['srcdir']}/log.inc");
 // added for the phpGACL group check -- JRM
 require_once("{$GLOBALS['srcdir']}/acl.inc");
 require_once("$srcdir/authentication/login_operations.php");
-
-use OpenEMR\Common\Logging\EventAuditLogger;
 
 $incoming_site_id = '';
 
@@ -45,8 +44,7 @@ if (isset($_GET['auth']) && ($_GET['auth'] == "login") && isset($_POST['authUser
     // set language direction according to language choice. Later in globals.php we'll override main theme name if needed.
     $_SESSION['language_direction'] = getLanguageDir($_SESSION['language_choice']);
 
-    if (!validate_user_password($_POST['authUser'], $clearPass, $_POST['authProvider'])
-     || !verify_user_gacl_group($_POST['authUser'], $_POST['authProvider'])) {
+    if (!validate_user_password($_POST['authUser'], $clearPass, $_POST['authProvider']) ||  !verify_user_gacl_group($_POST['authUser'])) {
         $_SESSION['loginfailure'] = 1;
         authLoginScreen();
     }
@@ -59,15 +57,13 @@ if (isset($_GET['auth']) && ($_GET['auth'] == "login") && isset($_POST['authUser
         }
     }
 
+    $ip=$_SERVER['REMOTE_ADDR'];
     $_SESSION['loginfailure'] = null;
     unset($_SESSION['loginfailure']);
     //store the very first initial timestamp for timeout errors
     $_SESSION["last_update"] = time();
 } else if ((isset($_GET['auth'])) && ($_GET['auth'] == "logout")) {
-    //If session has timed out / been destroyed, logout record for null user/provider will be invalid.
-    if (!empty($_SESSION['authUser']) && !empty($_SESSION['authProvider'])) {
-        EventAuditLogger::instance()->newEvent("logout", $_SESSION['authUser'], $_SESSION['authProvider'], 1, "success");
-    }
+    newEvent("logout", $_SESSION['authUser'], $_SESSION['authProvider'], 1, "success");
     authCloseSession();
     authLoginScreen(true);
 } else {
@@ -85,7 +81,7 @@ if (isset($_GET['auth']) && ($_GET['auth'] == "login") && isset($_POST['authUser
         //LOG EVERYTHING
         //newEvent("view", $_SESSION['authUser'], $_SESSION['authProvider'], $_SERVER['REQUEST_URI']);
     } else {
-        EventAuditLogger::instance()->newEvent("login", $_POST['authUser'], $_POST['authProvider'], 0, "insufficient data sent");
+        newEvent("login", $_POST['authUser'], $_POST['authProvider'], 0, "insufficient data sent");
         authLoginScreen();
     }
 }
@@ -98,7 +94,7 @@ if (!isset($_SESSION["last_update"])) {
      //via ajax scripts where this output is not getting sent to browser.
      //--Note DAEMON_FLAG is ok because it is run from a frame in the browser.
     if (((time() - $_SESSION["last_update"]) > $timeout) && empty($_REQUEST['skip_timeout_reset'])) {
-        EventAuditLogger::instance()->newEvent("logout", $_SESSION['authUser'], $_SESSION['authProvider'], 0, "timeout");
+        newEvent("logout", $_SESSION['authUser'], $_SESSION['authProvider'], 0, "timeout");
         authCloseSession();
         authLoginScreen(true);
     } else {
@@ -206,8 +202,35 @@ function authCheckExpired($user)
     return false;
 }
 
+function getUserList($cols = '*', $limit = 'all', $start = '0')
+{
+    if ($limit = "all") {
+        $rez = sqlStatement("select $cols from users where username != '' order by date DESC");
+    } else {
+        $rez = sqlStatement("select $cols from users where username != '' order by date DESC limit $limit, $start");
+    }
 
+    for ($iter = 0; $row = sqlFetchArray($rez); $iter++) {
+        $tbl[$iter] = $row;
+    }
 
+    return $tbl;
+}
+
+function getProviderList($cols = '*', $limit = 'all', $start = '0')
+{
+    if ($limit = "all") {
+        $rez = sqlStatement("select $cols from `groups` order by date DESC");
+    } else {
+        $rez = sqlStatement("select $cols from `groups` order by date DESC limit $limit, $start");
+    }
+
+    for ($iter = 0; $row = sqlFetchArray($rez); $iter++) {
+        $tbl[$iter] = $row;
+    }
+
+    return $tbl;
+}
 
 function addGroup($groupname)
 {

@@ -80,18 +80,6 @@ $timeslotHeightUnit="px";
   theForm.submit();
  }
 
- function ShowImage(src)
- {
-     var img = document.getElementById('popupImage');
-     var div = document.getElementById('popup');
-     img.src = src;
-     div.style.display = "block";
- }
-
- function HideImage()
- {
-     document.getElementById('popup').style.display = "none";
- }
 </script>
 
 [-php-]
@@ -162,9 +150,6 @@ if ( $_SESSION['pc_facility'] ) {
 //EOS FACILITY FILTERING (CHEMED)
 //==================================
 
-$chevron_icon_left = $_SESSION['language_direction'] == 'ltr' ? 'fa-chevron-circle-left' : 'fa-chevron-circle-right';
-$chevron_icon_right = $_SESSION['language_direction'] == 'ltr' ? 'fa-chevron-circle-right' : 'fa-chevron-circle-left';
-
 [-/php-]
 <div id="topToolbarRight" class="bgcolor2">  <!-- this wraps some of the top toolbar items -->
 <div id="functions">
@@ -190,11 +175,11 @@ if ($Date <> date('Ymd')) {
 [-php-]
 }
 echo "   <a id='prevday' href='$PREV_DAY_URL' onclick='top.restoreSession()' title='" . xl("Previous Day") . "'>
-            <i class='fa ".$chevron_icon_left." chevron_color' aria-hidden='true'></i></a>\n";
+            <i class='fa fa-chevron-circle-left chevron_color' aria-hidden='true'></i></a>\n";
 $atmp = array_keys($A_EVENTS);
 echo dateformat (strtotime($atmp[0]),true);
 echo "   <a id='nextday' href='$NEXT_DAY_URL' onclick='top.restoreSession()' title='" . xl("Next Day") . "'>
-            <i class= 'fa ".$chevron_icon_right." chevron_color' aria-hidden='true'></i></a>\n";
+            <i class= 'fa fa-chevron-circle-right chevron_color' aria-hidden='true'></i></a>\n";
 [-/php-]
 </div>
 
@@ -220,7 +205,7 @@ $cMonth = date("m", $caldate);
 $cYear = date("Y", $caldate);
 $cDay = date("d", $caldate);
 
-include_once($GLOBALS['fileroot'].'/interface/main/calendar/modules/PostCalendar/pntemplates/default/views/monthSelector.php');
+include_once($GLOBALS['webserver_root'].'/interface/main/calendar/modules/PostCalendar/pntemplates/default/views/monthSelector.php');
 [-/php-]
 <table border="0" cellpadding="0" cellspacing="0">
 <tr>
@@ -394,12 +379,8 @@ echo "   <tr><td><div class='view1' style=background-color:".$f['color'].";font-
 [-assign var="year"    value=$DATE|date_format:"%Y"|string_format:"%4d"-]
 
 [-pc_sort_events var="S_EVENTS" sort="time" order="asc" value=$A_EVENTS-]
-    <div id="popup" class="pop-up">
-        <img id="popupImage" alt="" />
-    </div>
 </div> <!-- end bottomLeft -->
-
-    <div id="bigCal">
+<div id="bigCal">
 [-php-]
 /* used in debugging
     foreach ($A_EVENTS as $date => $events) {
@@ -417,7 +398,7 @@ echo "<table border='0' cellpadding='1' cellspacing='0' width='100%'>\n";
 // output the TD with the times DIV
 echo "<tr>";
 echo "<td id='times'><div><table>\n";
-echo "<td class='timeslot providerXbtn' data-username='__PC_ALL__'><i class='fa fa-lg fa-user-md'></i></td>";
+echo "<td class='timeslot'>&nbsp;</td>";
 //============================================================================================================================
 foreach ($times as $slottime) {
     $startampm = ($slottime['mer']) == "pm" ? 2 : 1;
@@ -455,9 +436,9 @@ foreach ($providers as $provider) {
     // this is nice when all you see are times on the left side and no head
     // row with the dates or day-of-week (DOW)
     $classForWeekend = is_weekend_day(date('w', $caldate)) ? 'weekend-day' : 'work-day';
-    $provfl = attr(trim($provider['fname'].' '.$provider['lname']));
-    echo "<td class='schedule $classForWeekend' title='$provfl' date='".date("Ymd",$caldate )."' provider='$providerid'>";
-    echo "<div class='providerheader'>$provfl<a class='providerXbtn' data-username='".$provider['username']."'><i class='fa fa-times'></i></a></div>";
+    echo "<td class='schedule " . $classForWeekend . "' title='".htmlspecialchars($provider["fname"],ENT_QUOTES)." ".htmlspecialchars($provider["lname"],ENT_QUOTES)."' date='".date("Ymd",$caldate )."' provider='$providerid'>";
+    echo "<div class='providerheader'>";
+    echo htmlspecialchars($provider['fname'],ENT_QUOTES)." ".htmlspecialchars($provider['lname'],ENT_QUOTES)."</div>";
     echo "<div class='calendar_day'>";
 
     // For each event...
@@ -747,12 +728,8 @@ foreach ($providers as $provider) {
                     $link_title = htmlspecialchars($fname,ENT_QUOTES)." ".htmlspecialchars($lname,ENT_QUOTES). " \n";
                     $link_title .= xl('Age') . ": ".$patient_age."\n" . xl('DOB') . ": ".$patient_dob.htmlspecialchars($comment, ENT_QUOTES)."\n";
                     $link_title .= "(" . xl('Click to view') . ")";
-
                     $content .= "<a href='javascript:goPid($patientid)' title='$link_title'>";
-                    $content .= "<img src='{$this->_tpl_vars[TPL_IMAGE_PATH]}/user-green.gif'
-                                      onmouseover=\"javascript:ShowImage('".$GLOBALS['webroot']."/controller.php?document&retrieve&patient_id=".attr($patientid)."&document_id=-1&as_file=false&original_file=true&disable_exit=false&show_original=true&context=patient_picture');\"
-                                      onmouseout=\"javascript:HideImage();\"
-                                      border='0' title='$link_title' alt='View Patient' />";
+                    $content .= "<img src='{$this->_tpl_vars[TPL_IMAGE_PATH]}/user-green.gif' border='0' title='$link_title' alt='View Patient' />";
                     if ($catid == 1) $content .= "<strike>";
                     $content .= htmlspecialchars($lname);
                     if ($GLOBALS['calendar_appt_style'] != 1) {
@@ -936,18 +913,7 @@ echo "<P>";
     var tsHeight='[-php-] echo $timeslotHeightVal.$timeslotHeightUnit; [-/php-]';
     var tsHeightNum=[-php-] echo $timeslotHeightVal; [-/php-];
 
-    function providerXclick(e) {
-        var username=$(this).data('username');
-        if (username=='__PC_ALL__') {
-            $("#pc_username option:gt(0)").prop("selected", true);
-        } else {
-            $("#pc_username option[value="+username+"]").prop("selected", false);
-            // $(this).closest('td').remove();
-        }
-        ChangeProviders($("#pc_username"));
-    }
-
-    $(function(){
+    $(document).ready(function(){
         setupDirectTime();
         $("#pc_username").change(function() { ChangeProviders(this); });
         $("#pc_facility").change(function() { ChangeProviders(this); });
@@ -966,13 +932,6 @@ echo "<P>";
 
             dpCal=$("#datePicker>table");
             mp = $("#monthPicker"); mp.width(dpCal.width()); mp.toggle();});
-
-        $('div.providerheader').find('*')
-        .css('font-size', $('div.providerheader:first').css('font-size'))
-        .addClass(' mx-1 p-0 border-0 align-middle');
-        $('a.providerXbtn').addClass('close');
-        $('.providerXbtn').on('click', providerXclick);
-
     });
 
     /* edit an existing event */

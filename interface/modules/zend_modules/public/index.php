@@ -35,7 +35,9 @@ $controllerName = isset($urlArray[$countUrlArray-2]) ? $urlArray[$countUrlArray-
 
 //skipping OpenEMR authentication if the controller is SOAP and action is INDEX
 //SOAP authentication is done in the contoller EncounterccdadispatchController
-if ($_REQUEST['recipient'] === 'patient' && $_REQUEST['site'] && $controllerName) {
+if (strtolower($controllerName) == 'soap' && strtolower($actionName) == 'index') {
+    $ignoreAuth_offsite_portal = true;
+} elseif ($_REQUEST['recipient'] === 'patient' && $_REQUEST['site'] && $controllerName) {
     session_id($_REQUEST['me']);
     session_start();
     $ignoreAuth_onsite_portal_two = false; // eval'ed in globals but why not...
@@ -49,6 +51,7 @@ require_once(dirname(__FILE__)."/../../../globals.php");
 require_once(dirname(__FILE__)."/../../../../library/forms.inc");
 require_once(dirname(__FILE__)."/../../../../library/options.inc.php");
 require_once(dirname(__FILE__)."/../../../../library/acl.inc");
+require_once(dirname(__FILE__)."/../../../../library/log.inc");
 
 chdir(dirname(__DIR__));
 

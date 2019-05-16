@@ -1,18 +1,26 @@
 <?php
 /**
- * Encounter form to track any clinical parameter.
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Joe Slam <trackanything@produnis.de>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2014 Joe Slam <trackanything@produnis.de>
- * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+* Encounter form to track any clinical parameter.
+*
+* Copyright (C) 2014 Joe Slam <trackanything@produnis.de>
+*
+* LICENSE: This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* as published by the Free Software Foundation; either version 2
+* of the License, or (at your option) any later version.
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>.
+*
+* @package OpenEMR
+* @author Joe Slam <trackanything@produnis.de>
+* @link http://www.open-emr.org
+*/
 
-
-require_once($GLOBALS["srcdir"] . "/api.inc");
+include_once($GLOBALS["srcdir"] . "/api.inc");
 
 function track_anything_report($pid, $encounter, $cols, $id)
 {
@@ -123,7 +131,7 @@ function track_anything_report($pid, $encounter, $cols, $id)
         echo "<tr><td></td>";
         echo "<td colspan='" . attr($col) . "'><div class='navigateLink'>";
         echo "<input type='button' class='graph_button' ";
-        echo " onclick='ta_report_plot_graph(" . attr_js($formid) . "," . attr_js($ofc_name) . "," . attr_js($the_track_name)  . "," . attr_js($ofc_date) . "," . attr_js($ofc_value) . ")'";
+        echo " onclick='ta_report_plot_graph(\"" . attr($formid) . "\"," . json_encode($ofc_name) . ",\"" . attr($the_track_name)  . "\"," . json_encode($ofc_date) . "," . json_encode($ofc_value) . ")'";
         echo " name='' value='" . xla('Plot selected Items') . "'>";
         echo "</div></td></tr>";
     }

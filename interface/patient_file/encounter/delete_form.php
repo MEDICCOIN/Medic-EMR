@@ -2,21 +2,28 @@
 /**
  * This script delete an Encounter form.
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Roberto Vasquez <robertogagliotta@gmail.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2015 Roberto Vasquez <robertogagliotta@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2015 Roberto Vasquez <robertogagliotta@gmail.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Roberto Vasquez <robertogagliotta@gmail.com>
+ * @link    http://www.open-emr.org
  */
 
 
-require_once("../../globals.php");
-require_once(dirname(__FILE__) . "/../../../library/forms.inc");
 
-use OpenEMR\Common\Logging\EventAuditLogger;
-use OpenEMR\Core\Header;
+
+include_once("../../globals.php");
 
 // allow a custom 'delete' form
 $deleteform = $incdir . "/forms/" . $_REQUEST["formname"]."/delete.php";
@@ -34,14 +41,10 @@ if (file_exists($deleteform)) {
 $returnurl = 'forms.php';
 
 if ($_POST['confirm']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     if ($_POST['id'] != "*" && $_POST['id'] != '') {
       // set the deleted flag of the indicated form
         $sql = "update forms set deleted=1 where id=?";
-        sqlStatement($sql, array($_POST['id']));
+        sqlInsert($sql, array($_POST['id']));
       // Delete the visit's "source=visit" attributes that are not used by any other form.
         sqlStatement(
             "DELETE FROM shared_attributes WHERE " .
@@ -54,7 +57,7 @@ if ($_POST['confirm']) {
         );
     }
     // log the event
-    EventAuditLogger::instance()->newEvent("delete", $_SESSION['authUser'], $_SESSION['authProvider'], 1, "Form ".$_POST['formname']." deleted from Encounter ".$_POST['encounter']);
+    newEvent("delete", $_SESSION['authUser'], $_SESSION['authProvider'], 1, "Form ".$_POST['formname']." deleted from Encounter ".$_POST['encounter']);
 
     // redirect back to the encounter
     $address = "{$GLOBALS['rootdir']}/patient_file/encounter/$returnurl";
@@ -65,7 +68,12 @@ if ($_POST['confirm']) {
 <html>
 
 <head>
-<?php Header::setupHeader(['no_bootstrap', 'no_fontawesome', 'no_textformat', 'no_dialog' ]); ?>
+<?php html_header_show();?>
+<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
+
+<!-- supporting javascript code -->
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
+
 </head>
 
 <body class="body_top">
@@ -73,8 +81,6 @@ if ($_POST['confirm']) {
 <span class="title"><?php echo xlt('Delete Encounter Form'); ?></span>
 
 <form method="post" action="<?php echo $rootdir;?>/patient_file/encounter/delete_form.php" name="my_form" id="my_form">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
-
 <?php
 // output each GET variable as a hidden form input
 foreach ($_GET as $key => $value) {
@@ -83,13 +89,7 @@ foreach ($_GET as $key => $value) {
 ?>
 <input type="hidden" id="confirm" name="confirm" value="1"/>
 <p>
-<?php
-
-$formdir=$_GET["formname"];
-$formName=getFormNameByFormdir($formdir);
-echo xlt('You are about to delete the following form from this encounter') . ': ' . text(xl_form_title($formName["form_name"]));
-
-?>
+<?php echo xlt('You are about to delete the following form from this encounter') . ': ' . text(xl_form_title($_GET['formname'])); ?>
 </p>
 <input type="button" id="confirmbtn" name="confirmbtn" value='<?php echo xla('Yes, Delete this form'); ?>'>
 <input type="button" id="cancel" name="cancel" value='<?php echo xla('Cancel'); ?>'>
@@ -101,12 +101,12 @@ echo xlt('You are about to delete the following form from this encounter') . ': 
 // jQuery stuff to make the page a little easier to use
 
 $(document).ready(function(){
-    $("#confirmbtn").on("click", function() { return ConfirmDelete(); });
-    $("#cancel").on("click", function() { location.href='<?php echo "$rootdir/patient_file/encounter/$returnurl";?>'; });
+    $("#confirmbtn").click(function() { return ConfirmDelete(); });
+    $("#cancel").click(function() { location.href='<?php echo "$rootdir/patient_file/encounter/$returnurl";?>'; });
 });
 
 function ConfirmDelete() {
-    if (confirm(<?php echo xlj('This action cannot be undone. Are you sure you wish to delete this form?'); ?>)) {
+    if (confirm('<?php echo xls('This action cannot be undone. Are you sure you wish to delete this form?'); ?>')) {
         top.restoreSession();
         $("#my_form").submit();
         return true;

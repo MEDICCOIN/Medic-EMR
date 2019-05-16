@@ -408,7 +408,7 @@ class Prescription extends ORDataObject
 
             if (!isset($dataRow['id'])) {
                 //add the record to the medication list
-                sqlStatement("insert into lists(date,begdate,type,activity,pid,user,groupname,title) values (now(),cast(now() as date),'medication',1," . add_escape_custom($this->patient->id) . ",'" . $$_SESSION['authUser']. "','" . $$_SESSION['authProvider'] . "','" . add_escape_custom($this->drug) . "')");
+                sqlInsert("insert into lists(date,begdate,type,activity,pid,user,groupname,title) values (now(),cast(now() as date),'medication',1," . add_escape_custom($this->patient->id) . ",'" . $$_SESSION['authUser']. "','" . $$_SESSION['authProvider'] . "','" . add_escape_custom($this->drug) . "')");
             } else {
                 $dataRow = sqlQuery('update lists set activity = 1'
                             . " ,user = '" . $$_SESSION['authUser']
@@ -784,8 +784,8 @@ class Prescription extends ORDataObject
 
         $prescriptions = array();
         $p = new Prescription();
-        $sql = "SELECT id FROM " . escape_table_name($p->_table) . " WHERE patient_id = ? " .
-                "ORDER BY " . add_escape_custom($order_by);
+        $sql = "SELECT id FROM  " . $p->_table . " WHERE patient_id = ?" .
+                " ORDER BY " . add_escape_custom($order_by);
         $results = sqlQ($sql, array($patient_id));
         while ($row = sqlFetchArray($results)) {
             $prescriptions[] = new Prescription($row['id']);

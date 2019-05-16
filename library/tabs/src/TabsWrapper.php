@@ -54,9 +54,7 @@ class TabsWrapper
         // Note: require.js may be another option, but trying to keep it simple for now.
         if (!defined('INCLUDED_JQUERY_UI_CSS')) {
             define('INCLUDED_JQUERY_UI_CSS', '1-12-1');
-            // jquery 1-12-1 is now the default jquery-ui-themes package
-            //$s .= "<link rel='stylesheet' href='$web_root/public/assets/jquery-ui-" . INCLUDED_JQUERY_UI_CSS . "/themes/base/jquery-ui.css'>\n";
-            $s .= "<link rel='stylesheet' href='$web_root/public/assets/jquery-ui-themes/themes/base/jquery-ui.min.css'>\n";
+            $s .= "<link rel='stylesheet' href='$web_root/public/assets/jquery-ui-" . INCLUDED_JQUERY_UI_CSS . "/themes/base/jquery-ui.css'>\n";
         }
         $s .= <<<EOD
 <style>
@@ -101,8 +99,7 @@ EOD;
         $s = '';
         if (!defined('INCLUDED_JQUERY_UI')) {
             define('INCLUDED_JQUERY_UI', '1-12-1');
-            // jquery 1-12-1 is now the default jquery-ui package
-            $s .= "<script src='$web_root/public/assets/jquery-ui/jquery-ui.min.js'></script>\n";
+            $s .= "<script src='$web_root/public/assets/jquery-ui-" . INCLUDED_JQUERY_UI . "/jquery-ui.min.js'></script>\n";
         }
         if (!defined('INCLUDED_TW_ONETIME_JS')) {
             define('INCLUDED_TW_ONETIME_JS', true);
@@ -127,7 +124,6 @@ function twSetup(tabsid) {
   tabs.on("click", "span.ui-icon-close", function() {
     var mytabsid = $(this).closest("div").attr("id");
     var panelId = $(this).prev().attr("href").substring(1);
-    top.restoreSession();
     twCloseTab(mytabsid, panelId);
   });
 }
@@ -158,7 +154,7 @@ function twAddFrameTab(tabsid, label, url) {
   twAddTab(
     tabsid,
     label,
-    "<iframe name='" + panelId + "' frameborder='0' style='height:95.3%;width:100%;' src='" + url + "'>Oops</iframe>"
+    "<iframe name='" + panelId + "' frameborder='0' style='height:100%;width:100%;' src='" + url + "'>Oops</iframe>"
   );
   return panelId;
 }

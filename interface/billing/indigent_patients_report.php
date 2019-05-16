@@ -9,10 +9,9 @@
  * @author    Rod Roark <rod@sunsetsystems.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2005-2015 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2017-2019 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-
 
 require_once("../globals.php");
 require_once("$srcdir/patient.inc");
@@ -70,7 +69,7 @@ $form_end_date  = (!empty($_POST['form_end_date'])) ? DateToYYYYMMDD($_POST['for
 
 <script language="JavaScript">
 
-    $(function() {
+    $(document).ready(function() {
         var win = top.printLogSetup ? top : opener.top;
         win.printLogSetup(document.getElementById('printbutton'));
 
@@ -92,7 +91,6 @@ $form_end_date  = (!empty($_POST['form_end_date'])) ? DateToYYYYMMDD($_POST['for
 <span class='title'><?php echo xlt('Report'); ?> - <?php echo xlt('Indigent Patients'); ?></span>
 
 <form method='post' action='indigent_patients_report.php' id='theform' onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <div id="report_parameters">
 
@@ -179,10 +177,6 @@ $form_end_date  = (!empty($_POST['form_end_date'])) ? DateToYYYYMMDD($_POST['for
 
 <?php
 if ($_POST['form_refresh']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $where = "";
     $sqlBindArray = array();
 
@@ -298,7 +292,7 @@ if ($_POST['form_refresh']) {
 <script>
 <?php
 if ($alertmsg) {
-    echo "alert(" . js_escape($alertmsg) . ");\n";
+    echo "alert('" . addslashes($alertmsg) . "');\n";
 }
 ?>
 </script>

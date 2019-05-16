@@ -1,37 +1,33 @@
 <?php
-/**
- * This module is used to find and add insurance companies.
- * It is opened as a popup window.  The opener may have a
- * JavaScript function named set_insurance(id, name), in which
- * case selecting or adding an insurance company will cause the
- * function to be called passing the ID and name of that company.
- *
- * When used for searching, this module will in turn open another
- * popup window ins_list.php, which lists the matched results and
- * permits selection of one of them via the same set_insurance()
- * function.
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2005 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+ // Copyright (C) 2005 Rod Roark <rod@sunsetsystems.com>
+ //
+ // This program is free software; you can redistribute it and/or
+ // modify it under the terms of the GNU General Public License
+ // as published by the Free Software Foundation; either version 2
+ // of the License, or (at your option) any later version.
 
+ // This module is used to find and add insurance companies.
+ // It is opened as a popup window.  The opener may have a
+ // JavaScript function named set_insurance(id, name), in which
+ // case selecting or adding an insurance company will cause the
+ // function to be called passing the ID and name of that company.
 
-require_once("../globals.php");
-require_once("$srcdir/acl.inc");
+ // When used for searching, this module will in turn open another
+ // popup window ins_list.php, which lists the matched results and
+ // permits selection of one of them via the same set_insurance()
+ // function.
 
-use OpenEMR\Core\Header;
+ require_once("../globals.php");
+ require_once("$srcdir/acl.inc");
 
-// Putting a message here will cause a popup window to display it.
-$info_msg = "";
+ use OpenEMR\Core\Header;
 
-// This is copied from InsuranceCompany.class.php.  It should
-// really be in a SQL table.
-$ins_type_code_array = array(''
+ // Putting a message here will cause a popup window to display it.
+ $info_msg = "";
+
+ // This is copied from InsuranceCompany.class.php.  It should
+ // really be in a SQL table.
+ $ins_type_code_array = array(''
   , xl('Other HCFA')
   , xl('Medicare Part B')
   , xl('Medicaid')
@@ -58,12 +54,12 @@ $ins_type_code_array = array(''
   , xl('Veterans Administration Plan')
   , xl('Workers Compensation Health Plan')
   , xl('Mutually Defined')
-);
+ );
 
 ?>
 <html>
 <head>
-<title><?php echo xlt('Insurance Company Search/Add');?></title>
+<title><?php xl('Insurance Company Search/Add', 'e');?></title>
 
 <?php Header::setupHeader(['opener','topdialog']); ?>
 
@@ -83,7 +79,13 @@ td { font-size:10pt; }
 
 <script language="JavaScript">
 
+ var mypcc = '<?php  echo $GLOBALS['phone_country_code'] ?>';
+
 <?php require($GLOBALS['srcdir'] . "/restoreSession.php"); ?>
+
+ function doescape(value) {
+  return encodeURIComponent(value);
+ }
 
  // This is invoked when our Search button is clicked.
  function dosearch() {
@@ -91,16 +93,15 @@ td { font-size:10pt; }
     $("#form_entry").hide();
     var f = document.forms[0];
     var search_list = 'ins_list.php' +
-   '?form_name='   + encodeURIComponent(f.form_name.value  ) +
-   '&form_attn='   + encodeURIComponent(f.form_attn.value  ) +
-   '&form_addr1='  + encodeURIComponent(f.form_addr1.value ) +
-   '&form_addr2='  + encodeURIComponent(f.form_addr2.value ) +
-   '&form_city='   + encodeURIComponent(f.form_city.value  ) +
-   '&form_state='  + encodeURIComponent(f.form_state.value ) +
-   '&form_zip='    + encodeURIComponent(f.form_zip.value   ) +
-   '&form_phone='  + encodeURIComponent(f.form_phone.value ) +
-   '&form_cms_id=' + encodeURIComponent(f.form_cms_id.value) +
-   '&csrf_token_form=' + <?php echo js_url(collectCsrfToken()); ?>;
+   '?form_name='   + doescape(f.form_name.value  ) +
+   '&form_attn='   + doescape(f.form_attn.value  ) +
+   '&form_addr1='  + doescape(f.form_addr1.value ) +
+   '&form_addr2='  + doescape(f.form_addr2.value ) +
+   '&form_city='   + doescape(f.form_city.value  ) +
+   '&form_state='  + doescape(f.form_state.value ) +
+   '&form_zip='    + doescape(f.form_zip.value   ) +
+   '&form_phone='  + doescape(f.form_phone.value ) +
+   '&form_cms_id=' + doescape(f.form_cms_id.value);
 
     top.restoreSession();
     $("#form_list").load( search_list ).show();
@@ -154,10 +155,6 @@ td { font-size:10pt; }
  // If we are saving, then save and close the window.
  //
 if ($_POST['form_save']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $ins_id = '';
     $ins_name = $_POST['form_name'];
 
@@ -167,10 +164,10 @@ if ($_POST['form_save']) {
     } else {
         $ins_id = generate_id();
 
-        sqlStatement("INSERT INTO insurance_companies ( " .
+        sqlInsert("INSERT INTO insurance_companies ( " .
         "id, name, attn, cms_id, ins_type_code, x12_receiver_id, x12_default_partner_id " .
         ") VALUES ( " .
-        "'" . add_escape_custom($ins_id)                   . "', " .
+        $ins_id                         . ", "  .
         "'" . add_escape_custom($ins_name)                 . "', " .
         "'" . add_escape_custom($_POST['form_attn'])       . "', " .
         "'" . add_escape_custom($_POST['form_cms_id'])     . "', " .
@@ -179,17 +176,17 @@ if ($_POST['form_save']) {
         "'" . add_escape_custom($_POST['form_partner'])    . "' "  .
         ")");
 
-        sqlStatement("INSERT INTO addresses ( " .
+        sqlInsert("INSERT INTO addresses ( " .
         "id, line1, line2, city, state, zip, country, foreign_id " .
         ") VALUES ( " .
-        "'" . add_escape_custom(generate_id())          . "', " .
+        generate_id()                . ", "  .
         "'" . add_escape_custom($_POST['form_addr1'])   . "', " .
         "'" . add_escape_custom($_POST['form_addr2'])   . "', " .
         "'" . add_escape_custom($_POST['form_city'])    . "', " .
         "'" . add_escape_custom($_POST['form_state'])   . "', " .
         "'" . add_escape_custom($_POST['form_zip'])     . "', " .
         "'" . add_escape_custom($_POST['form_country']) . "', " .
-        "'" . add_escape_custom($ins_id)                . "' " .
+        $ins_id                      . " "   .
         ")");
 
         $phone_parts = array();
@@ -199,16 +196,16 @@ if ($_POST['form_save']) {
             $phone_parts
         );
 
-        sqlStatement("INSERT INTO phone_numbers ( " .
+        sqlInsert("INSERT INTO phone_numbers ( " .
         "id, country_code, area_code, prefix, number, type, foreign_id " .
         ") VALUES ( " .
-        "'" . add_escape_custom(generate_id())   . "', " .
+        generate_id()         . ", "  .
         "'+1'"                . ", "  .
         "'" . add_escape_custom($phone_parts[1]) . "', " .
         "'" . add_escape_custom($phone_parts[2]) . "', " .
         "'" . add_escape_custom($phone_parts[3]) . "', " .
         "'2'"                 . ", "  .
-        "'" . add_escape_custom($ins_id)         . "' "  .
+        $ins_id               . " "   .
         ")");
     }
 
@@ -216,11 +213,11 @@ if ($_POST['form_save']) {
   //
     echo "<script language='JavaScript'>\n";
     if ($info_msg) {
-        echo " alert(" . js_escape($info_msg) . ");\n";
+        echo " alert('$info_msg');\n";
     }
 
     echo " top.restoreSession();\n";
-    echo " if (opener.set_insurance) opener.set_insurance(" . js_escape($ins_id) . "," . js_escape($ins_name) . ");\n";
+    echo " if (opener.set_insurance) opener.set_insurance($ins_id,'".addslashes($ins_name)."');\n";
     echo " dlgclose();\n";
     echo "</script></body></html>\n";
     exit();
@@ -235,29 +232,28 @@ if ($_POST['form_save']) {
 
 <form method='post' name='theform' action='ins_search.php'
  onsubmit='return validate(this)'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 <center>
 
 <p>
 <table border='0' width='100%'>
  <tr>
-  <td valign='top' width='1%' nowrap><b><?php echo xlt('Name'); ?>:</b></td>
+  <td valign='top' width='1%' nowrap><b><?php xl('Name', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_name' maxlength='35'
-    class='search input-sm' style='width:100%' title='<?php echo xla('Name of insurance company'); ?>' />
+    class='search input-sm' style='width:100%' title=<?php xl('Name of insurance company', 'e');?> />
   </td>
  </tr>
 
  <tr>
-  <td valign='top' nowrap><b><?php echo xlt('Attention');?>:</b></td>
+  <td valign='top' nowrap><b><?php xl('Attention', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_attn' maxlength='35'
-    class='search input-sm' style='width:100%' title='<?php echo xla('Contact name'); ?>' />
+    class='search input-sm' style='width:100%' title=".xl('Contact name')." />
   </td>
  </tr>
 
  <tr>
-  <td valign='top' nowrap><b><?php echo xlt('Address1'); ?>:</b></td>
+  <td valign='top' nowrap><b><?php xl('Address1', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_addr1' maxlength='35'
     class='search input-sm' style='width:100%' title='First address line' />
@@ -265,7 +261,7 @@ if ($_POST['form_save']) {
  </tr>
 
  <tr>
-  <td valign='top' nowrap><b><?php echo xlt('Address2'); ?>:</b></td>
+  <td valign='top' nowrap><b><?php xl('Address2', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_addr2' maxlength='35'
     class='search input-sm' style='width:100%' title='Second address line, if any' />
@@ -273,7 +269,7 @@ if ($_POST['form_save']) {
  </tr>
 
  <tr>
-  <td valign='top' nowrap><b><?php echo xlt('City/State'); ?>:</b></td>
+  <td valign='top' nowrap><b><?php xl('City/State', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_city' maxlength='25'
     class='search input-sm' title='City name' />
@@ -284,7 +280,7 @@ if ($_POST['form_save']) {
  </tr>
 
  <tr>
-  <td valign='top' nowrap><b><?php echo xlt('Zip/Country:'); ?></b></td>
+  <td valign='top' nowrap><b><?php xl('Zip/Country:', 'e'); ?></b></td>
   <td>
    <input type='text' size='20' name='form_zip' maxlength='10'
     class='search input-sm' title='Postal code' />
@@ -295,14 +291,14 @@ if ($_POST['form_save']) {
  </tr>
 
  <tr>
-  <td valign='top' nowrap><b><?php echo xlt('Phone'); ?>:</b></td>
+  <td valign='top' nowrap><b><?php xl('Phone', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_phone' maxlength='20'
     class='search input-sm' title='Telephone number' />
   </td>
  </tr>
  <tr>
-  <td valign='top' nowrap><b><?php echo xlt('Payer ID'); ?>:</b></td>
+  <td valign='top' nowrap><b><?php xl('CMS ID', 'e');?>:</b></td>
   <td>
    <input type='text' size='20' name='form_cms_id' maxlength='15'
     class='search input-sm' title='Identifier assigned by CMS' />
@@ -310,14 +306,14 @@ if ($_POST['form_save']) {
  </tr>
 
  <tr>
-  <td valign='top' nowrap><b><?php echo xlt('Payer Type'); ?>:</b></td>
+  <td valign='top' nowrap><b><?php xl('Payer Type', 'e');?>:</b></td>
   <td>
    <select name='form_ins_type_code' class="input-sm">
 <?php
 for ($i = 1; $i < count($ins_type_code_array); ++$i) {
-    echo "   <option value='" . attr($i) . "'";
+    echo "   <option value='$i'";
   // if ($i == $row['ins_type_code']) echo " selected";
-    echo ">" . text($ins_type_code_array[$i]) . "\n";
+    echo ">" . $ins_type_code_array[$i] . "\n";
 }
 ?>
    </select>
@@ -325,15 +321,15 @@ for ($i = 1; $i < count($ins_type_code_array); ++$i) {
  </tr>
 
  <tr>
-  <td valign='top' nowrap><b><?php echo xlt('X12 Partner'); ?>:</b></td>
+  <td valign='top' nowrap><b><?php xl('X12 Partner', 'e');?>:</b></td>
   <td>
    <select name='form_partner' title='Default X12 Partner' class="input-sm">
-    <option value=""><?php echo '-- ' . xlt('None') . ' --'; ?></option>
+    <option value=""><?php xl('None', 'e', '-- ', ' --'); ?></option>
 <?php
 while ($xrow = sqlFetchArray($xres)) {
-    echo "   <option value='" . attr($xrow['id']) . "'";
+    echo "   <option value='" . $xrow['id'] . "'";
   // if ($xrow['id'] == $row['x12_default_partner_id']) echo " selected";
-    echo ">" . text($xrow['name']) . "</option>\n";
+    echo ">" . $xrow['name'] . "</option>\n";
 }
 ?>
    </select>
@@ -343,11 +339,11 @@ while ($xrow = sqlFetchArray($xres)) {
 </table>
 
 <p>&nbsp;<br>
-<input type='button' value='<?php echo xla('Search'); ?>' class='search' onclick='dosearch()' />
+<input type='button' value='<?php xl('Search', 'e'); ?>' class='search' onclick='dosearch()' />
 &nbsp;
-<input type='submit' value='<?php echo xla('Save as New'); ?>' name='form_save' onmousedown='save_clicked=true' />
+<input type='submit' value='<?php xl('Save as New', 'e'); ?>' name='form_save' onmousedown='save_clicked=true' />
 &nbsp;
-<input type='button' value='<?php echo xla('Cancel'); ?>' onclick='window.close();'/>
+<input type='button' value='<?php xl('Cancel', 'e'); ?>' onclick='window.close();'/>
 </p>
 
 </center>

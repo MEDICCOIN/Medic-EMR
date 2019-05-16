@@ -1,5 +1,5 @@
 /*
- *
+ * 
  */
 var bucket = function( args ) {
 
@@ -30,24 +30,24 @@ var bucket = function( args ) {
             }
         );
         select.attr("data-hidden", hidden );
-        select.on("change", fn_handle_change );
-        select.on("change", function() {
+        select.change( fn_handle_change );
+        select.change( function() {
             showMe.show();
         });
     }
 
     var fn_wire_events = function() {
-        $('#change_category').on("click", function() {
+        $('#change_category').click( function() {
             $("#fld_category_lbl").hide();
-            var select = $("<select></select>");
+            var select = $("<select></select");
             $("#fld_category_lbl").parent().append( select );
             fn_prep_options( select, 'categories', 'fld_category', $(this) );
             $(this).hide();
         });
-
-        $('#change_item').on("click", function() {
+        
+        $('#change_item').click( function() {
             $("#fld_item_lbl").hide();
-            var select = $("<select></select>");
+            var select = $("<select></select");
             $("#fld_item_lbl").parent().append( select );
             fn_prep_options( select, 'items', 'fld_item', $(this));
             $(this).hide();

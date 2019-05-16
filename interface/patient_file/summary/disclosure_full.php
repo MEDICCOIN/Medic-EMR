@@ -13,9 +13,9 @@
 
 
 require_once("../../globals.php");
+require_once("$srcdir/log.inc");
 require_once("$srcdir/options.inc.php");
 
-use OpenEMR\Common\Logging\EventAuditLogger;
 use OpenEMR\Core\Header;
 
 //retrieve the user name
@@ -23,10 +23,6 @@ $res = sqlQuery("select username from users where username=?", array($_SESSION{"
 $uname=$res{"username"};
 //if the mode variable is set to disclosure, retrieve the values from 'disclosure_form ' in record_disclosure.php to store it in database.
 if (isset($_POST["mode"]) and  $_POST["mode"] == "disclosure") {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $dates=trim($_POST['dates']);
     $event=trim($_POST['form_disclosure_type']);
     $recipient_name=trim($_POST['recipient_name']);
@@ -34,23 +30,19 @@ if (isset($_POST["mode"]) and  $_POST["mode"] == "disclosure") {
     $disclosure_id=trim($_POST['disclosure_id']);
     if (isset($_POST["updatemode"]) and $_POST["updatemode"] == "disclosure_update") {
         //update the recorded disclosure in the extended_log table.
-        EventAuditLogger::instance()->updateRecordedDisclosure($dates, $event, $recipient_name, $disclosure_desc, $disclosure_id);
+        updateRecordedDisclosure($dates, $event, $recipient_name, $disclosure_desc, $disclosure_id);
     } else {
         //insert the disclosure records in the extended_log table.
-        EventAuditLogger::instance()->recordDisclosure($dates, $event, $pid, $recipient_name, $disclosure_desc, $uname);
+         recordDisclosure($dates, $event, $pid, $recipient_name, $disclosure_desc, $uname);
     }
     // added ajax submit to record_disclosure thus an exit() 12/19/17
     exit();
 }
 
 if (isset($_GET['deletelid'])) {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $deletelid=$_GET['deletelid'];
-    //function to delete the recorded disclosures
-    EventAuditLogger::instance()->deleteDisclosure($deletelid);
+//function to delete the recorded disclosures
+    deleteDisclosure($deletelid);
 }
 ?>
 <html>
@@ -122,17 +114,19 @@ if ($n>0) {?>
         $result2[$iter] = $frow;
     }
 
-    foreach ($result2 as $iter) { ?>
+    foreach ($result2 as $iter) {
+        $description =nl2br(text($iter{'description'})); //for line break if there is any new lines in the input text area field.
+        ?>
         <!-- List the recipient name, description, date and edit and delete options-->
         <tr  class="noterow" height='25'>
             <!--buttons for edit and delete.-->
-            <td valign='top'><a href='record_disclosure.php?editlid=<?php echo attr_url($iter{'id'}); ?>'
+            <td valign='top'><a href='record_disclosure.php?editlid=<?php echo text($iter{'id'}); ?>'
             class='css_button_small iframe' onclick='top.restoreSession()'><span><?php echo xlt('Edit');?></span></a>
             <a href='#' class='deletenote css_button_small'
-            id='<?php echo attr($iter{'id'}); ?>' onclick='top.restoreSession()'><span><?php echo xlt('Delete');?></span></a></td>
+            id='<?php echo text($iter{'id'}); ?>' onclick='top.restoreSession()'><span><?php echo xlt('Delete');?></span></a></td>
             <td class="text" valign='top'><?php echo text($iter{'recipient'});?>&nbsp;</td>
             <td class='text' valign='top'><?php echo text(getListItemTitle('disclosure_type', $iter['event'])); ?>&nbsp;</td>
-            <td class='text'><?php echo text($iter{'date'}) . " " . nl2br(text($iter{'description'}));?>&nbsp;</td>
+            <td class='text'><?php echo text($iter{'date'})." ".$description;?>&nbsp;</td>
             <td class='text'><?php echo text($iter{'user_fullname'});?></td>
         </tr>
         <?php
@@ -150,8 +144,8 @@ if ($n>0) {?>
   <td>
 <?php
 if ($offset > ($N-1) && $n!=0) {
-    echo "   <a class='link' href='disclosure_full.php?active=" . attr_url($active) .
-        "&offset=" . attr_url($offset-$N) . "' onclick='top.restoreSession()'>[" .
+    echo "   <a class='link' href='disclosure_full.php?active=" . $active .
+        "&offset=" . attr($offset-$N) . "' onclick='top.restoreSession()'>[" .
         xlt('Previous') . "]</a>\n";
 }
 ?>
@@ -159,8 +153,8 @@ if ($offset > ($N-1) && $n!=0) {
 <?php
 
 if ($n >= $N && $noOfRecordsLeft!=$N) {
-    echo "&nbsp;&nbsp;   <a class='link' href='disclosure_full.php?active=" . attr_url($active) .
-        "&offset=" . attr_url($offset+$N)  ."&leftrecords=" . attr_url($noOfRecordsLeft) . "' onclick='top.restoreSession()'>[" .
+    echo "&nbsp;&nbsp;   <a class='link' href='disclosure_full.php?active=" . $active.
+        "&offset=" . attr($offset+$N)  ."&leftrecords=".$noOfRecordsLeft."' onclick='top.restoreSession()'>[" .
         xlt('Next') . "]</a>\n";
 }
 ?>
@@ -187,9 +181,9 @@ $(document).ready(function () {
     });
 
     var DeleteNote = function (logevent) {
-        if (confirm(<?php echo xlj('Are you sure you want to delete this disclosure?'); ?> + "\n " + <?php echo xlj('This action CANNOT be undone.'); ?>)) {
+        if (confirm("<?php echo htmlspecialchars(xl('Are you sure you want to delete this disclosure?', '', '', '\n ') . xl('This action CANNOT be undone.'), ENT_QUOTES); ?>")) {
             top.restoreSession();
-            window.location.replace("disclosure_full.php?deletelid=" + encodeURIComponent(logevent.id) + "&csrf_token_form=" + <?php echo js_url(collectCsrfToken()); ?>);
+            window.location.replace("disclosure_full.php?deletelid=" + logevent.id)
         }
     }
 

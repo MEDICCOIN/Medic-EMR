@@ -7,22 +7,15 @@
  * @author    Rod Roark <rod@sunsetsystems.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2009 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-
 
 require_once("../globals.php");
 require_once("../../library/patient.inc");
 require_once("../../library/acl.inc");
 
 use OpenEMR\Services\FacilityService;
-
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
 
 // Might want something different here.
 //
@@ -32,8 +25,7 @@ if (! acl_check('acct', 'rep')) {
 
 $facilityService = new FacilityService();
 
-$from_date     = (isset($_POST['form_from_date'])) ? DateToYYYYMMDD($_POST['form_from_date']) : date('Y-m-d');
-
+$from_date     = fixDate($_POST['form_from_date']);
 $form_facility = isset($_POST['form_facility']) ? $_POST['form_facility'] : '';
 $form_output   = isset($_POST['form_output']) ? 0 + $_POST['form_output'] : 1;
 
@@ -87,14 +79,14 @@ function genAnyCell($data, $right = false, $class = '')
         } else {
             echo "  <td";
             if ($class) {
-                echo " class='" . attr($class) . "'";
+                echo " class='$class'";
             }
 
             if ($right) {
                 echo " align='right'";
             }
 
-            echo ">" . text($datum) . "</td>\n";
+            echo ">$datum</td>\n";
         }
 
         ++$cellcount;
@@ -133,10 +125,11 @@ if ($form_output == 3) {
 ?>
 <html>
 <head>
-<title><?php echo text($report_title); ?></title>
+<?php html_header_show(); ?>
+<title><?php echo $report_title; ?></title>
 
 <link rel='stylesheet' href='<?php echo $css_header ?>' type='text/css'>
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 
 <style type="text/css">
  body       { font-family:sans-serif; font-size:10pt; font-weight:normal }
@@ -144,16 +137,16 @@ if ($form_output == 3) {
  .detail    { color:#000000; font-family:sans-serif; font-size:10pt; font-weight:normal }
 </style>
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 <script type="text/javascript" src="../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
 
 <script language="JavaScript">
-    $(function() {
+    $(document).ready(function() {
         $('.datepicker').datetimepicker({
             <?php $datetimepicker_timepicker = false; ?>
             <?php $datetimepicker_showseconds = false; ?>
-            <?php $datetimepicker_formatInput = true; ?>
+            <?php $datetimepicker_formatInput = false; ?>
             <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'); ?>
             <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
         });
@@ -165,15 +158,15 @@ if ($form_output == 3) {
 
 <center>
 
-<h2><?php echo text($report_title); ?></h2>
+<h2><?php echo $report_title; ?></h2>
 
-<form name='theform' method='post' action='ippf_daily.php?t=<?php echo attr_url($report_type); ?>' onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<form name='theform' method='post'
+ action='ippf_daily.php?t=<?php echo $report_type ?>'>
 
 <table border='0' cellspacing='5' cellpadding='1'>
  <tr>
   <td valign='top' class='detail' nowrap>
-    <?php echo xlt('Facility'); ?>:
+    <?php xl('Facility', 'e'); ?>:
   </td>
   <td valign='top' class='detail'>
 <?php
@@ -184,39 +177,40 @@ if ($form_output == 3) {
  echo "    <option value=''>-- All Facilities --\n";
 foreach ($fres as $frow) {
     $facid = $frow['id'];
-    echo "    <option value='" . attr($facid) . "'";
+    echo "    <option value='$facid'";
     if ($facid == $_POST['form_facility']) {
         echo " selected";
     }
 
-    echo ">" . text($frow['name']) . "\n";
+    echo ">" . $frow['name'] . "\n";
 }
 
  echo "   </select>\n";
 ?>
   </td>
   <td colspan='2' class='detail' nowrap>
-    <?php echo xlt('Date'); ?>
-   <input type='text' class='datepicker' name='form_from_date' id='form_from_date' size='10' value='<?php echo attr(oeFormatShortDate($from_date)); ?>' />
+    <?php xl('Date', 'e'); ?>
+   <input type='text' class='datepicker' name='form_from_date' id='form_from_date' size='10' value='<?php echo $from_date ?>'
+    title='Report date yyyy-mm-dd' />
   </td>
   <td valign='top' class='dehead' nowrap>
-    <?php echo xlt('To'); ?>:
+    <?php xl('To', 'e'); ?>:
   </td>
   <td colspan='3' valign='top' class='detail' nowrap>
 <?php
 foreach (array(1 => 'Screen', 2 => 'Printer', 3 => 'Export File') as $key => $value) {
-    echo "   <input type='radio' name='form_output' value='" . attr($key) . "'";
+    echo "   <input type='radio' name='form_output' value='$key'";
     if ($key == $form_output) {
         echo ' checked';
     }
 
-    echo " />" . text($value) . " &nbsp;";
+    echo " />$value &nbsp;";
 }
 ?>
   </td>
   <td align='right' valign='top' class='detail' nowrap>
-   <input type='submit' name='form_submit' value='<?php echo xla('Submit'); ?>'
-    title='<?php echo xla('Click to generate the report'); ?>' />
+   <input type='submit' name='form_submit' value='<?php xl('Submit', 'e'); ?>'
+    title='<?php xl('Click to generate the report', 'e'); ?>' />
   </td>
  </tr>
  <tr>
@@ -237,10 +231,8 @@ if ($_POST['form_submit']) {
 
     $areport['zzz'] = array('Unknown', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
-    $sqlBindArray = array();
-
-    // This gets us all MA codes, with encounter and patient
-    // info attached and grouped by patient and encounter.
+  // This gets us all MA codes, with encounter and patient
+  // info attached and grouped by patient and encounter.
     $query = "SELECT " .
     "fe.pid, fe.encounter, fe.date AS encdate, fe.pc_catid, " .
     "pd.regdate, b.code_type, b.code " .
@@ -249,17 +241,15 @@ if ($_POST['form_submit']) {
     "LEFT JOIN billing AS b ON " .
     "b.pid = fe.pid AND b.encounter = fe.encounter AND b.activity = 1 " .
     "AND b.code_type = 'MA' " .
-    "WHERE fe.date >= ? AND " .
-    "fe.date <= ? ";
-    array_push($sqlBindArray, $from_date.' 00:00:00', $from_date.' 23:59:59');
+    "WHERE fe.date >= '$from_date 00:00:00' AND " .
+    "fe.date <= '$from_date 23:59:59' ";
 
     if ($form_facility) {
-        $query .= "AND fe.facility_id = ? ";
-        array_push($sqlBindArray, $form_facility);
+        $query .= "AND fe.facility_id = '$form_facility' ";
     }
 
     $query .= "ORDER BY fe.pid, fe.encounter, b.code";
-    $res = sqlStatement($query, $sqlBindArray);
+    $res = sqlStatement($query);
 
     $last_pid = '0';
     $last_contra_pid = '0';
@@ -275,10 +265,10 @@ if ($_POST['form_submit']) {
 
                 $crow = sqlQuery("SELECT lc.new_method " .
                 "FROM lists AS l, lists_ippf_con AS lc WHERE " .
-                "l.pid = ? AND l.begdate <= ? AND " .
-                "( l.enddate IS NULL OR l.enddate > ? ) AND " .
+                "l.pid = '$last_pid' AND l.begdate <= '$from_date' AND " .
+                "( l.enddate IS NULL OR l.enddate > '$from_date' ) AND " .
                 "l.activity = 1 AND l.type = 'contraceptive' AND lc.id = l.id " .
-                "ORDER BY l.begdate DESC LIMIT 1", array($last_pid, $from_date, $from_date));
+                "ORDER BY l.begdate DESC LIMIT 1");
                 $amethods = explode('|', empty($crow) ? 'zzz' : $crow['new_method']);
 
                 // TBD: We probably want to select the method with highest CYP here,
@@ -389,7 +379,7 @@ if ($_POST['form_submit']) {
 
     foreach ($areport as $key => $varr) {
         $bgcolor = (++$encount & 1) ? "#ddddff" : "#ffdddd";
-        genStartRow("bgcolor='". attr($bgcolor) . "'");
+        genStartRow("bgcolor='$bgcolor'");
         genAnyCell($varr[0], false, 'detail');
         // Generate data and accumulate totals for this row.
         for ($cnum = 0; $cnum < $report_col_count; ++$cnum) {

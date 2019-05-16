@@ -1,35 +1,18 @@
 <?php
-/**
- * Default values for optional variables that are allowed to be set by callers.
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
 
 // Checks if the server's PHP version is compatible with OpenEMR:
 require_once(dirname(__FILE__) . "/../common/compatibility/Checker.php");
-$response = OpenEMR\Common\Compatibility\Checker::checkPhpVersion();
-if ($response !== true) {
-    die(htmlspecialchars($response));
-}
 
+use OpenEMR\Common\Checker;
 use OpenEMR\Core\Kernel;
 use Dotenv\Dotenv;
 
-// Throw error if the php openssl module is not installed.
-if (!(extension_loaded('openssl'))) {
-    error_log("OPENEMR ERROR: OpenEMR is not working since the php openssl module is not installed.", 0);
-    die("OpenEMR Error : OpenEMR is not working since the php openssl module is not installed.");
-}
-// Throw error if the openssl aes-256-cbc cipher is not available.
-if (!(in_array('aes-256-cbc', openssl_get_cipher_methods()))) {
-    error_log("OPENEMR ERROR: OpenEMR is not working since the openssl aes-256-cbc cipher is not available.", 0);
-    die("OpenEMR Error : OpenEMR is not working since the openssl aes-256-cbc cipher is not available.");
+$response = Checker::checkPhpVersion();
+if ($response !== true) {
+    die($response);
 }
 
+// Default values for optional variables that are allowed to be set by callers.
 
 //This is to help debug the ssl mysql connection. This will send messages to php log to show if mysql connections have a cipher set up.
 $GLOBALS['debug_ssl_mysql_connection'] = false;
@@ -37,6 +20,11 @@ $GLOBALS['debug_ssl_mysql_connection'] = false;
 // Unless specified explicitly, apply Auth functions
 if (!isset($ignoreAuth)) {
     $ignoreAuth = false;
+}
+
+// Unless specified explicitly, caller is not offsite_portal and Auth is required
+if (!isset($ignoreAuth_offsite_portal)) {
+    $ignoreAuth_offsite_portal = false;
 }
 
 // Same for onsite
@@ -48,6 +36,11 @@ if (!isset($ignoreAuth_onsite_portal_two)) {
 if (!defined('IS_WINDOWS')) {
     define('IS_WINDOWS', (stripos(PHP_OS, 'WIN') === 0));
 }
+
+// Some important php.ini overrides. Defaults for these values are often
+// too small.  You might choose to adjust them further.
+//
+ini_set('session.gc_maxlifetime', '14400');
 
 // The webserver_root and web_root are now automatically collected.
 // If not working, can set manually below.
@@ -96,15 +89,9 @@ $GLOBALS['OE_SITES_BASE'] = "$webserver_root/sites";
 // OpenEMR instances on same server to prevent session conflicts; also
 // modified interface/login/login.php and library/restoreSession.php to be
 // consistent with this.
-// Defaults for session.gc_maxlifetime is often too small. You might choose to
-// adjust it further.
-if (session_status() === PHP_SESSION_NONE) {
-    // Only can run these when do not have an active session yet
-    // (for example, need to skip this in the portal where the session is already active)
-    ini_set('session.gc_maxlifetime', '14400');
-    ini_set('session.cookie_path', $web_root ? $web_root : '/');
-    session_name("OpenEMR");
-}
+ini_set('session.cookie_path', $web_root ? $web_root : '/');
+session_name("OpenEMR");
+
 session_start();
 
 // Set the site ID if required.  This must be done before any database
@@ -114,13 +101,6 @@ if (empty($_SESSION['site_id']) || !empty($_GET['site'])) {
         $tmp = $_GET['site'];
     } else {
         if (empty($ignoreAuth)) {
-            // mdsupport - Don't die if logout menu link is called from expired session.
-            // Eliminate this code when close method is available for session management.
-            if ((isset($_GET['auth'])) && ($_GET['auth'] == "logout")) {
-                $GLOBALS['login_screen'] = "login_screen.php";
-                $srcdir = "../library";
-                require_once("$srcdir/auth.inc");
-            }
             die("Site ID is missing from session data!");
         }
 
@@ -130,13 +110,8 @@ if (empty($_SESSION['site_id']) || !empty($_GET['site'])) {
         }
     }
 
-    // for both REST API and browser access we can't proceed unless we have a valid site id.
-    // since this is user provided content we need to escape the value but we use htmlspecialchars instead
-    // of text() as our helper functions are loaded in later on in this file.
     if (empty($tmp) || preg_match('/[^A-Za-z0-9\\-.]/', $tmp)) {
-        echo "Invalid URL";
-        error_log("Request with site id '". htmlspecialchars($tmp, ENT_NOQUOTES) . "' contains invalid characters.");
-        die();
+        die("Site ID '". htmlspecialchars($tmp, ENT_NOQUOTES) . "' contains invalid characters.");
     }
 
     if (isset($_SESSION['site_id']) && ($_SESSION['site_id'] != $tmp)) {
@@ -144,10 +119,10 @@ if (empty($_SESSION['site_id']) || !empty($_GET['site'])) {
         session_unset(); // clear session, clean logout
         if (isset($landingpage) && !empty($landingpage)) {
           // OpenEMR Patient Portal use
-            header('Location: index.php?site=' . urlencode($tmp));
+            header('Location: index.php?site='.$tmp);
         } else {
           // Main OpenEMR use
-            header('Location: ../login/login.php?site=' . urlencode($tmp)); // Assuming in the interface/main directory
+            header('Location: ../login/login.php?site='.$tmp); // Assuming in the interface/main directory
         }
 
         exit;
@@ -212,39 +187,35 @@ $GLOBALS['incdir'] = $include_root;
 $GLOBALS['login_screen'] = $GLOBALS['rootdir'] . "/login_screen.php";
 
 // Variable set for Eligibility Verification [EDI-271] path
-$GLOBALS['edi_271_file_path'] = $GLOBALS['OE_SITE_DIR'] . "/documents/edi/";
+$GLOBALS['edi_271_file_path'] = $GLOBALS['OE_SITE_DIR'] . "/edi/";
 
-//  Check necessary writable paths (add them if do not exist)
-if (! is_dir($GLOBALS['OE_SITE_DIR'] . '/documents/smarty/gacl')) {
-    mkdir($GLOBALS['OE_SITE_DIR'] . '/documents/smarty/gacl', 0755, true);
-}
-if (! is_dir($GLOBALS['OE_SITE_DIR'] . '/documents/smarty/main')) {
-    mkdir($GLOBALS['OE_SITE_DIR'] . '/documents/smarty/main', 0755, true);
+//  Check necessary writeable paths exist for mPDF tool
+if (is_dir($GLOBALS['OE_SITE_DIR'] . '/documents/mpdf/')) {
+    if (! is_dir($GLOBALS['OE_SITE_DIR'] . '/documents/mpdf/ttfontdata/')) {
+        mkdir($GLOBALS['OE_SITE_DIR'] . '/documents/mpdf/ttfontdata/', 0755);
+    }
+
+    if (! is_dir($GLOBALS['OE_SITE_DIR'] . '/documents/mpdf/pdf_tmp/')) {
+        mkdir($GLOBALS['OE_SITE_DIR'] . '/documents/mpdf/pdf_tmp/', 0755);
+    }
+} else {
+    mkdir($GLOBALS['OE_SITE_DIR'] . '/documents/mpdf/ttfontdata/', 0755, true);
+    mkdir($GLOBALS['OE_SITE_DIR'] . '/documents/mpdf/pdf_tmp/', 0755);
 }
 
-//  Set and check that necessary writeable path exist for mPDF tool
-$GLOBALS['MPDF_WRITE_DIR'] = $GLOBALS['OE_SITE_DIR'] . '/documents/mpdf/pdf_tmp';
-if (! is_dir($GLOBALS['MPDF_WRITE_DIR'])) {
-    mkdir($GLOBALS['MPDF_WRITE_DIR'], 0755, true);
-}
+// Safe bet support directories exist, define them.
+define("_MPDF_TEMP_PATH", $GLOBALS['OE_SITE_DIR'] . '/documents/mpdf/pdf_tmp/');
+define("_MPDF_TTFONTDATAPATH", $GLOBALS['OE_SITE_DIR'] . '/documents/mpdf/ttfontdata/');
 
 // Includes composer autoload
 // Note this also brings in following library files:
 //  library/htmlspecialchars.inc.php - Include convenience functions with shorter names than "htmlspecialchars" (for security)
 //  library/formdata.inc.php - Include sanitization/checking functions (for security)
 //  library/sanitize.inc.php - Include sanitization/checking functions (for security)
-//  library/formatting.inc.php - Includes functions for date/time internationalization and formatting
 //  library/date_functions.php - Includes functions for date internationalization
 //  library/validation/validate_core.php - Includes functions for page validation
 //  library/translation.inc.php - Includes translation functions
 require_once $GLOBALS['vendor_dir'] ."/autoload.php";
-
-// Set up csrf token
-// This is done in cases where it is not yet set for the session
-// (note this is permanently done for the session in the main_screen.php script)
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = createCsrfToken();
-}
 
 /**
  * @var Dotenv Allow a `.env` file to be read in and applied as $_SERVER variables.
@@ -256,7 +227,7 @@ if (empty($_SESSION['csrf_token'])) {
  * @link http://open-emr.org/wiki/index.php/Dotenv_Usage
  */
 if (file_exists("{$webserver_root}/.env")) {
-    $dotenv = Dotenv::create($webserver_root);
+    $dotenv = new Dotenv($webserver_root);
     $dotenv->load();
 }
 
@@ -379,8 +350,7 @@ if (!empty($glrow)) {
             $GLOBALS['language_menu_show'][] = $gl_value;
         } elseif ($gl_name == 'css_header') {
             //Escape css file name using 'attr' for security (prevent XSS).
-            $GLOBALS[$gl_name] = $web_root.'/public/themes/'.attr($gl_value).'?v='.$v_js_includes;
-            $css_header = $GLOBALS[$gl_name];
+            $GLOBALS[$gl_name] = $rootdir.'/themes/'.attr($gl_value).'?v='.$v_js_includes;
             $temp_css_theme_name = $gl_value;
         } elseif ($gl_name == 'weekend_days') {
             $GLOBALS[$gl_name] = explode(',', $gl_value);
@@ -417,7 +387,7 @@ if (!empty($glrow)) {
 
   // Language cleanup stuff.
     $GLOBALS['language_menu_login'] = false;
-    if ((count($GLOBALS['language_menu_show']) > 1) || $GLOBALS['language_menu_showall']) {
+    if ((count($GLOBALS['language_menu_show']) >= 1) || $GLOBALS['language_menu_showall']) {
         $GLOBALS['language_menu_login'] = true;
     }
 
@@ -459,13 +429,12 @@ if (!empty($glrow)) {
         $new_theme = 'rtl_' . $temp_css_theme_name;
 
         // Check file existance
-        if (file_exists($webserver_root.'/public/themes/'.$new_theme)) {
+        if (file_exists($include_root.'/themes/'.$new_theme)) {
             //Escape css file name using 'attr' for security (prevent XSS).
-            $GLOBALS['css_header'] = $web_root.'/public/themes/'.attr($new_theme).'?v='.$v_js_includes;
-            $css_header = $GLOBALS['css_header'];
+            $GLOBALS['css_header'] = $rootdir.'/themes/'.attr($new_theme).'?v='.$v_js_includes;
         } else {
             // throw a warning if rtl'ed file does not exist.
-            error_log("Missing theme file ".text($webserver_root).'/public/themes/'.text($new_theme));
+            error_log("Missing theme file ".text($include_root).'/themes/'.text($new_theme));
         }
     }
 
@@ -490,7 +459,7 @@ if (!empty($glrow)) {
     $GLOBALS['translate_appt_categories'] = true;
     $timeout = 7200;
     $openemr_name = 'OpenEMR';
-    $css_header = "$web_root/public/themes/style_default.css";
+    $css_header = "$rootdir/themes/style_default.css";
     $GLOBALS['css_header'] = $css_header;
     $GLOBALS['schedule_start'] = 8;
     $GLOBALS['schedule_end'] = 17;
@@ -511,13 +480,26 @@ $GLOBALS['restore_sessions'] = 1; // 0=no, 1=yes, 2=yes+debug
 //
 $top_bg_line = ' bgcolor="#dddddd" ';
 $GLOBALS['style']['BGCOLOR2'] = "#dddddd";
+$bottom_bg_line = $top_bg_line;
+$title_bg_line = ' bgcolor="#bbbbbb" ';
+$nav_bg_line = ' bgcolor="#94d6e7" ';
+$login_filler_line = ' bgcolor="#f7f0d5" ';
 $logocode = "<img class='img-responsive center-block' src='" . $GLOBALS['OE_SITE_WEBROOT'] . "/images/login_logo.gif'>";
 // optimal size for the tiny logo is height 43 width 86 px
 // inside the open emr they will be auto reduced
 $tinylogocode1 = "<img class='tinylogopng' src='" . $GLOBALS['OE_SITE_WEBROOT'] . "/images/logo_1.png'>";
 $tinylogocode2 = "<img class='tinylogopng' src='" . $GLOBALS['OE_SITE_WEBROOT'] . "/images/logo_2.png'>";
 
+$linepic = "$rootdir/pic/repeat_vline9.gif";
+$table_bg = ' bgcolor="#cccccc" ';
 $GLOBALS['style']['BGCOLOR1'] = "#cccccc";
+$GLOBALS['style']['TEXTCOLOR11'] = "#222222";
+$GLOBALS['style']['HIGHLIGHTCOLOR'] = "#dddddd";
+$GLOBALS['style']['BOTTOM_BG_LINE'] = $bottom_bg_line;
+// The height in pixels of the Logo bar at the top of the login page:
+$GLOBALS['logoBarHeight'] = 110;
+// The height in pixels of the Navigation bar:
+$GLOBALS['navBarHeight'] = 22;
 // The height in pixels of the Title bar:
 $GLOBALS['titleBarHeight'] = 50;
 
@@ -558,6 +540,7 @@ if (!empty($version)) {
 
 $srcdir = $GLOBALS['srcdir'];
 $login_screen = $GLOBALS['login_screen'];
+$GLOBALS['css_header'] = $css_header;
 $GLOBALS['backpic'] = $backpic;
 
 // 1 = send email message to given id for Emergency Login user activation,
@@ -574,12 +557,14 @@ $GLOBALS['include_de_identification']=0;
 // don't include the authentication module - we do this to avoid
 // include loops.
 
-if (($ignoreAuth_onsite_portal_two === true) && ($GLOBALS['portal_onsite_two_enable'] == 1)) {
+if (($ignoreAuth_offsite_portal === true) && ($GLOBALS['portal_offsite_enable'] == 1)) {
+    $ignoreAuth = true;
+} elseif (($ignoreAuth_onsite_portal_two === true) && ($GLOBALS['portal_onsite_two_enable'] == 1)) {
     $ignoreAuth = true;
 }
 
 if (!$ignoreAuth) {
-    require_once("$srcdir/auth.inc");
+    include_once("$srcdir/auth.inc");
 }
 
 
@@ -624,13 +609,14 @@ function strterm($string, $length)
     }
 }
 
-// Override temporary_files_dir
-$GLOBALS['temporary_files_dir'] = rtrim(sys_get_temp_dir(), '/');
+// Override temporary_files_dir if PHP >= 5.2.1.
+if (version_compare(phpversion(), "5.2.1", ">=")) {
+    $GLOBALS['temporary_files_dir'] = rtrim(sys_get_temp_dir(), '/');
+}
 
+### Begin Medic Coin Module ###
+$GLOBALS['medic_usd'] = file_get_contents('http://sharedmn.mediccoin.net/coinmkc.php');
+$GLOBALS['medic_qrcode_prefix'] = 'https://explorer.mediccoin.com/qr/';
+### End Medic Coin Module ###
 // turn off PHP compatibility warnings
 ini_set("session.bug_compat_warn", "off");
-// user debug mode
-if ((int) $GLOBALS['user_debug'] > 1) {
-    error_reporting(error_reporting() & ~E_WARNING & ~E_NOTICE & ~E_USER_WARNING);
-    ini_set('display_errors', 1);
-}

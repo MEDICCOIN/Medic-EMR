@@ -1,16 +1,21 @@
 <?php
-/**
- * find_drug_popup.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Visolve <vicareplus_engg@visolve.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2010 ViCarePlus, Visolve <vicareplus_engg@visolve.com>
- * @copyright Copyright (c) 2018-2019 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
+/********************************************************************************\
+ * Copyright (C) ViCarePlus, Visolve (vicareplus_engg@visolve.com)              *
+ *                                                                              *
+ * This program is free software; you can redistribute it and/or                *
+ * modify it under the terms of the GNU General Public License                  *
+ * as published by the Free Software Foundation; either version 2               *
+ * of the License, or (at your option) any later version.                       *
+ *                                                                              *
+ * This program is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                *
+ * GNU General Public License for more details.                                 *
+ *                                                                              *
+ * You should have received a copy of the GNU General Public License            *
+ * along with this program; if not, write to the Free Software                  *
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.  *
+ \********************************************************************************/
 
 require_once("../globals.php");
 require_once("$srcdir/patient.inc");
@@ -22,7 +27,8 @@ $form_code_type = $_POST['form_code_type'];
 ?>
 <html>
 <head>
-<title><?php echo xlt('Drug Finder'); ?></title>
+<?php html_header_show(); ?>
+<title><?php xl('Drug Finder', 'e'); ?></title>
 <link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
 
 <style>
@@ -56,9 +62,9 @@ td { font-size:10pt; }
    }
   }
   if(!str)
-    alert(<?php echo xlj("Select Drug");?>);
+    alert('<?php echo xl("Select Drug");?>');
   if (opener.closed || ! opener.set_related)
-   alert(<?php echo xlj('The destination form was closed')?>);
+   alert("<?php echo xl('The destination form was closed')?>");
   else
    opener.set_related(str,"drugs");
 
@@ -102,7 +108,7 @@ function check_search_str()
  var search_str = document.getElementById('search_term').value;
  if(search_str.length < 3)
  {
-  alert(<?php echo xlj("Search string should have at least three characters");?>);
+  alert('<?php echo xl("Search string should have at least three characters");?>');
   return false;
  }
  top.restoreSession();
@@ -113,7 +119,6 @@ function check_search_str()
 </head>
 <body class="body_top">
 <form method='post' name='theform'  action='find_drug_popup.php' onsubmit="return check_search_str();">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 <center>
 <input type="hidden" name="search_status" id="search_status" value=1;>
 <table border='0' cellpadding='5' cellspacing='0'>
@@ -124,11 +129,11 @@ function check_search_str()
  <tr>
   <td>
    <b>
-    <?php echo xlt('Search for'); ?>
-   <input type='text' name='search_term' id='search_term' size='12' value='<?php echo attr($_REQUEST['search_term']); ?>'
-    title='<?php echo xla('Any part of the drug id or drug name'); ?>' />
+    <?php xl('Search for', 'e'); ?>
+   <input type='text' name='search_term' id='search_term' size='12' value='<?php echo $_REQUEST['search_term']; ?>'
+    title='<?php xl('Any part of the drug id or drug name', 'e'); ?>' />
    &nbsp;
-   <input type='submit' name='bn_search' id='bn_search' value='<?php echo xla('Search'); ?>' />
+   <input type='submit' name='bn_search' id='bn_search' value='<?php xl('Search', 'e'); ?>' />
    </b>
   </td>
  </tr>
@@ -144,10 +149,6 @@ function check_search_str()
 <tr>
 <td colspan="4">
 <?php if ($_REQUEST['bn_search']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $search_term = $_REQUEST['search_term'];
     {
     $query = "SELECT count(*) as count FROM drugs " .
@@ -155,11 +156,13 @@ function check_search_str()
       "name LIKE ?) ";
     $res = sqlStatement($query, array('%'.$search_term.'%', '%'.$search_term.'%'));
     if ($row = sqlFetchArray($res)) {
-        $no_of_items = $row['count'];
+        $no_of_items = addslashes($row['count']);
         if ($no_of_items < 1) {
             ?>
         <script language='JavaScript'>
-            alert(<?php echo xlj('Search string does not match with list in database'); ?> + '\n' + <?php echo xlj('Please enter new search string'); ?>);
+            alert("<?php echo xl('Search string does not match with list in database');
+            echo '\n';
+            echo xl('Please enter new search string');?>");
         document.theform.search_term.value=" ";
         document.theform.search_term.focus();
         </script>
@@ -174,10 +177,10 @@ function check_search_str()
         $row_count = 0;
         while ($row = sqlFetchArray($res)) {
               $row_count = $row_count + 1;
-              $itercode = $row['drug_id'];
-              $itertext = ucfirst(strtolower(trim($row['name'])));
+              $itercode = addslashes($row['drug_id']);
+              $itertext = addslashes(ucfirst(strtolower(trim($row['name']))));
                 ?>
-               <input type="checkbox" id="chkbox" name ="chkbox" value= "<?php echo attr($itercode) . "-" . attr($itertext); ?>" > <?php echo text($itercode) . "    " . text($itertext) . "</br>";
+               <input type="checkbox" id="chkbox" name ="chkbox" value= "<?php echo $itercode."-".$itertext; ?>" > <?php echo $itercode."    ".$itertext."</br>";
         }
     }
 
@@ -187,13 +190,13 @@ function check_search_str()
 </tr>
  </table>
 <center>
- <input type='button' name='select_all' value='<?php echo xla('Select All'); ?>' onclick="chkbox_select_all(document.select_drug.chkbox);"/>
+ <input type='button' name='select_all' value='<?php xl('Select All', 'e'); ?>' onclick="chkbox_select_all(document.select_drug.chkbox);"/>
 
- <input type='button' name='unselect_all' value='<?php echo xla('Unselect All'); ?>' onclick="chkbox_select_none(document.select_drug.chkbox);"/>
+ <input type='button' name='unselect_all' value='<?php xl('Unselect All', 'e'); ?>' onclick="chkbox_select_none(document.select_drug.chkbox);"/>
 
- <input type='button' name='submit' value='<?php echo xla('Submit'); ?>' onclick="window_submit(document.select_drug.chkbox);"/>
+ <input type='button' name='submit' value='<?php xl('Submit', 'e'); ?>' onclick="window_submit(document.select_drug.chkbox);"/>
 
- <input type='button' name='cancel' value='<?php echo xla('Cancel'); ?>' onclick="window_close();"/>
+ <input type='button' name='cancel' value='<?php xl('Cancel', 'e'); ?>' onclick="window_close();"/>
 </center>
 <?php } ?>
 </form>

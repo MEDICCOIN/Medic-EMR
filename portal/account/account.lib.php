@@ -6,7 +6,7 @@
  * @link    http://www.open-emr.org
  * @author  Jerry Padgett <sjpadgett@gmail.com>
  * @copyright Copyright (c) 2017 Jerry Padgett <sjpadgett@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @license https://www.gnu.org/licenses/agpl-3.0.en.html GNU Affero General Public License 3
  */
 /* Library functions for register*/
 
@@ -132,6 +132,11 @@ function messageCreate($uname, $pass)
 {
     $message = htmlspecialchars(xl("Patient Portal Web Address"), ENT_NOQUOTES) . ":<br>";
 
+    if ($GLOBALS['portal_onsite_enable']) {
+        $message .= "<a href='" . htmlspecialchars($GLOBALS['portal_onsite_address'], ENT_QUOTES) . "'>" .
+            htmlspecialchars($GLOBALS['portal_onsite_address'], ENT_NOQUOTES) . "</a><br>";
+    }
+
     if ($GLOBALS['portal_onsite_two_enable']) {
         $message .= "<a href='" . htmlspecialchars($GLOBALS['portal_onsite_two_address'], ENT_QUOTES) . "'>" .
             htmlspecialchars($GLOBALS['portal_onsite_two_address'], ENT_NOQUOTES) . "</a><br>";
@@ -199,7 +204,7 @@ function doCredentials($pid)
         $sent = true;
     } else {
         $email_status = $mail->ErrorInfo;
-        error_log("EMAIL ERROR: " . errorLogEscape($email_status), 0);
+        error_log("EMAIL ERROR: " . $email_status, 0);
         $sent = false;
     }
     if ($sent) {

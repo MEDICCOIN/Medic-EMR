@@ -1,4 +1,5 @@
 <?php
+
 /**
  * forms/eye_mag/report.php
  *
@@ -6,6 +7,25 @@
  * is created.  New reports are created via new.php and then this script is displayed.
  * Edit are performed in view.php.  Nothing is editable here, but it is scrollable
  * across time...
+ *
+ * Copyright (C) 2016 Raymond Magauran <magauran@MedFetch.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Ray Magauran <magauran@MedFetch.com>
+ * @link http://www.open-emr.org
  *
  *   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *  The HTML5 Sketch plugin stuff:
@@ -20,13 +40,9 @@
  *  The above copyright notice and this permission notice shall be included in all copies or substantial
  *  portions of the Software.
  *   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Ray Magauran <magauran@MedFetch.com>
- * @copyright Copyright (c) 2016 Raymond Magauran <magauran@MedFetch.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
+
 
 
 require_once("../../globals.php");
@@ -35,7 +51,6 @@ require_once(dirname(__FILE__) ."/../../../library/api.inc");
 require_once(dirname(__FILE__) ."/../../../library/lists.inc");
 require_once(dirname(__FILE__) ."/../../../library/forms.inc");
 require_once(dirname(__FILE__) ."/../../../library/patient.inc");
-require_once(dirname(__FILE__) ."/../../../controllers/C_Document.class.php");
 
 use OpenEMR\Services\FacilityService;
 
@@ -85,37 +100,19 @@ function eye_mag_report($pid, $encounter, $cols, $id, $formname = 'eye_mag')
     global $form_name;
     global $choice;
 
-  /**
-   * openEMR note:  eye_mag Index is id,
-   * linked to encounter in form_encounter
-   * whose encounter is linked to id in forms.
-   */
+  /** openEMR note:  eye_mag Index is id,
+    * linked to encounter in form_encounter
+    * whose encounter is linked to id in forms.
+  */
 
-    $query ="  select  *,form_encounter.date as encounter_date
-
-               from forms,form_encounter,form_eye_base,
-                form_eye_hpi,form_eye_ros,form_eye_vitals,
-                form_eye_acuity,form_eye_refraction,form_eye_biometrics,
-                form_eye_external, form_eye_antseg,form_eye_postseg,
-                form_eye_neuro,form_eye_locking
-                    where
-                    forms.deleted != '1'  and
-                    forms.formdir='eye_mag' and
-                    forms.encounter=form_encounter.encounter  and
-                    forms.form_id=form_eye_base.id and
-                    forms.form_id=form_eye_hpi.id and
-                    forms.form_id=form_eye_ros.id and
-                    forms.form_id=form_eye_vitals.id and
-                    forms.form_id=form_eye_acuity.id and
-                    forms.form_id=form_eye_refraction.id and
-                    forms.form_id=form_eye_biometrics.id and
-                    forms.form_id=form_eye_external.id and
-                    forms.form_id=form_eye_antseg.id and
-                    forms.form_id=form_eye_postseg.id and
-                    forms.form_id=form_eye_neuro.id and
-                    forms.form_id=form_eye_locking.id and
-                    forms.encounter=? and 
-                    forms.pid=? ";
+    $query="select form_encounter.date as encounter_date,form_eye_mag.*
+  from form_eye_mag ,forms,form_encounter
+  where
+  form_encounter.encounter =? and
+  form_encounter.encounter = forms.encounter and
+  form_eye_mag.id=forms.form_id and
+  forms.pid =form_eye_mag.pid and
+  form_eye_mag.pid=? ";
     $objQuery =sqlQuery($query, array($encounter,$pid));
     @extract($objQuery);
 
@@ -214,35 +211,17 @@ function narrative($pid, $encounter, $cols, $form_id, $choice = 'full')
 {
     global $form_folder;
     global $PDF_OUTPUT;
-    global $tmp_files_remove;
     global $facilityService;
   //if $cols == 'Fax', we are here from taskman, making a fax and this a one page short form - leave out PMSFH, prescriptions
   //and any clinical area that is blank.
-     $query ="  select  *,form_encounter.date as encounter_date
-
-               from forms,form_encounter,form_eye_base,
-                form_eye_hpi,form_eye_ros,form_eye_vitals,
-                form_eye_acuity,form_eye_refraction,form_eye_biometrics,
-                form_eye_external, form_eye_antseg,form_eye_postseg,
-                form_eye_neuro,form_eye_locking
-                    where
-                    forms.deleted != '1'  and
-                    forms.formdir='eye_mag' and
-                    forms.encounter=form_encounter.encounter  and
-                    forms.form_id=form_eye_base.id and
-                    forms.form_id=form_eye_hpi.id and
-                    forms.form_id=form_eye_ros.id and
-                    forms.form_id=form_eye_vitals.id and
-                    forms.form_id=form_eye_acuity.id and
-                    forms.form_id=form_eye_refraction.id and
-                    forms.form_id=form_eye_biometrics.id and
-                    forms.form_id=form_eye_external.id and
-                    forms.form_id=form_eye_antseg.id and
-                    forms.form_id=form_eye_postseg.id and
-                    forms.form_id=form_eye_neuro.id and
-                    forms.form_id=form_eye_locking.id and
-                    forms.encounter=? and 
-                    forms.pid=? ";
+    $query="select form_encounter.date as encounter_date,form_eye_mag.id as form_id,form_encounter.*, form_eye_mag.*
+            from form_eye_mag ,forms,form_encounter
+            where
+            form_encounter.encounter =? and
+            form_encounter.encounter = forms.encounter and
+            form_eye_mag.id=forms.form_id and
+            forms.deleted != '1' and
+            form_eye_mag.pid=? ";
 
     $encounter_data =sqlQuery($query, array($encounter,$pid));
     @extract($encounter_data);
@@ -454,21 +433,49 @@ function narrative($pid, $encounter, $cols, $form_id, $choice = 'full')
         <td style="width:220px;padding:1px;vertical-align:top;">
             <?php
             //get patient photo
-            $tempDocC = new C_Document;
-            $fileTemp = $tempDocC->retrieve_action($pid, -1, false, true, true, true, 'patient_picture');
-            if (!empty($fileTemp)) {
-                if ($PDF_OUTPUT) {
-                    // tmp file in ../documents/temp since need to be available via webroot
-                    $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'] . '/documents/temp', "oer");
-                    file_put_contents($from_file_tmp_web_name, $fileTemp);
-                    echo "<img src='" . $from_file_tmp_web_name . "' style='width:220px;'>";
-                    $tmp_files_remove[] = $from_file_tmp_web_name;
+            //no idea if this works for couchDB people
+            $sql = "SELECT * FROM documents,categories,categories_to_documents WHERE
+                  documents.id=categories_to_documents.document_id and
+                  categories.id=categories_to_documents.category_id and
+                  categories.name='Patient Photograph' and
+                  documents.foreign_id=?";
+            $doc = sqlQuery($sql, array($pid));
+            $document_id =$doc['document_id'];
+            if (is_numeric($document_id)) {
+                $d = new Document($document_id);
+                $fname = basename($d->get_url());
+                $couch_docid = $d->get_couch_docid();
+                $couch_revid = $d->get_couch_revid();
+                $url_file = $d->get_url_filepath();
+                if ($couch_docid && $couch_revid) {
+                    $url_file = $d->get_couch_url($pid, $encounter);
+                }
+
+                // Collect filename and path
+                $from_all = explode("/", $url_file);
+                $from_filename = array_pop($from_all);
+                $from_pathname_array = array();
+                for ($i=0; $i<$d->get_path_depth(); $i++) {
+                    $from_pathname_array[] = array_pop($from_all);
+                }
+
+                $from_pathname_array = array_reverse($from_pathname_array);
+                $from_pathname = implode("/", $from_pathname_array);
+                if ($couch_docid && $couch_revid) {
+                    $from_file = $GLOBALS['OE_SITE_DIR'] . '/documents/temp/' . $from_filename;
                 } else {
-                    $filetoshow = $GLOBALS['webroot'] . "/controller.php?document&retrieve&patient_id=" . attr_url($pid) . "&document_id=-1&as_file=false&original_file=true&disable_exit=false&show_original=true&context=patient_picture";
-                    echo "<img src='" . $filetoshow . "' style='width:220px;'>";
+                    $from_file = $GLOBALS["fileroot"] . "/sites/" . $_SESSION['site_id'] .
+                    '/documents/' . $from_pathname . '/' . $from_filename;
+                }
+
+                if ($PDF_OUTPUT) {
+                    echo "<img src='". $from_file."' style='width:220px;'>";
+                } else {
+                    $filetoshow = $GLOBALS['webroot']."/controller.php?document&retrieve&patient_id=$pid&document_id=".$doc['document_id']."&as_file=false&blahblah=".rand();
+                    echo "<img src='".$filetoshow."' style='width:220px;'>";
                 }
             }
-            ?>
+                ?>
         </td>
       </tr>
     </table>
@@ -956,10 +963,8 @@ function narrative($pid, $encounter, $cols, $form_id, $choice = 'full')
     }
 
     if ($cols !='Fax') {
-        ?><!-- start of the refraction boxes -->
-        <?php
         if ($ODVA||$OSVA||$ARODSPH||$AROSSPH||$MRODSPH||$MROSSPH||$CRODSPH||$CROSSPH||$CTLODSPH||$CTLOSSPH) { ?>
-
+          <!-- start of the refraction boxes -->
           <br />
           <table class="refraction_tables">
                <tr>
@@ -991,13 +996,12 @@ function narrative($pid, $encounter, $cols, $form_id, $choice = 'full')
                             $RX_TYPE = xlt('Progressive');
                         }
 
-                        /*
-                          Note html2pdf does not like the last field of a table to be blank.
-                          If it is it will squish the lines together.
-                          Work around: if the field is blank, then replace it with a "-" else echo it.
-                          aka echo (text($field))?:"-");
-                        */
-                        // TODO - now use mPDF, so should test if still need this fix
+                      /*
+                    Note html2pdf does not like the last field of a table to be blank.
+                    If it is it will squish the lines together.
+                    Work around: if the field is blank, then replace it with a "-" else echo it.
+                    aka echo (text($field))?:"-");
+                      */
                         ?>
                   <tr>
                         <td style="font-weight:600;font-size:0.7em;text-align:right;"><?php echo xlt('Current RX')." #".$i.": "; ?></td>
@@ -1456,7 +1460,7 @@ if ($ANTSEG_COMMENTS) { ?>
                     <?php
                 }
 
-                if (isset($RMRD) || isset($LMRD)) { ?>
+                if ($RMRD || $LMRD) { ?>
                   <tr>
                     <td class="report_text right"><?php echo text($RMRD); ?></td>
                     <td class="middle" title="<?php echo xla('Marginal Reflex Distance'); ?>"><?php echo xlt('MRD{{marginal reflex distance}}'); ?></td>
@@ -1465,7 +1469,7 @@ if ($ANTSEG_COMMENTS) { ?>
                     <?php
                 }
 
-                if (isset($RVFISSURE) || isset($LVFISSURE)) { ?>
+                if ($RVFISSURE || $LVFISSURE) { ?>
                   <tr>
                     <td class="report_text right"><?php echo text($RVFISSURE); ?></td>
                     <td class="middle" title="<?php echo xla('Vertical Fissure: central height between lid margins'); ?>"><?php echo xlt('Vert Fissure{{vertical fissure}}'); ?></td>
@@ -1979,17 +1983,19 @@ if ($ODCMT||$OSCMT) { ?>
 
                     echo  $item['plan']."</div><br />";
                 }
-                $query = "SELECT * FROM form_eye_mag_orders where form_id=? and pid=? ORDER BY id ASC";
-                $PLAN_results = sqlStatement($query, array($form_id, $pid ));
 
-
-                if ($PLAN_results) { ?>
+                if ($PLAN && $PLAN != '0') { ?>
                     <b><?php echo xlt('Orders')."/".xlt('Next Visit'); ?>:</b>
                     <br />
                     <div style="padding-left:15px;padding-bottom:10px;width:400px;">
                         <?php
-                        while ($plan_row = sqlFetchArray($PLAN_results)) {
-                            echo  $plan_row['ORDER_DETAILS']."<br />";
+                        $PLAN_items = explode('|', $PLAN);
+                        foreach ($PLAN_items as $item) {
+                            echo  $item."<br />";
+                        }
+
+                        if ($PLAN2) {
+                            echo $PLAN2."<br />";
                         }
                         ?>
                     </div>
@@ -2005,25 +2011,23 @@ if ($ODCMT||$OSCMT) { ?>
             display_draw_image("IMPPLAN", $encounter, $pid);
 
             if ($PDF_OUTPUT) {
-                //display a stored optional electronic sig for this providerID, ie the patient's Doc not the tech
-                //Isn't there a place in sites/..default../images for a jpg signature file for Rx printing or some other openEMR task?
-                $from_file = $GLOBALS['fileroot'] ."/interface/forms/".$form_folder."/images/sign_".$providerID.".jpg";
+              //display a stored optional electronic sig for this providerID, ie the patient's Doc not the tech
+                $from_file = $GLOBALS["webserver_root"] ."/interface/forms/".$form_folder."/images/sign_".$providerID.".jpg";
                 if (file_exists($from_file)) {
-                    echo "<img style='width:50mm;' src='$from_file'><hr style='width:40mm;' />";
+                    echo "<img style='width:50mm;' src='$from_file'><hr style='width:40mm;' />".
+                    text($providerNAME)."<br />
+                <i style='font-size:9px;'>".xlt('electronically signed on')." ".oeFormatShortDate()."</i>";
                 }
+                ?>
+              <br />
+              <span style="border-top:1pt solid black;padding-left:50px;"><?php echo text($providerNAME); ?></span>
+                <?php
             } else {
-                $signature = $GLOBALS['fileroot']."/interface/forms/".$form_folder."/images/sign_".$providerID.".jpg";
+                $signature = $GLOBALS["webserver_root"]."/interface/forms/".$form_folder."/images/sign_".$providerID.".jpg";
                 if (file_exists($signature)) {
-                        echo "<img style='width:50mm;' src='".$GLOBALS['web_root']."/interface/forms/".$form_folder."/images/sign_".$providerID.".jpg'><hr style='width:40mm;' />";
+                    echo "<img src='".$GLOBALS['web_root']."/interface/forms/".$form_folder."/images/sign_".$providerID.".jpg'  style='width:30mm; height:6mm;bottom:1px;' height='10' />";
                 }
             }
-            echo "<br /><i style='font-size:9px;'>".xlt('electronically signed on')." ".oeFormatShortDate()."</i>";
-
-            ?>
-              <br />
-              <span style="padding-left:30px;"><?php echo text($providerNAME); ?></span>
-                <?php
-
             ?>
 
 
@@ -2040,7 +2044,6 @@ function display_draw_image($zone, $encounter, $pid)
     global $form_folder;
     global $web_root;
     global $PDF_OUTPUT;
-    global $tmp_files_remove;
     $side = "OU";
     $base_name = $pid."_".$encounter."_".$side."_".$zone."_VIEW";
     $filename = $base_name.".jpg";
@@ -2052,6 +2055,8 @@ function display_draw_image($zone, $encounter, $pid)
         $d = new Document($document_id);
         $fname = basename($d->get_url());
 
+        $couch_docid = $d->get_couch_docid();
+        $couch_revid = $d->get_couch_revid();
         $extension = substr($fname, strrpos($fname, "."));
         $notes = $d->get_notes();
         if (!empty($notes)) {
@@ -2074,17 +2079,36 @@ function display_draw_image($zone, $encounter, $pid)
             echo "</table>";
         }
 
+        $url_file = $d->get_url_filepath();
+        if ($couch_docid && $couch_revid) {
+            $url_file = $d->get_couch_url($pid, $encounter);
+        }
+
+        // Collect filename and path
+        $from_all = explode("/", $url_file);
+        $from_filename = array_pop($from_all);
+        $from_pathname_array = array();
+        for ($i=0; $i<$d->get_path_depth(); $i++) {
+            $from_pathname_array[] = array_pop($from_all);
+        }
+
+        $from_pathname_array = array_reverse($from_pathname_array);
+        $from_pathname = implode("/", $from_pathname_array);
+
+        if ($couch_docid && $couch_revid) {
+            $from_file = $GLOBALS['OE_SITE_DIR'] . '/documents/temp/' . $from_filename;
+            $to_file = substr($from_file, 0, strrpos($from_file, '.')) . '_converted.jpg';
+        } else {
+            $from_file = $GLOBALS["fileroot"] . "/sites/" . $_SESSION['site_id'] .
+            '/documents/' . $from_pathname . '/' . $from_filename;
+            $to_file = substr($from_file, 0, strrpos($from_file, '.')) . '_converted.jpg';
+        }
+
         //               if ($extension == ".png" || $extension == ".jpg" || $extension == ".jpeg" || $extension == ".gif") {
         if ($PDF_OUTPUT) {
-            $tempDocC = new C_Document;
-            $fileTemp = $tempDocC->retrieve_action($pid, $doc['id'], false, true, true);
-            // tmp file in ../documents/temp since need to be available via webroot
-            $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'].'/documents/temp', "oer");
-            file_put_contents($from_file_tmp_web_name, $fileTemp);
-            echo "<img src='".$from_file_tmp_web_name."' style='width:220px;height:120px;'>";
-            $tmp_files_remove[] = $from_file_tmp_web_name;
+            echo "<img src='". $from_file."' style='width:220px;height:120px;'>";
         } else {
-            $filetoshow = $GLOBALS['webroot']."/controller.php?document&retrieve&patient_id=".attr_url($pid)."&document_id=".attr_url($doc['id'])."&as_file=false&blahblah=".attr_url(rand());
+            $filetoshow = $GLOBALS['webroot']."/controller.php?document&retrieve&patient_id=$pid&document_id=".$doc['id']."&as_file=false&blahblah=".rand();
             echo "<img src='".$filetoshow."' style='width:220px;height:120px;'>";
         }
     } //else show base_image

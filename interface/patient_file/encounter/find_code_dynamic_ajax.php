@@ -6,12 +6,9 @@
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2015-2017 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-
 
 require_once("../../globals.php");
 require_once("$srcdir/options.inc.php");
@@ -277,8 +274,8 @@ if ($what == 'fields' && $source == 'V') {
 //
 $out = array(
   "sEcho"                => intval($_GET['sEcho']),
-  "iTotalRecords"        => ($iTotal) ? $iTotal : 0,
-  "iTotalDisplayRecords" => ($iFilteredTotal) ? $iFilteredTotal : 0,
+  "iTotalRecords"        => $iTotal,
+  "iTotalDisplayRecords" => $iFilteredTotal,
   "aaData"               => array()
 );
 

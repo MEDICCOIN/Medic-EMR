@@ -1,33 +1,34 @@
 <?php
-/**
- * main.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Kevin Yeh <kevin.y@integralemr.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @author    Ranganath Pathak <pathak@scrs1.org>
- * @copyright Copyright (c) 2016 Kevin Yeh <kevin.y@integralemr.com>
- * @copyright Copyright (c) 2016 Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2019 Ranganath Pathak <pathak@scrs1.org>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
-
-require_once('../../globals.php');
-require_once $GLOBALS['srcdir'].'/ESign/Api.php';
-
 use Esign\Api;
 use OpenEMR\Core\Header;
 
-// ensure token_main matches so this script can not be run by itself
-if ((empty($_SESSION['token_main_php'])) ||
-    (empty($_GET['token_main'])) ||
-    ($_GET['token_main'] != $_SESSION['token_main_php'])) {
-    die(xlt('Authentication Error'));
-}
-// this will not allow copy/paste of the link to this main.php page or a refresh of this main.php page
-unset($_SESSION['token_main_php']);
+/**
+ * Copyright (C) 2016 Kevin Yeh <kevin.y@integralemr.com>
+ * Copyright (C) 2016 Brady Miller <brady.g.miller@gmail.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Kevin Yeh <kevin.y@integralemr.com>
+ * @author  Brady Miller <brady.g.miller@gmail.com>
+ * @link    http://www.open-emr.org
+ */
+
+
+
+
+/* Include our required headers */
+require_once('../../globals.php');
+require_once $GLOBALS['srcdir'].'/ESign/Api.php';
 
 $esignApi = new Api();
 
@@ -36,12 +37,8 @@ $esignApi = new Api();
 <head>
 <title><?php echo text($openemr_name); ?></title>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <script type="text/javascript">
 <?php require($GLOBALS['srcdir'] . "/restoreSession.php"); ?>
-
-var isPortalEnabled = "<?php echo $GLOBALS['portal_onsite_two_enable'] == 1; ?>";
 
 // Since this should be the parent window, this is to prevent calls to the
 // window that opened this window. For example when a new window is opened
@@ -69,53 +66,17 @@ function goRepeaterServices(){
     //  timing out mechanism in OpenEMR.
     top.restoreSession();
     $.post("<?php echo $GLOBALS['webroot']; ?>/library/ajax/dated_reminders_counter.php",
-        {
-            skip_timeout_reset: "1",
-            csrf_token_form: "<?php echo attr(collectCsrfToken()); ?>"
-        },
+        { skip_timeout_reset: "1" },
         function(data) {
             // Go knockout.js
             app_view_model.application_data.user().messages(data);
         }
     );
-    // Notify App for various portal alerts
-    if (isPortalEnabled) {
-        top.restoreSession();
-        $.post("<?php echo $GLOBALS['webroot']; ?>/library/ajax/dated_reminders_counter.php",
-            {
-                skip_timeout_reset: "1",
-                isPortal: "1",
-                csrf_token_form: "<?php echo attr(collectCsrfToken()); ?>"
-            },
-            function (counts) {
-                data = JSON.parse(counts);
-                let mail = data.mailCnt;
-                let chats = data.chatCnt;
-                let audits = data.auditCnt;
-                let payments = data.paymentCnt;
-                let total = data.total;
-                let enable = (1 * mail) + (1 * audits); // payments are among audits.
-
-                app_view_model.application_data.user().portal(enable);
-                if (enable) {
-                    app_view_model.application_data.user().portalAlerts(total);
-                    app_view_model.application_data.user().portalAudits(audits);
-                    app_view_model.application_data.user().portalMail(mail);
-                    app_view_model.application_data.user().portalChats(chats);
-                    app_view_model.application_data.user().portalPayments(payments);
-                }
-            }
-        );
-    }
 
     top.restoreSession();
     // run background-services
     $.post("<?php echo $GLOBALS['webroot']; ?>/library/ajax/execute_background_services.php",
-        {
-            skip_timeout_reset: "1",
-            ajax: "1",
-            csrf_token_form: "<?php echo attr(collectCsrfToken()); ?>"
-        }
+        { skip_timeout_reset: "1", ajax: "1" }
     );
 
     // auto run this function every 60 seconds
@@ -144,10 +105,8 @@ function isEncounterLocked( encounterId ) {
     return false;
     <?php } ?>
 }
-// some globals to access using top.variable
-var userDebug = <?php echo js_escape($GLOBALS['user_debug']); ?>;
-var webroot_url = <?php echo js_escape($web_root); ?>;
-var jsLanguageDirection = <?php echo js_escape($_SESSION['language_direction']); ?>;
+var webroot_url="<?php echo $web_root; ?>";
+var jsLanguageDirection = "<?php echo $_SESSION["language_direction"]; ?>";
 </script>
 
 <?php Header::setupHeader(["knockout","tabs-theme",'jquery-ui']); ?>
@@ -165,12 +124,9 @@ var jsLanguageDirection = <?php echo js_escape($_SESSION['language_direction']);
 var xl_strings_tabs_view_model = <?php echo json_encode(array(
     'encounter_locked' => xla('This encounter is locked. No new forms can be added.'),
     'must_select_patient'  => $GLOBALS['enable_group_therapy'] ? xla('You must first select or add a patient or therapy group.') : xla('You must first select or add a patient.'),
-    'must_select_encounter'    => xla('You must first select or create an encounter.'),
-    'new' => xla('New')
+    'must_select_encounter'    => xla('You must first select or create an encounter.')
 ));
 ?>;
-// Set the csrf_token_js token that is used in the below js/tabs_view_model.js script
-var csrf_token_js = <?php echo js_escape(collectCsrfToken()); ?>;
 </script>
 <script type="text/javascript" src="js/tabs_view_model.js?v=<?php echo $v_js_includes; ?>"></script>
 
@@ -204,73 +160,30 @@ $GLOBALS['allow_issue_menu_link'] = ((acl_check('encounters', 'notes', '', 'writ
 <?php require_once("templates/therapy_group_template.php"); ?>
 <?php require_once("templates/user_data_template.php"); ?>
 <?php require_once("menu/menu_json.php"); ?>
-<?php $userQuery = sqlQuery("select * from users where username = ?", array($_SESSION['authUser']));?>
-<?php $width = $GLOBALS['vertical_responsive_menu']; //will be vertical menu at and below this width
-
-
-?>
+<?php $userQuery = sqlQuery("select * from users where username = ?", array($_SESSION['authUser'])); ?>
 <script type="text/javascript">
     <?php if (!empty($_SESSION['frame1url']) && !empty($_SESSION['frame1target'])) { ?>
         app_view_model.application_data.tabs.tabsList()[0].url(<?php echo json_encode("../".$_SESSION['frame1url']); ?>);
         app_view_model.application_data.tabs.tabsList()[0].name(<?php echo json_encode($_SESSION['frame1target']); ?>);
     <?php } ?>
-
+    <?php unset($_SESSION['frame1url']); ?>
+    <?php unset($_SESSION['frame1target']); ?>
     <?php if (!empty($_SESSION['frame2url']) && !empty($_SESSION['frame2target'])) { ?>
     app_view_model.application_data.tabs.tabsList()[1].url(<?php echo json_encode("../".$_SESSION['frame2url']); ?>);
     app_view_model.application_data.tabs.tabsList()[1].name(<?php echo json_encode($_SESSION['frame2target']); ?>);
     <?php } ?>
+    <?php unset($_SESSION['frame2url']); ?>
+    <?php unset($_SESSION['frame2target']); ?>
 
     app_view_model.application_data.user(new user_data_view_model(<?php echo json_encode($_SESSION{"authUser"})
         .',' . json_encode($userQuery['fname'])
         .',' . json_encode($userQuery['lname'])
         .',' . json_encode($_SESSION['authGroup']); ?>));
-   
-</script>
-<script>
-    $(window).on('resize', function() {
-        
-     var win = $(this);
-     var winWidth = $(this).width();
-        if (winWidth >  <?php echo js_escape($width); ?>) {
-            $("#tabs_div").removeClass('col-sm-10');
-            $("#mainFrames_div").removeClass('col-sm-10');
-            $("#menu_icon").addClass('fa-bars');
-            
-            $("#username div:first-child" ).addClass("userSection");
-            $(".appMenu_small").addClass('appMenu');
-            $(".appMenu_small").removeClass('appMenu_small');
-            
-        } else if (winWidth <=  <?php echo js_escape($width); ?> ){
-            $("#username div:first-child" ).removeClass("userSection");
-            $(".appMenu").addClass('appMenu_small');
-            $(".appMenu").removeClass('appMenu');
-        } 
-    });
-    $(function() {
-        $(window).trigger('resize');// to avoid repeating code triggers above on page open
-    });
+
 </script>
 
-<style>
-@media only screen and (max-width: <?php echo attr($width); ?>px) {
-    .patientDataColumn
-    {
-        width: 100% !important;
-        float: left;
-        display: block;
-    }
-}
-
-html, body{
-    
-    min-height:100% !important;
-    height:100% !important;
-}
-
-</style>
-  
 </head>
-<body data-bind="css: responsiveDisplay.objWidth().bodyMain">
+<body>
 <!-- Below iframe is to support auto logout when timeout is reached -->
 <iframe name="timeout" style="visibility:hidden; position:absolute; left:0; top:0; height:0; width:0; border:none;" src="timeout_iframe.php"></iframe>
 <?php // mdsupport - app settings
@@ -287,146 +200,26 @@ if (isset($_SESSION['app1'])) {
     }
 }
 ?>
-<div id="mainBox" <?php echo $disp_mainBox ?> data-bind='attr: {id: responsiveDisplay.objWidth().mainBoxId}  '>
-
+<div id="mainBox" <?php echo $disp_mainBox ?>>
     <div id="dialogDiv"></div>
-    
-    <div class="body_top" id="body_top_div" data-bind='css: responsiveDisplay.objWidth().bodyTopDivWidth'>
-        <div id="logo_menu" >
-        <a href="https://www.open-emr.org" title="OpenEMR <?php echo xla("Website"); ?>" rel="noopener" target="_blank"><img class="logo" id='oemr_logo' alt="openEMR small logo"  style="width:20px" border="0" src="<?php echo $GLOBALS['images_static_relative']; ?>/menu-logo.png"></a>
-        <div>
-        <i class="fa fa-2x fa-bars oe-hidden col-sm-2" aria-hidden="true" id='menu_icon' data-bind='css: responsiveDisplay.objWidth().menuIconHide, click: function(){ responsiveDisplay.verticalMenuObservable(); responsiveDisplay.menuIconObservable()}, css2: {"fa-bars" : !responsiveDisplay.oeMenuIcon(), "fa-eye-slash" : responsiveDisplay.oeMenuIcon}'></i>
-        </div>
-        <div class="clearfix" data-bind="css: {'clearfix' : responsiveDisplay.winWidth() <= <?php echo attr($width); ?>}"></div>
-        </div>
-        <div id="menu_items" class="oe-hidden" data-bind=" css2: {'oe-hidden' : !responsiveDisplay.oeVerticalMenu() && responsiveDisplay.winWidth() <= <?php echo attr($width); ?>}">
-            <span id="menu_logo" data-bind="template: {name: 'menu-template', data: application_data} "></span>
-            <div>
-            <span id="userData" data-bind="template: {name: 'user-data-template', data:application_data} "></span>
-            <a href="../../logout.php" rel="noopener" id="logout_link" onclick="top.restoreSession()" data-bind="css: {'oe-hidden' :responsiveDisplay.oeLogoutIcon}" title="<?php echo xla("Logout");?>"><i class="fa fa-2x fa-sign-out" aria-hidden="true" id="logout_icon"></i></a>
-            </div>
-        </div>
-        <div class="clearfix" data-bind="css: {'clearfix' : responsiveDisplay.winWidth() <= <?php echo attr($width); ?>}"></div>
+    <div class="body_top">
+        <a href="http://medicemr.com" title="MedicEMR <?php echo xla("Website"); ?>" target="_blank"><img class="logo" alt="MedicEMR small logo"  border="0" src="<?php echo $GLOBALS['images_static_relative']; ?>/menu-logo.png"></a>
+        <span id="menu logo" data-bind="template: {name: 'menu-template', data: application_data} "></span>
+        <span id="userData" data-bind="template: {name: 'user-data-template', data:application_data} "></span>
     </div>
-    <div id="attendantData" class="body_title acck"  data-bind="template: {name: app_view_model.attendant_template_type, data: application_data}, css: responsiveDisplay.objWidth().attendantDataWidth + ' '  + responsiveDisplay.objWidth().attendantDataClear ">
+    <div id="attendantData" class="body_title acck" data-bind="template: {name: app_view_model.attendant_template_type, data: application_data} ">
     </div>
-   
-    <div class="body_title" id="tabs_div" data-bind="template: {name: 'tabs-controls', data: application_data}, css: responsiveDisplay.objWidth().tabsDivWidth"> </div>
+    <div class="body_title" data-bind="template: {name: 'tabs-controls', data: application_data} "> </div>
 
-    <div class="mainFrames" id="mainFrames_div" style="display: flex;" data-bind="css: responsiveDisplay.objWidth().mainFramesDivWidth  + ' ' +  responsiveDisplay.objWidth().mainFramesDivFill">
-        <div id="framesDisplay" data-bind="template: {name: 'tabs-frames', data: application_data}, css: responsiveDisplay.objWidth().framesDisplayFill"> </div>
+    <div class="mainFrames">
+        <div id="framesDisplay" data-bind="template: {name: 'tabs-frames', data: application_data}"> </div>
     </div>
 </div>
-<script>
-    
-var displayViewModel = {
-   winWidth: ko.observable(),
-   winHeight: ko.observable(),
-   winDevice: ko.observable(),
-   objWidth: {}
-  
-};
-
-displayViewModel.objWidth = ko.computed(function() {
-        if(this.winWidth() <= <?php echo js_escape($width); ?>){
-            currWidth = {
-               mainBoxId: "mainBox_vertical",
-               mainFramesDivFill: "oe-fill",
-               framesDisplayFill: "oe-fill",
-               menuItemsHide: "oe-hidden",
-               menuIconHide: "",
-               menuHideHide: "oe-hidden"
-            }
-            if(this.winWidth() > 1440){
-                currWidth.bodyTopDivWidth = "col-sm-1";
-                currWidth.bodyMain = "body_main_widescreen";
-            } else {
-                currWidth.bodyTopDivWidth = "col-sm-2";
-                currWidth.bodyMain = "body_main";
-            }
-            if(this.oeVerticalMenu()){
-                if(this.winWidth() > 1440){
-                    currWidth.tabsDivWidth = "col-sm-11";
-                    currWidth.mainFramesDivWidth = "col-sm-11";
-                    currWidth.bodyTopDivWidth = "col-sm-1";
-                } else {
-                    currWidth.tabsDivWidth = "col-sm-10";
-                    currWidth.mainFramesDivWidth = "col-sm-10";
-                    currWidth.bodyTopDivWidth = "col-sm-2";
-                }
-            } else {
-               currWidth.tabsDivWidth = "col-sm-12";
-               currWidth.mainFramesDivWidth = "col-sm-12";
-            }
-            if (this.winWidth() <= 767){
-                currWidth.attendantDataClear = "clearfix";
-                currWidth.attendantDataWidth = "";
-            } else if (this.winWidth() > 767){
-                currWidth.attendantDataClear = "";
-                if(this.winWidth() > 1440){
-                    currWidth.attendantDataWidth = "col-sm-11";
-                } else{
-                    currWidth.attendantDataWidth = "col-sm-10";
-                }
-            }
-        } else {
-            currWidth = {
-               mainBoxId: "mainBox",
-               bodyTopDivWidth : "",
-               tabsDivWidth: "",
-               mainFramesDivWidth: "",
-               mainFramesDivFill: "",
-               framesDisplayFill: "",
-               menuItemsHide: "",
-               menuIconHide: "oe-hidden",
-               menuHideHide: "oe-hidden",
-               attendantDataClear: "",
-               attendantDataWidth: ""
-            }
-        }
-    return currWidth;
-}, displayViewModel);
-
-displayViewModel.oeVerticalMenu = ko.observable(false);
-displayViewModel.oeVerticalDisplay = ko.computed(function(){
-    var vertDispl = displayViewModel.winWidth() > <?php echo js_escape($width); ?> ? false : true;
-    return vertDispl;
-}, displayViewModel);
-
-displayViewModel.verticalMenuObservable = function() {
-    displayViewModel.oeVerticalMenu(!displayViewModel.oeVerticalMenu());
- };
-displayViewModel.oeMenuIcon = ko.observable(false);
-displayViewModel.menuIconObservable = function() {
-    displayViewModel.oeMenuIcon(!displayViewModel.oeMenuIcon());
- };
-
- displayViewModel.oeLogoutIcon = ko.computed(function(){
-    var logoutIcon =  this.winWidth() > <?php echo js_escape($width); ?>  ? true : false; 
-    return logoutIcon;
- }, displayViewModel);
-var $window = $(window);
-$window.resize(function () { 
-    displayViewModel.winWidth($window.width());
-    displayViewModel.winHeight($window.height());
-    if($window.width() > <?php echo js_escape($width); ?>){
-    displayViewModel.winDevice('ipad');
-    } else {
-    displayViewModel.winDevice('bipad');
-    }
-    
-});
-$(function() {
-        $(window).trigger('resize');// to avoid repeating code triggers above on page open
-    });
-ko.bindingHandlers['css2'] = ko.bindingHandlers.css;    
-app_view_model.responsiveDisplay = displayViewModel;
-</script>
 <script>
     $("#dialogDiv").hide();
     ko.applyBindings(app_view_model);
 
-    $(function () {
+    $(document).ready(function() {
         $('.dropdown-toggle').dropdown();
         goRepeaterServices();
         $('#patient_caret').click(function() {

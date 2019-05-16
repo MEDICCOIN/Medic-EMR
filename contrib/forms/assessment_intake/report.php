@@ -1,19 +1,7 @@
 <?php
-/**
- * assessment_intake report.php.
- *
- * Forms generated from formsWiz
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
-
-require_once("../../globals.php");
-require_once($GLOBALS["srcdir"]."/api.inc");
+//------------Forms generated from formsWiz
+include_once("../../globals.php");
+include_once($GLOBALS["srcdir"]."/api.inc");
 function assessment_intake_report($pid, $encounter, $cols, $id)
 {
     $count = 0;
@@ -31,7 +19,7 @@ function assessment_intake_report($pid, $encounter, $cols, $id)
             }
 
             $key=ucwords(str_replace("_", " ", $key));
-            print "<td><span class=bold>" . text($key) . ": </span><span class=text>" . text($value) . "</span></td>";
+            print "<td><span class=bold>$key: </span><span class=text>$value</span></td>";
             $count++;
             if ($count == $cols) {
                 $count = 0;

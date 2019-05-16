@@ -22,7 +22,7 @@
 * @author    Rod Roark <rod@sunsetsystems.com>
 * @author    Brady Miller <brady.g.miller@gmail.com>
 * @author  Teny <teny@zhservices.com>
-* @link      https://www.open-emr.org
+* @link      http://www.open-emr.org
 */
 
 /**

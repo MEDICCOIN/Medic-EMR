@@ -5,7 +5,7 @@
  * @link    http://www.MedExbank.com
  * @author  MedEx <support@MedExBank.com>
  * @copyright Copyright (c) 2017 MedEx <support@MedExBank.com>
- * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @license https://www.gnu.org/licenses/agpl-3.0.en.html GNU Affero General Public License 3
  */
 
 var labels = [];
@@ -27,16 +27,9 @@ function recall_name_click(field) {
  * pid is sent to server for the data to display
  */
 function setpatient(pid, lname, fname, dob) {
-    if (lname==null){
-        lname='';
-    }
-    if (fname==null){
-        fname='';
-    }
-    if (dob==null){
-        dob='';
-    }
-
+    var f = document.forms['addRecall'];
+    f.new_recall_name.value = lname + ', ' + fname;//+ '&nbsp; ('+dob+')'+''+pid;
+                                                   //go get the rest of the data
     top.restoreSession();
     $.ajax({
         type: "POST",
@@ -55,7 +48,7 @@ function setpatient(pid, lname, fname, dob) {
             var dolv = moment(obj.DOLV); // another date
             var duration = dolv.diff(now, 'days');
             if (duration > '0') { //it's a future appt dude!
-                alert(xljs_NOTE + ': ' + xljs_PthsApSched + ' ' + obj.DOLV );
+                alert(xljs_NOTE + ': ' + xljs_PthsApSched + ' ' + obj.DOLV + '...');
             }
         }
         $(".news").removeClass('nodisplay');
@@ -93,10 +86,7 @@ function setpatient(pid, lname, fname, dob) {
         //not sure where it is though... or if we can use it here.
         $("#new_age").html(obj.age + ' years old');
         $("#new_reason").val(obj.PLAN);
-        $("#new_recall_name").val(obj.lname + ', ' + obj.fname);
-        $("#form_recall_date").val(obj.recall_date);
-        $("#new_provider").val(obj.provider).change();
-        $("#new_facility").val(obj.facility).change();
+
     });
 }
 
@@ -176,10 +166,7 @@ function checkAll(chk, set) {
 /**
  * This function sends a list of checked items to the server for processing.
  */
-function process_this(material, id, eid) {
-    if (eid==null){
-        eid='';
-    }
+function process_this(material, id, eid='') {
     var make_this = [];
     var make_that = [];
     var make_all = [];
@@ -322,10 +309,7 @@ function goMedEx() {
 
 /****  END FUNCTIONS RELATED TO NAVIGATION *****/
 
-function show_this(colorish) {
-    if (colorish==null){
-        colorish='';
-    }
+function show_this(colorish='') {
     var facV = $("#form_facility").val();
     var provV = $("#form_provider").val();
     var pidV = $("#form_patient_id").val();
@@ -358,7 +342,7 @@ function tabYourIt(tabNAME, url) {
     parent.left_nav.loadFrame('1', tabNAME, url);
 }
 
-$(function () {
+$(document).ready(function () {
     //bootstrap menu functions
     $('.dropdown').hover(function () {
         $(".dropdown").removeClass('open');

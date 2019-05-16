@@ -14,11 +14,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://opensource.org/licenses/gpl-license.php>;.
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
  *
  * @package OpenEMR
  * @author  Ensoftek
- * @link    https://www.open-emr.org
+ * @link    http://www.open-emr.org
  */
 
 
@@ -27,7 +27,7 @@ class QRDAXml extends XmlWriterOemr
     public $unique_id;
     public $nqf_code;
 
-    function __construct($nqf_code = '', $indent = '  ')
+    function __construct($nqf_code, $indent = '  ')
     {
         $this->nqf_code = $nqf_code;
         parent::__construct($indent);
@@ -419,7 +419,7 @@ class QRDAXml extends XmlWriterOemr
         $this->element('item', $value);
     }
 
-    function open_entry($code_type = '')
+    function open_entry($code_type)
     {
         if ($code_type != "") {
             $this->push('entry', array('typeCode'=>$code_type));

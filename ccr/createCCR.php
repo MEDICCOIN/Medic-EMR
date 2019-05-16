@@ -22,7 +22,7 @@ if (isset($_GET['portal_auth']) || isset($_GET['portal_auth_two'])) {
     }
 
     session_start();
-    if (isset($_SESSION['pid']) && isset($_SESSION['patient_portal_onsite_two'])) {
+    if (isset($_SESSION['pid']) && (isset($_SESSION['patient_portal_onsite']) || isset($_SESSION['patient_portal_onsite_two']))) {
         $pid = $_SESSION['pid'];
         $ignoreAuth=true;
         global $ignoreAuth;
@@ -38,8 +38,6 @@ require_once(dirname(__FILE__) . "/../library/sql-ccr.inc");
 require_once(dirname(__FILE__) . "/uuid.php");
 require_once(dirname(__FILE__) . "/transmitCCD.php");
 require_once(dirname(__FILE__) . "/../custom/code_types.inc.php");
-
-use PHPMailer\PHPMailer\PHPMailer;
 
 function createCCR($action, $raw = "no", $requested_by = "")
 {

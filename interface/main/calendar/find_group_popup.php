@@ -2,39 +2,42 @@
 /**
  * interface/main/calendar/find_group_popup.php
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Shachar Zilbershlag <shaharzi@matrix.co.il>
- * @author    Amiel Elboim <amielel@matrix.co.il>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2005-2007 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2016 Shachar Zilbershlag <shaharzi@matrix.co.il>
- * @copyright Copyright (c) 2016 Amiel Elboim <amielel@matrix.co.il>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2005-2007 Rod Roark <rod@sunsetsystems.com>
+ * Copyright (C) 2016 Shachar Zilbershlag <shaharzi@matrix.co.il>
+ * Copyright (C) 2016 Amiel Elboim <amielel@matrix.co.il>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+
+ * @author  Shachar Zilbershlag <shaharzi@matrix.co.il>
+ * @author  Amiel Elboim <amielel@matrix.co.il>
+ * @link    http://www.open-emr.org
  */
+
 
 
 require_once('../../globals.php');
 require_once("$srcdir/group.inc");
+require_once("$srcdir/formdata.inc.php");
 require_once("../../therapy_groups/therapy_groups_controllers/therapy_groups_controller.php");
-
-use OpenEMR\Core\Header;
-
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
 
 $info_msg = "";
 $group_types = TherapyGroupsController::prepareGroupTypesList();
 // If we are searching, search.
 //
-if ($_POST['searchby'] && $_POST['searchparm']) {
-    $searchby = $_POST['searchby'];
-    $searchparm = trim($_POST['searchparm']);
+if ($_REQUEST['searchby'] && $_REQUEST['searchparm']) {
+    $searchby = $_REQUEST['searchby'];
+    $searchparm = trim($_REQUEST['searchparm']);
 
     if ($searchby == "Name") {
         $result = getGroupData("$searchparm", "*", 'group_name');
@@ -43,11 +46,13 @@ if ($_POST['searchby'] && $_POST['searchparm']) {
     }
 }
 ?>
+
 <html>
 <head>
-    <title><?php echo xlt('Group Finder'); ?></title>
-    <?php Header::setupHeader(['no_bootstrap', 'no_fontawesome', 'no_textformat', 'no_dialog', 'opener']); ?>
-
+    <?php html_header_show(); ?>
+    <title><?php echo htmlspecialchars(xl('Group Finder'), ENT_NOQUOTES); ?></title>
+    <link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
+    <script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js"></script>
     <style>
         form {
             padding: 0px;
@@ -162,11 +167,28 @@ if ($_POST['searchby'] && $_POST['searchparm']) {
         }
     </style>
 
+    <script type="text/javascript"
+            src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
+    <!-- ViSolve: Verify the noresult parameter -->
+    <?php
+    if (isset($_GET["res"])) {
+        echo '
+<script language="Javascript">
+			// Pass the variable to parent hidden type and submit
+			opener.document.theform.resname.value = "noresult";
+			opener.document.theform.submit();
+			// Close the window
+			window.self.close();
+</script>';
+    }
+    ?>
+    <!-- ViSolve: Verify the noresult parameter -->
+
     <script language="JavaScript">
 
         function selgid(gid, name, end_date) {
             if (opener.closed || !opener.setgroup)
-                alert(<?php echo xlj('The destination form was closed; I cannot act on your selection.'); ?>);
+                alert("<?php echo htmlspecialchars(xl('The destination form was closed; I cannot act on your selection.'), ENT_QUOTES); ?>");
             else
                 opener.setgroup(gid, name, end_date);
             dlgclose();
@@ -180,31 +202,40 @@ if ($_POST['searchby'] && $_POST['searchparm']) {
 <body class="body_top">
 
 <div id="searchCriteria">
-    <form method='post' name='theform' id="theform" action='find_group_popup.php'>
-        <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
-        <?php echo xlt('Search by') . ':'; ?>
+    <form method='post' name='theform' id="theform"
+          action='find_group_popup.php?<?php if (isset($_GET['pflag'])) {
+                echo "pflag=0";
+} ?>'>
+        <?php echo htmlspecialchars(xl('Search by'), ENT_NOQUOTES) . ':'; ?>
         <select name='searchby'>
-            <option value="Name"><?php echo xlt('Name'); ?></option>
-            <option value="ID"<?php echo ($searchby == 'ID') ? ' selected' : ''; ?>><?php echo xlt('ID'); ?></option>
+            <option value="Name"><?php echo htmlspecialchars(xl('Name'), ENT_NOQUOTES); ?></option>
+            <option
+                value="ID"<?php if ($searchby == 'ID') {
+                    echo ' selected';
+} ?>><?php echo htmlspecialchars(xl('ID'), ENT_NOQUOTES); ?></option>
         </select>
-        <?php echo xlt('for') . ':'; ?>
-        <input type='text' id='searchparm' name='searchparm' size='12' value='<?php echo attr($_POST['searchparm']); ?>'>        &nbsp;
-        <input type='submit' id="submitbtn" value='<?php echo xla('Search'); ?>'>
+        <?php echo htmlspecialchars(xl('for'), ENT_NOQUOTES) . ':'; ?>
+        <input type='text' id='searchparm' name='searchparm' size='12'
+               value='<?php echo htmlspecialchars($_REQUEST['searchparm'], ENT_QUOTES); ?>'
+               title='<?php echo htmlspecialchars(xl(''), ENT_QUOTES); ?>'>
+        &nbsp;
+        <input type='submit' id="submitbtn" value='<?php echo htmlspecialchars(xl('Search'), ENT_QUOTES); ?>'>
         <div id="searchspinner"><img src="<?php echo $GLOBALS['webroot'] ?>/interface/pic/ajax-loader.gif"></div>
     </form>
 </div>
 
 
-<?php if (!isset($_POST['searchparm'])) : ?>
-    <div id="searchstatus"><?php echo xlt('Enter your search criteria above'); ?></div>
+<?php if (!isset($_REQUEST['searchparm'])) : ?>
+    <div id="searchstatus"><?php echo htmlspecialchars(xl('Enter your search criteria above'), ENT_NOQUOTES); ?></div>
 <?php elseif (count($result) == 0) : ?>
-<div id="searchstatus" class="noResults"><?php echo xlt('No records found. Please expand your search criteria.'); ?>
+<div id="searchstatus"
+     class="noResults"><?php echo htmlspecialchars(xl('No records found. Please expand your search criteria.'), ENT_NOQUOTES); ?>
     <br>
 </div>
 <?php elseif (count($result) >= 100) : ?>
-<div id="searchstatus" class="tooManyResults"><?php echo xlt('More than 100 records found. Please narrow your search criteria.'); ?></div>
+<div id="searchstatus" class="tooManyResults"><?php echo htmlspecialchars(xl('More than 100 records found. Please narrow your search criteria.'), ENT_NOQUOTES); ?></div>
 <?php elseif (count($result) < 100) : ?>
-<div id="searchstatus" class="howManyResults"><?php echo text(count($result)); ?> <?php echo xlt('records found.'); ?></div>
+<div id="searchstatus" class="howManyResults"><?php echo htmlspecialchars(count($result), ENT_NOQUOTES); ?> <?php echo htmlspecialchars(xl('records found.'), ENT_NOQUOTES); ?></div>
 <?php endif; ?>
 
 <?php if (isset($result)) : ?>
@@ -212,10 +243,10 @@ if ($_POST['searchby'] && $_POST['searchparm']) {
 <div id="searchResultsHeader">
 <table>
  <tr>
-  <th class="srName"><?php echo xlt('Name'); ?></th>
-  <th class="srGID"><?php echo xlt('ID'); ?></th> <!-- (CHEMED) Search by phone number -->
-    <th class="srType"><?php echo xlt('Type'); ?></th>
-    <th class="srStartDate"><?php echo xlt('Start Date'); ?></th>
+  <th class="srName"><?php echo htmlspecialchars(xl('Name'), ENT_NOQUOTES); ?></th>
+  <th class="srGID"><?php echo htmlspecialchars(xl('ID'), ENT_NOQUOTES); ?></th> <!-- (CHEMED) Search by phone number -->
+    <th class="srType"><?php echo htmlspecialchars(xl('Type'), ENT_NOQUOTES); ?></th>
+    <th class="srStartDate"><?php echo htmlspecialchars(xl('Start Date'), ENT_NOQUOTES); ?></th>
     </tr>
     </table>
 </div>
@@ -232,12 +263,12 @@ if ($_POST['searchby'] && $_POST['searchparm']) {
 
             $trClass = "oneresult";
 
-            echo " <tr class='" . attr($trClass) . "' id='" .
-                attr($itergid . "~" . $itername . "~" . $itertype . "~" . $iter_start_date . "~" . $iter_end_date) . "'>";
-            echo "  <td class='srName'>" . text($itername) . "</td>\n";
-            echo "  <td class='srGID'>" . text($itergid) . "</td>\n";
-            echo "  <td class='srType'>" . text($itertype) . "</td>\n";
-            echo "  <td class='srStartDate'>" . text($iter_start_date) . "</td>\n";
+            echo " <tr class='" . $trClass . "' id='" .
+                htmlspecialchars($itergid . "~" . $itername . "~" . $itertype . "~" . $iter_start_date . "~" . $iter_end_date, ENT_QUOTES) . "'>";
+            echo "  <td class='srName'>" . htmlspecialchars($itername, ENT_NOQUOTES);
+            echo "  <td class='srGID'>" . htmlspecialchars($itergid, ENT_NOQUOTES) . "</td>\n";
+            echo "  <td class='srType'>" . htmlspecialchars($itertype, ENT_NOQUOTES) . "</td>\n";
+            echo "  <td class='srStartDate'>" . htmlspecialchars($iter_start_date, ENT_NOQUOTES) . "</td>\n";
             echo " </tr>";
         }
         ?>
@@ -249,13 +280,16 @@ if ($_POST['searchby'] && $_POST['searchparm']) {
 
     // jQuery stuff to make the page a little easier to use
 
-    $(function(){
-        $("#searchparm").trigger("focus");
-        $(".oneresult").on("mouseover", function() { $(this).toggleClass("highlight"); });
-        $(".oneresult").on("mouseout", function() { $(this).toggleClass("highlight"); });
-        $(".oneresult").on("click", function() { SelectGroup(this); });
+    $(document).ready(function(){
+        $("#searchparm").focus();
+        $(".oneresult").mouseover(function() { $(this).toggleClass("highlight"); });
+        $(".oneresult").mouseout(function() { $(this).toggleClass("highlight"); });
+        $(".oneresult").click(function() { SelectGroup(this); });
+        //ViSolve
+        $(".noresult").click(function () { SubmitForm(this);});
 
-        $("#theform").on("submit" , function() { SubmitForm(this); });
+        //$(".event").dblclick(function() { EditEvent(this); });
+        $("#theform").submit(function() { SubmitForm(this); });
 
     });
 

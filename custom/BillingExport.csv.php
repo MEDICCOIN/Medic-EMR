@@ -140,10 +140,10 @@ class BillingExport
         "p.street, p.city, p.state, p.postal_code, p.phone_home, p.phone_biz, " .
         "p.status, p.sex, e.name " .
         "FROM patient_data AS p " .
-        "LEFT OUTER JOIN employer_data AS e ON e.pid = ? " .
-        "WHERE p.pid = ? " .
+        "LEFT OUTER JOIN employer_data AS e ON e.pid = '$patient_id' " .
+        "WHERE p.pid = '$patient_id' " .
         "LIMIT 1";
-        $prow = sqlQuery($query, array($patient_id, $patient_id));
+        $prow = sqlQuery($query);
 
         // Patient line.
         fwrite($this->tmpfh, 'PT' .
@@ -173,12 +173,12 @@ class BillingExport
           "f.domain_identifier AS clia_code " .
           "FROM form_encounter AS e " .
           "LEFT OUTER JOIN forms ON forms.formdir = 'newpatient' AND " .
-          "forms.form_id = e.id AND forms.pid = ? " .
+          "forms.form_id = e.id AND forms.pid = '$patient_id' " .
           "LEFT OUTER JOIN users AS u ON u.username = forms.user " .
           "LEFT OUTER JOIN facility AS f ON f.name = e.facility " .
-          "WHERE e.pid = ? AND e.encounter = ? " .
+          "WHERE e.pid = '$patient_id' AND e.encounter = '$encounter' " .
           "LIMIT 1";
-        $erow = sqlQuery($query, array($patient_id, $patient_id, $encounter));
+        $erow = sqlQuery($query);
 
         // Performing Provider line.
         fwrite($this->tmpfh, 'PP' .
@@ -206,11 +206,11 @@ class BillingExport
           "LEFT OUTER JOIN insurance_companies AS c ON c.id = d.provider " .
           "LEFT OUTER JOIN addresses AS a ON a.foreign_id = c.id " .
           "LEFT OUTER JOIN phone_numbers AS p ON p.foreign_id = c.id AND p.type = 2 " .
-          "LEFT OUTER JOIN insurance_numbers AS n ON n.provider_id = ? " .
-          "AND n.insurance_company_id = c.id " .
-          "WHERE d.pid = ? AND d.provider != '' " .
+          "LEFT OUTER JOIN insurance_numbers AS n ON n.provider_id = " .
+          $erow['id'] . " AND n.insurance_company_id = c.id " .
+          "WHERE d.pid = '$patient_id' AND d.provider != '' " .
           "ORDER BY d.type ASC, d.date DESC";
-        $ires = sqlStatement($query, array($erow['id'], $patient_id));
+        $ires = sqlStatement($query);
 
         $prev_type = '?';
         while ($irow = sqlFetchArray($ires)) {
@@ -248,10 +248,10 @@ class BillingExport
 
         $query = "SELECT id, code, modifier, justify " .
         "FROM billing " .
-        "WHERE pid = ? AND encounter = ? " .
+        "WHERE pid = '$patient_id' AND encounter = '$encounter' " .
         "AND activity = 1 AND code_type = 'CPT4' " .
         "ORDER BY id";
-        $bres = sqlStatement($query, array($patient_id, $encounter));
+        $bres = sqlStatement($query);
 
         while ($brow = sqlFetchArray($bres)) {
               fwrite($this->tmpfh, 'PR' .

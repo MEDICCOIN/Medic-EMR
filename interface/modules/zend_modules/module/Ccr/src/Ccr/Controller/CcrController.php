@@ -27,19 +27,15 @@ use Zend\View\Model\ViewModel;
 use Zend\View\Model\JsonModel;
 use Application\Listener\Listener;
 use Documents\Controller\DocumentsController;
-use Ccr\Model\CcrTable;
 
 class CcrController extends AbstractActionController
 {
     protected $ccrTable;
     protected $listenerObject;
-    private $documentsController;
     
-    public function __construct(CcrTable $ccrTable, DocumentsController $documentsController)
+    public function __construct()
     {
-        $this->ccrTable = $ccrTable;
         $this->listenerObject   = new Listener;
-        $this->documentsController = $documentsController;
     }
     
     /*
@@ -57,7 +53,8 @@ class CcrController extends AbstractActionController
         $category_details = $this->getCcrTable()->fetch_cat_id('CCR');
         
         $time_start     = date('Y-m-d H:i:s');
-        $docid          = $this->documentsController->uploadAction($request);
+        $obj_doc        = new DocumentsController();
+        $docid          = $obj_doc->uploadAction($request);
         $uploaded_documents     = array();
         $uploaded_documents     = $this->getCcrTable()->fetch_uploaded_documents(array('user' => $_SESSION['authId'], 'time_start' => $time_start, 'time_end' => date('Y-m-d H:i:s')));
         
@@ -66,13 +63,11 @@ class CcrController extends AbstractActionController
             $_REQUEST["batch_import"]   = 'YES';
             $this->importAction();
         } else {
-            // TODO: change to $this->Documents()
             $result = \Documents\Plugin\Documents::fetchXmlDocuments();
             foreach ($result as $row) {
                 if ($row['doc_type'] == 'CCR') {
                     $_REQUEST["document_id"] = $row['doc_id'];
                     $this->importAction();
-                    // TODO: need to inject this dependency instead of the static...
                     \Documents\Model\DocumentsTable::updateDocumentCategoryUsingCatname($row['doc_type'], $row['doc_id']);
                 }
             }
@@ -101,7 +96,7 @@ class CcrController extends AbstractActionController
         if ($request->getQuery('document_id')) {
             $_REQUEST["document_id"] = $request->getQuery('document_id');
             $category_details          = $this->getCcrTable()->fetch_cat_id('CCR');
-            $this->documentsController->getDocumentsTable()->updateDocumentCategory($category_details[0]['id'], $_REQUEST["document_id"]);
+            \Documents\Controller\DocumentsController::getDocumentsTable()->updateDocumentCategory($category_details[0]['id'], $_REQUEST["document_id"]);
         }
 
         $doc_id     = $_REQUEST["document_id"];
@@ -271,7 +266,7 @@ class CcrController extends AbstractActionController
         if ($request->getPost('setval') == 'approve') {
             $this->getCcrTable()->insertApprovedData($_REQUEST);
             return $this->redirect()->toRoute('ccr', array('action'=>'index'));
-        } elseif ($request->getPost('setval') == 'discard') {
+        } else if ($request->getPost('setval') == 'discard') {
             $this->getCcrTable()->discardCCRData(array('audit_master_id' => $audit_master_id));
             return $this->redirect()->toRoute('ccr', array('action'=>'index'));
         }
@@ -324,6 +319,11 @@ class CcrController extends AbstractActionController
     */
     public function getCcrTable()
     {
+        if (!$this->ccrTable) {
+            $sm = $this->getServiceLocator();
+            $this->ccrTable = $sm->get('Ccr\Model\CcrTable');
+        }
+
         return $this->ccrTable;
     }
 }

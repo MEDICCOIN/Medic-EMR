@@ -2,16 +2,27 @@
 /**
  * interface/forms/group_attendance/new.php
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Shachar Zilbershlag <shaharzi@matrix.co.il>
- * @author    Amiel Elboim <amielel@matrix.co.il>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2016 Shachar Zilbershlag <shaharzi@matrix.co.il>
- * @copyright Copyright (c) 2016 Amiel Elboim <amielel@matrix.co.il>
- * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016 Shachar Zilbershlag <shaharzi@matrix.co.il>
+ * Copyright (C) 2016 Amiel Elboim <amielel@matrix.co.il>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Shachar Zilbershlag <shaharzi@matrix.co.il>
+ * @author  Amiel Elboim <amielel@matrix.co.il>
+ * @link    http://www.open-emr.org
  */
+
+
 
 
 require_once("../../globals.php");
@@ -57,21 +68,22 @@ if ($form_id) {//If editing a form or the form already exists (inwhich case will
 <html>
 
 <head>
+    <?php html_header_show();?>
 
     <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'];?>/datatables.net-jqui/css/dataTables.jqueryui.css" type="text/css">
-    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'];?>/bootstrap/dist/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'];?>/datatables.net-jqui-1-10-13/css/dataTables.jqueryui.min.css" type="text/css">
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'];?>/bootstrap-3-3-4/dist/css/bootstrap.min.css" type="text/css">
 
-    <script src="<?php echo $GLOBALS['assets_static_relative'];?>/jquery-1-9-1/jquery.min.js"></script>
-    <script src="<?php echo $GLOBALS['assets_static_relative'];?>/jquery-ui/jquery-ui.min.js"></script>
-    <script src="<?php echo $GLOBALS['assets_static_relative'];?>/datatables.net/js/jquery.dataTables.js"></script>
-    <script src="<?php echo $GLOBALS['assets_static_relative'];?>/bootstrap/dist/js/bootstrap.min.js?v=40"></script>
+    <script src="<?php echo $GLOBALS['assets_static_relative'];?>/jquery-min-1-9-1/index.js"></script>
+    <script src="<?php echo $GLOBALS['assets_static_relative'];?>/jquery-ui-1-12-1/jquery-ui.min.js"></script>
+    <script src="<?php echo $GLOBALS['assets_static_relative'];?>/datatables.net-1-10-13/js/jquery.dataTables.min.js"></script>
+    <script src="<?php echo $GLOBALS['assets_static_relative'];?>/bootstrap-3-3-4/dist/js/bootstrap.min.js?v=40"></script>
     <script src="<?php echo $GLOBALS['web_root'];?>/library/dialog.js"></script>
 </head>
 
 <body class="body_top">
 <?php if ($form_id) { ?>
-<form id="group_attendance_form" method=post onclick="top.restoreSession();" action="<?php echo $rootdir;?>/forms/group_attendance/save.php?mode=update&id=<?php echo attr_url($form_id) ;?>" name="my_form">
+<form id="group_attendance_form" method=post onclick="top.restoreSession();" action="<?php echo $rootdir;?>/forms/group_attendance/save.php?mode=update&id=<?php echo attr($form_id) ;?>" name="my_form">
 <?php } else { ?>
 <form id="group_attendance_form" method=post onclick="top.restoreSession();" action="<?php echo $rootdir;?>/forms/group_attendance/save.php?mode=new" name="my_form">
 <?php } ?>
@@ -143,7 +155,7 @@ if ($form_id) {//If editing a form or the form already exists (inwhich case will
     </div>
 </form>
 <script>
-    $(function () {
+    $(document).ready(function () {
 
         /* Initialise Datatable */
         var table = $('#group_attendance_form_table').DataTable({
@@ -183,7 +195,7 @@ if ($form_id) {//If editing a form or the form already exists (inwhich case will
             if(name == ""){
                 //If no patient was chosen (validation)
                 $('.new_patient').css("border-color", "red");
-                var err_msg = <?php echo xlj("Choose Patient"); ?>;
+                var err_msg = "<?php echo xlt("Choose Patient"); ?>";
                 $('.error_wrap .error').html(err_msg);
             }
             else{
@@ -201,7 +213,7 @@ if ($form_id) {//If editing a form or the form already exists (inwhich case will
                 var exists = $.inArray(new_patient_id, ids_array);
                 if(exists >= 0){
                     $('.new_patient').css("border-color", "red");
-                    var err_msg = <?php echo xlj("Patient already in form"); ?>;
+                    var err_msg = "<?php echo xlt("Patient already in form"); ?>";
                     $('.error_wrap .error').html(err_msg);
                     return;
                 }

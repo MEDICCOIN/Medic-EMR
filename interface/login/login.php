@@ -28,7 +28,6 @@
 
 
 use OpenEMR\Core\Header;
-use OpenEMR\Services\FacilityService;
 
 $ignoreAuth=true;
 require_once("../globals.php");
@@ -96,13 +95,10 @@ if (count($emr_app)) {
 ?>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title><?php echo text($openemr_name) . " " . xlt('Login'); ?></title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
     <?php Header::setupHeader(['jquery-ui', 'jquery-ui-darkness']); ?>
-
-    <title><?php echo text($openemr_name) . " " . xlt('Login'); ?></title>
 
     <link rel="stylesheet" href="../themes/login.css?v=<?php echo $v_js_includes; ?>" type="text/css">
 
@@ -169,14 +165,14 @@ if (count($emr_app)) {
 </head>
 <body class="login">
     <div class="container">
-        <form method="POST" id="login_form" autocomplete="off"
+        <form method="POST" id="login_form"
             action="../main/main_screen.php?auth=login&site=<?php echo attr($_SESSION['site_id']); ?>"
             target="_top" name="login_form" onsubmit="return imsubmitted();">
             <div class="row">
                 <div class="col-sm-12">
                     <div>
                         <div class="center-block" style="max-width:400px">
-                            <img class="img-fluid img-responsive center-block" src="<?php echo $GLOBALS['images_static_relative']; ?>/login-logo.png" />
+                            <img class="img-responsive center-block" src="<?php echo $GLOBALS['images_static_relative']; ?>/login-logo.png" />
                         </div>
 
                         <input type='hidden' name='new_login_session_management' value='1' />
@@ -241,33 +237,30 @@ if (count($emr_app)) {
                         } else {
                             echo "<input type='hidden' name='languageChoice' value='".attr($defaultLangID)."' />\n";
                         }
-
-                        if ($GLOBALS['login_into_facility']) {
-                            $facilityService = new FacilityService();
-                            $facilities = $facilityService->getAll();
-                            $facilitySelected = ($GLOBALS['set_facility_cookie'] && isset($_COOKIE['pc_facility'])) ? $_COOKIE['pc_facility'] : null;
-                        }
                         ?>
                     </div>
                 </div>
             </div>
+            <?php if (isset($_SESSION['relogin']) && ($_SESSION['relogin'] == 1)) : // Begin relogin dialog ?>
             <div class="row">
                 <div class="col-sm-12">
-                    <?php if (isset($_SESSION['relogin']) && ($_SESSION['relogin'] == 1)) : // Begin relogin dialog ?>
-                    <div class="alert alert-info m-1">
-                        <strong>
-                            <?php echo xlt('Password security has recently been upgraded.').'&nbsp;&nbsp;'.xlt('Please login again.'); ?>
-                        </strong>
-                    </div>
-                    <?php unset($_SESSION['relogin']);
-                    endif;
-if (isset($_SESSION['loginfailure']) && ($_SESSION['loginfailure'] == 1)) : // Begin login failure block ?>
-                    <div class="alert alert-danger login-failure m-1">
-                        <?php echo xlt('Invalid username or password'); ?>
-                    </div>
-                    <?php endif; // End login failure block?>
+                    <p>
+                        <strong><?php echo xlt('Password security has recently been upgraded.'); ?><br>
+                        <?php echo xlt('Please login again.'); ?></strong>
+                    </p>
+                    <?php unset($_SESSION['relogin']); ?>
                 </div>
             </div>
+            <?php endif; ?>
+            <?php if (isset($_SESSION['loginfailure']) && ($_SESSION['loginfailure'] == 1)) : // Begin login failure block ?>
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="well well-lg login-failure">
+                        <?php echo xlt('Invalid username or password'); ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; // End login failure block?>
             <div class="row">
                 <?php
                 $extraLogo = $GLOBALS['extra_logo_login'];
@@ -359,23 +352,6 @@ if (isset($_SESSION['loginfailure']) && ($_SESSION['loginfailure'] == 1)) : // B
                             </div>
                         </div>
                     <?php endif; // End language menu block ?>
-                    <?php if ($GLOBALS['login_into_facility']) : // Begin facilities menu block ?>
-                        <div class="form-group">
-                            <label for="facility" class="control-label text-right"><?php echo xlt('Facility'); ?>:</label>
-                            <div>
-                                <select class="form-control" name="facility" size="1">
-                                    <option value="user_default"><?php echo xlt('My default facility'); ?></option>
-                                    <?php foreach ($facilities as $facility) : ?>
-                                        <?php if (!is_null($facilitySelected) && $facilitySelected == $facility['id']) : ?>
-                                            <option value="<?php echo attr($facility['id']);?>" selected ><?php echo text($facility['name']);?></option>
-                                        <?php else : ?>
-                                            <option value="<?php echo attr($facility['id']);?>"><?php echo text($facility['name']);?></option>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-                    <?php endif; // End facilities menu block ?>
                     <div class="form-group pull-right">
                         <button type="submit" class="btn btn-default btn-lg" onClick="transmit_form()"><i class="fa fa-sign-in"></i>&nbsp;&nbsp;<?php echo xlt('Login');?></button>
                     </div>

@@ -49,11 +49,10 @@ class InsuranceCompany extends ORDataObject
     var $attn;
     var $cms_id;
     var $alt_cms_id;
-    var $eligibility_id;
     //this is now deprecated use new x12 partners instead
     var $x12_receiver_id;
     var $x12_default_partner_id;
-    var $x12_default_eligibility_id;
+
     /*
 	*	OpenEMR used this value to determine special formatting for the specified type of payer.
 	*	This value is a mutually exclusive choice answering the FB.Payer.isX API calls
@@ -233,14 +232,6 @@ class InsuranceCompany extends ORDataObject
     {
         return $this->alt_cms_id;
     }
-    function set_eligibility_id($id)
-    {
-        $this->eligibility_id = $id;
-    }
-    function get_eligibility_id()
-    {
-        return $this->eligibility_id;
-    }
     function set_ins_type_code($type)
     {
         $this->ins_type_code = $type;
@@ -320,22 +311,6 @@ class InsuranceCompany extends ORDataObject
         return $xa[$this->get_x12_default_partner_id()];
     }
 
-    function set_x12_default_eligibility_id($id)
-    {
-        $this->x12_default_eligibility_id = $id;
-    }
-
-    function get_x12_default_eligibility_id()
-    {
-        return $this->x12_default_eligibility_id;
-    }
-
-    function get_x12_default_eligibility_name()
-    {
-        $xa = $this->_utility_array($this->X12Partner->x12_partner_factory());
-        return $xa[$this->get_x12_default_eligibility_id()];
-    }
-
     function populate()
     {
         parent::populate();
@@ -355,7 +330,7 @@ class InsuranceCompany extends ORDataObject
     function utility_insurance_companies_array()
     {
         $pharmacy_array = array();
-        $sql = "SELECT p.id, p.name, a.city, a.state FROM " . escape_table_name($this->_table) ." AS p INNER JOIN addresses AS a ON  p.id = a.foreign_id";
+        $sql = "Select p.id, p.name, a.city, a.state from " . $this->_table ." as p INNER JOIN addresses as a on  p.id = a.foreign_id";
         $res = sqlQ($sql);
         while ($row = sqlFetchArray($res)) {
                 $d_string = $row['city'];
@@ -375,14 +350,12 @@ class InsuranceCompany extends ORDataObject
         if (empty($city)) {
              $city= "";
         } else {
-            $city = " WHERE city = '" . add_escape_custom($foreign_id) . "'";
+            $city = " WHERE city = " . add_escape_custom($foreign_id);
         }
 
         $p = new InsuranceCompany();
         $icompanies = array();
-        $sql = "SELECT p.id, a.city " .
-            "FROM " . escape_table_name($p->_table) . " AS p " .
-            "INNER JOIN addresses as a on p.id = a.foreign_id " .$city . " " . add_escape_custom($sort);
+        $sql = "SELECT p.id, a.city FROM  " . $p->_table . " as p INNER JOIN addresses as a on p.id = a.foreign_id " .$city . " " . add_escape_custom($sort);
 
         //echo $sql . "<bR />";
         $results = sqlQ($sql);
@@ -401,8 +374,8 @@ class InsuranceCompany extends ORDataObject
         . "ID: " . $this->id."\n"
         . "Name: " . $this->name ."\n"
         . "Attn:" . $this->attn . "\n"
-        . "Payer ID:" . $this->cms_id . "\n"
-        . "ALT Payer ID:" . $this->alt_cms_id . "\n"
+        . "CMS ID:" . $this->cms_id . "\n"
+        . "ALT CMS ID:" . $this->alt_cms_id . "\n"
         //. "Phone: " . $this->phone_numbers[0]->toString($html) . "\n"
         . "Address: " . $this->address->toString($html) . "\n";
 

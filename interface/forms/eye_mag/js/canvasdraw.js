@@ -4,12 +4,27 @@
  * Base concept code by Chtiwi Malek ===> CODICODE.COM
  * Adapted to process multiple canvases on a single page
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Ray Magauran <magauran@MedFetch.com>
- * @copyright Copyright (c) 2016 Raymond Magauran <magauran@MedFetch.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016 Raymond Magauran <magauran@MedFetch.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Ray Magauran <magauran@MedFetch.com>
+ * @link http://www.open-emr.org
  */
+
+
 
 var mousePressed = false;
 var lastX, lastY;
@@ -22,32 +37,17 @@ var cStep = new Array();
 
 function InitThis(zone) {
     ctx[zone] = document.getElementById('myCanvas_'+zone).getContext("2d");
-
-    $('#myCanvas_'+zone).on('touchstart', function(e){
-        mousePressed = true;
-        Draw(e.pageX - $(this).offset().left, e.pageY - $(this).offset().top, false, zone);
-    });
-
-    $('#myCanvas_'+zone).on('touchmove',function (e) {
-        if (mousePressed) {
-            e.preventDefault();
-            Draw(e.pageX - $(this).offset().left, e.pageY - $(this).offset().top, true, zone);
-        }
-    });
-    $('#myCanvas_'+zone).on('touchend', function (e) {
-        mousePressed = false;
-        cPush(zone);
-    });
-
     $('#myCanvas_'+zone).mousedown(function (e) {
         mousePressed = true;
         Draw(e.pageX - $(this).offset().left, e.pageY - $(this).offset().top, false, zone);
     });
+
     $('#myCanvas_'+zone).mousemove(function (e) {
         if (mousePressed) {
             Draw(e.pageX - $(this).offset().left, e.pageY - $(this).offset().top, true, zone);
         }
     });
+
     $('#myCanvas_'+zone).mouseup(function (e) {
         if (mousePressed) {
             mousePressed = false;
@@ -55,7 +55,7 @@ function InitThis(zone) {
         }
     });
 
-     $('#myCanvas_'+zone).mouseleave(function (e) {
+    $('#myCanvas_'+zone).mouseleave(function (e) {
         if (mousePressed) {
             mousePressed = false;
             cPush(zone);
@@ -63,7 +63,6 @@ function InitThis(zone) {
     });
     drawImage(zone);
 }
-
 function drawImage(zone) {
     image[zone] = new Image();
         // We need to get the openEMR pointer for this image, which is either
@@ -72,11 +71,11 @@ function drawImage(zone) {
         // The PHP code determines which when the page is called
         // and stores it in this id-->
     image[zone].src = $("#url_"+zone).val();
-    $(image[zone]).on('load',function () {
+    $(image[zone]).load(function () {
                         ctx[zone].drawImage(image[zone], 0, 0, 450, 225);
                         // using variable size canvas? -> adjust size for canvas
     cPush(zone);
-    });
+    });    
 }
 
 function Draw(x, y, isDown,zone) {
@@ -100,14 +99,18 @@ function cPush(zone) {
     if (typeof(cPushArray[zone]) == 'undefined') { cPushArray[zone] = new Array;}
     if (cStep[zone] < cPushArray[zone].length) { cPushArray[zone].length = cStep[zone]; }
     cPushArray[zone].push(document.getElementById('myCanvas_'+zone).toDataURL('image/jpeg'));
+        //    document.title = cStep[zone] + ":" + cPushArray[zone].length + ":" +zone;
 }
 
 function cUndo(zone) {
     if (cStep[zone] > 0) {
         cStep[zone]--;
+            // here = cStep[zone]
+            //alert(cPushArray[zone][cStep[zone]]);
         canvasPic = new Image();
         canvasPic.src = cPushArray[zone][cStep[zone]];
         canvasPic.onload = function () { ctx[zone].drawImage(canvasPic, 0, 0); }
+            //    document.title = cStep[zone] + ":" + cPushArray[zone].length + ":" +zone;
     }
 }
 function cRedo(zone) {
@@ -116,6 +119,7 @@ function cRedo(zone) {
         canvasPic = new Image();
         canvasPic.src = cPushArray[zone][cStep[zone]];
         canvasPic.onload = function () { ctx[zone].drawImage(canvasPic, 0, 0); }
+            //   document.title = cStep[zone] + ":" + cPushArray[zone].length + ":" +zone;
     }
 }
 function cReload(zone) {

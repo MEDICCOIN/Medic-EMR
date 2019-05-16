@@ -36,20 +36,23 @@ if ($_POST['bn_save']) {
  // If updating an existing form...
  //
     if ($formid) {
-        $query = "UPDATE form_hist_exam_plan SET
-         history = ?,
-         examination = ?,
-         plan = ?,
-         WHERE id = ?";
-        sqlStatement($query, array($_POST['form_history'], $_POST['form_examination'], $_POST['form_plan'], $formid ));
+        $query = "UPDATE form_hist_exam_plan SET "      .
+         "history = '"     . $_POST['form_history']     . "', " .
+         "examination = '" . $_POST['form_examination'] . "', " .
+         "plan = '"        . $_POST['form_plan']        . "' "  .
+         "WHERE id = '$formid'";
+        sqlStatement($query);
     } // If adding a new form...
  //
     else {
-        $query = "INSERT INTO form_hist_exam_plan (
-         history, examination, plan
-         ) VALUES ( ?, ?, ? )";
-         
-        $newid = sqlInsert($query, array($_POST['form_history'], $_POST['form_examination'], $_POST['form_plan'] ));
+        $query = "INSERT INTO form_hist_exam_plan ( " .
+         "history, examination, plan " .
+         ") VALUES ( " .
+         "'" . $_POST['form_history']     . "', " .
+         "'" . $_POST['form_examination'] . "', " .
+         "'" . $_POST['form_plan']        . "' "  .
+         ")";
+        $newid = sqlInsert($query);
         addForm($encounter, "Hist/Exam/Plan", $newid, "hist_exam_plan", $pid, $userauthorized);
     }
 
@@ -66,7 +69,10 @@ if ($formid) {
 ?>
 <html>
 <head>
+<?php html_header_show();?>
 <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
+<script language="JavaScript">
+</script>
 </head>
 
 <body <?php echo $top_bg_line;?> topmargin="0" rightmargin="0" leftmargin="2"

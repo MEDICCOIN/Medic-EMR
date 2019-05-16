@@ -24,25 +24,19 @@ use Zend\Json\Server\Exception\ErrorException;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 use Application\Listener\Listener;
-use Patientvalidation\Model\PatientDataTable;
 use Error;
 
 class PatientvalidationController extends BaseController
 {
 
-    /**
-     * @var PatientDataTable
-     */
-    private $PatientDataTable;
 
     /**
      * PatientvalidationController constructor.
      */
-    public function __construct(PatientDataTable $dataTable)
+    public function __construct()
     {
         parent::__construct();
         $this->listenerObject = new Listener;
-        $this->PatientDataTable = $dataTable;
         //todo add permission of admin
     }
 
@@ -103,6 +97,10 @@ class PatientvalidationController extends BaseController
      */
     private function getPatientDataTable()
     {
+        if (!$this->PatientDataTable) {
+            $sm = $this->getServiceLocator();
+            $this->PatientDataTable = $sm->get('Patientvalidation\Model\PatientDataTable');
+        }
 
         return $this->PatientDataTable;
     }

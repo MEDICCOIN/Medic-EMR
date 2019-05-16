@@ -1,13 +1,10 @@
 <?php
-/**
- * @package OpenEMR
- * @author Rod Roark <rod@sunsetsystems.com>
- * @author Stephen Waite <stephen.waite@cmsvt.com>
- * @copyright Copyright (c) 2005-2010 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2018 Stephen Waite <stephen.waite@cmsvt.com>
- * @link https://www.open-emr.org
- * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+// Copyright (C) 2005-2010 Rod Roark <rod@sunsetsystems.com>
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 
 // This returns an associative array keyed on procedure code, representing
 // all charge items for one invoice.  This array's values are themselves
@@ -32,9 +29,9 @@
 //  dsc - for tax charges, a description of the tax
 //  arseq - ar_activity.sequence_no when it applies.
 
+require_once("sl_eob.inc.php");
 require_once(dirname(__FILE__) . "/../custom/code_types.inc.php");
 
-use OpenEMR\Billing\SLEOB;
 
 // for Integrated A/R.
 //
@@ -111,15 +108,7 @@ function ar_get_invoice_summary($patient_id, $encounter_id, $with_detail = false
             $codes[$code]['dtl'][$tmpkey] = $tmp;
         }
     }
-    // Get insurance data for stuff
-    $ins_data = array();
-    $res = sqlStatement("SELECT insurance_data.type as type, insurance_companies.name as name " .
-        "FROM insurance_data " .
-        "INNER JOIN insurance_companies ON insurance_data.provider = insurance_companies.id " .
-        "WHERE insurance_data.pid = ?", array($patient_id));
-    while ($row = sqlFetchArray($res)) {
-        $ins_data[$row['type']] = $row['name'];
-    }
+
   // Get payments and adjustments. (includes copays)
     $res = sqlStatement("SELECT " .
     "a.code_type, a.code, a.modifier, a.memo, a.payer_type, a.adj_amount, a.pay_amount, a.reason_code, " .
@@ -170,9 +159,6 @@ function ar_get_invoice_summary($patient_id, $encounter_id, $with_detail = false
                 $tmp['chg'] = 0 - $row['adj_amount'];
                 // $tmp['rsn'] = (empty($row['memo']) || empty($row['session_id'])) ? 'Unknown adjustment' : $row['memo'];
                 $tmp['rsn'] = empty($row['memo']) ? 'Unknown adjustment' : $row['memo'];
-                $tmp['rsn'] = str_replace("Ins1", $ins_data['primary'], $tmp['rsn']);
-                $tmp['rsn'] = str_replace("Ins2", $ins_data['secondary'], $tmp['rsn']);
-                $tmp['rsn'] = str_replace("Ins3", $ins_data['tertiary'], $tmp['rsn']);
                 $tmpkey = $paydate . $keysuff1++;
             } else {
                 $tmpkey = $paydate . $keysuff2++;
@@ -218,7 +204,7 @@ function ar_responsible_party($patient_id, $encounter_id)
         return $next_level;
     }
 
-    if (SLEOB::arGetPayerID($patient_id, substr($row['date'], 0, 10), $next_level)) {
+    if (arGetPayerID($patient_id, substr($row['date'], 0, 10), $next_level)) {
         return $next_level;
     }
 

@@ -2,21 +2,29 @@
 /**
  * Used for displaying dated reminders.
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Craig Bezuidenhout <http://www.tajemo.co.za/>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2012 tajemo.co.za <http://www.tajemo.co.za/>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2012 tajemo.co.za <http://www.tajemo.co.za/>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Craig Bezuidenhout <http://www.tajemo.co.za/>
+ * @link    http://www.open-emr.org
  */
-
 
 // removed as jquery is already called in messages page (if you need to use jQuery, uncomment it futher down)
 require_once('../../globals.php');
 require_once("$srcdir/dated_reminder_functions.php");
 
-        $days_to_show = 30;
+        $days_to_show = 5;
         $alerts_to_show = $GLOBALS['dated_reminders_max_alerts_to_show'];
         $updateDelay = 60; // time is seconds
 
@@ -35,16 +43,12 @@ require_once("$srcdir/dated_reminder_functions.php");
 // Javascript will send a post
 // ----------------------------------------------------------------------------
 if (isset($_POST['drR'])) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     // set as processed
     setReminderAsProcessed($_POST['drR']);
     // ----- get updated data
     $reminders = RemindersArray($days_to_show, $today, $alerts_to_show);
     // ----- echo for ajax to use
-    echo getRemindersHTML($today, $reminders);
+    echo getRemindersHTML($reminders, $today);
     // stop any other output
     exit;
 }
@@ -83,7 +87,10 @@ if (isset($_POST['drR'])) {
          }
       </style>
       <script type="text/javascript">
-         $(function (){
+         $(document).ready(function (){
+            <?php if (!$hasAlerts) {
+                echo '$(".hideDR").html("<span>'.xla('Show Reminders').'</span>"); $(".drHide").hide();';
+} ?>
             $(".hideDR").click(function(){
               if($(this).html() == "<span><?php echo xla('Hide Reminders') ?></span>"){
                 $(this).html("<span><?php echo xla('Show Reminders') ?></span>");
@@ -93,10 +100,10 @@ if (isset($_POST['drR'])) {
                 $(this).html("<span><?php echo xla('Hide Reminders') ?></span>");
                 $(".drHide").slideDown("slow");
               }
-            });
+            })
            // run updater after 30 seconds
            var updater = setTimeout("updateme(0)", 1);
-         });
+         })
 
            function openAddScreen(id){
              if(id == 0){
@@ -104,12 +111,12 @@ if (isset($_POST['drR'])) {
                dlgopen('<?php echo $GLOBALS['webroot']; ?>/interface/main/dated_reminders/dated_reminders_add.php', '_drAdd', 700, 500);
              }else{
                top.restoreSession();
-               dlgopen('<?php echo $GLOBALS['webroot']; ?>/interface/main/dated_reminders/dated_reminders_add.php?mID='+encodeURIComponent(id)+'&csrf_token_form=<?php echo attr_url(collectCsrfToken()); ?>', '_drAdd', 700, 500);
+               dlgopen('<?php echo $GLOBALS['webroot']; ?>/interface/main/dated_reminders/dated_reminders_add.php?mID='+id, '_drAdd', 700, 500);
              }
            }
 
            function updateme(id){
-             refreshInterval = <?php echo attr($updateDelay); ?>;
+             refreshInterval = <?php echo $updateDelay ?>;
              if(id > 0){
               $(".drTD").html('<p style="text-size:3em; margin-left:200px; color:black; font-weight:bold;"><?php echo xla("Processing") ?>...</p>');
              }
@@ -120,14 +127,10 @@ if (isset($_POST['drR'])) {
              // Send the skip_timeout_reset parameter to not count this as a manual entry in the
              //  timing out mechanism in OpenEMR.
              $.post("<?php echo $GLOBALS['webroot']; ?>/interface/main/dated_reminders/dated_reminders.php",
-               {
-                drR: id,
-                skip_timeout_reset: "1",
-                csrf_token_form: "<?php echo attr(collectCsrfToken()); ?>"
-               },
+               { drR: id, skip_timeout_reset: "1" },
                function(data) {
                 if(data == 'error'){
-                  alert("<?php echo xls('Error Removing Message') ?>");
+                  alert("<?php echo addslashes(xl('Error Removing Message')) ?>");
                 }else{
                   if(id > 0){
                     $(".drTD").html('<p style="text-size:3em; margin-left:200px; color:black; font-weight:bold;"><?php echo xla("Refreshing Reminders") ?> ...</p>');
@@ -156,20 +159,15 @@ if (isset($_POST['drR'])) {
 
         <?php
           // initialize html string
-          $pdHTML = '<div class="container">
-                            <div class="drHide col-xs-12">'.
-                                '<a title="'.xla('View Past and Future Reminders').'" onclick="openLogScreen()" class="btn btn-default btn-show" href="#"><span>'.xlt('View Log').'</span></a>&nbsp;'
-                                .'<a onclick="openAddScreen(0)" class="btn btn-default btn-add" href="#"><span>'.xlt('Create A Dated Reminder').'</span></a>
-                            </div>
-                            <div class="col-xs-12 pre-scrollable oe-margin-t-10">
-                            <fieldset>
-                            <legend>'.xla('Dated Reminders').'</legend>
-                           <table class="table-condensed">
-                            </tr>
-                                <td class="drHide drTD">';
+          $pdHTML = '<div class="dr_container"><table><tr><td valign="top">
+                        <p><a class="hideDR css_button_small btn" href="#"><span>'.xlt('Hide Reminders').'</span></a><br /></p>
+                        <div class="drHide">'.
+                        '<p><a title="'.xla('View Past and Future Reminders').'" onclick="openLogScreen()" class="css_button_small btn" href="#"><span>'.xlt('View Log').'</span></a><br /></p>'
+                        .'<p><a onclick="openAddScreen(0)" class="css_button_small btn" href="#"><span>'.xlt('Send A Dated Reminder').'</span></a></p></div>
+                        </td><td class="drHide drTD">';
 
-          $pdHTML .= getRemindersHTML($today, $reminders);
-          $pdHTML .= '</td></tr></table></fieldset></div></div>';
+          $pdHTML .= getRemindersHTML($reminders, $today);
+          $pdHTML .= '</td></tr></table></div>';
           // print output
           echo $pdHTML;
         ?>

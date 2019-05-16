@@ -16,7 +16,6 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 $form_folder= "eye_mag";
 require_once('../../globals.php');
 require_once($GLOBALS['srcdir'].'/lists.inc');
@@ -25,6 +24,7 @@ require_once($GLOBALS['srcdir'].'/acl.inc');
 require_once($GLOBALS['srcdir'].'/options.inc.php');
 require_once($GLOBALS['fileroot'].'/custom/code_types.inc.php');
 require_once($GLOBALS['srcdir'].'/csv_like_join.php');
+require_once($GLOBALS['srcdir'].'/log.inc');
 require_once("../../forms/".$form_folder."/php/".$form_folder."_functions.php");
 
 $pid = 0 + (empty($_REQUEST['pid']) ? $pid : $_REQUEST['pid']);
@@ -79,8 +79,8 @@ if (!empty($irow['type'])) {
     }
 }
 
-$given="ROSGENERAL,ROSHEENT,ROSCV,ROSPULM,ROSGI,ROSGU,ROSDERM,ROSNEURO,ROSPSYCH,ROSMUSCULO,ROSIMMUNO,ROSENDOCRINE,ROSCOMMENTS";
-$query="SELECT $given from form_eye_ros where id=? and pid=?";
+$given="ROSGENERAL,ROSHEENT,ROSCV,ROSPULM,ROSGI,ROSGU,ROSDERM,ROSNEURO,ROSPSYCH,ROSMUSCULO,ROSIMMUNO,ROSENDOCRINE";
+$query="SELECT $given from form_eye_mag where id=? and pid=?";
 $rres = sqlQuery($query, array($form_id,$pid));
 foreach (explode(',', $given) as $item) {
     $$item = $rres[$item];
@@ -547,12 +547,13 @@ foreach (explode(',', $given) as $item) {
     </script>
     <!-- Add Font stuff for the look and feel.  -->
 
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap/dist/css/bootstrap.min.css">
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap-3-3-4/dist/css/bootstrap.min.css">
       <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-themes-1-11-4/themes/excite-bike/jquery-ui.css">
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/pure/0.5.0/pure-min.css">
-      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/font-awesome/css/font-awesome.min.css">
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-1-11-4/themes/excite-bike/jquery-ui.css">
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/pure-0-5-0/pure-min.css">
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/qtip2-2-2-1/jquery.qtip.min.css" />
+      <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/font-awesome-4-6-3/css/font-awesome.min.css">
       <link rel="stylesheet" href="../../forms/<?php echo $form_folder; ?>/css/style.css" type="text/css">
       <style>
           td, select, textarea, input  {
@@ -586,7 +587,6 @@ foreach (explode(',', $given) as $item) {
           .issues {
             font-size:0.8em;
             text-align: center;
-              width:500px;
           }
          select {
             text-align: left;
@@ -607,11 +607,12 @@ foreach (explode(',', $given) as $item) {
       </style>
 
       <link rel="shortcut icon" href="<?php echo $GLOBALS['images_static_relative']; ?>/favicon.ico" />
-      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-1-10-2/jquery.js"></script>
-      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap/dist/js/bootstrap.min.js"></script>
+      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-min-1-10-2/index.js"></script>
+      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap-3-3-4/dist/js/bootstrap.min.js"></script>
       <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-1-11-4/jquery-ui.min.js"></script>
+      <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/qtip2-2-2-1/jquery.qtip.min.js"></script>
       <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/manual-added-packages/shortcut.js-2-01-B/shortcut.js"></script>
-      <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+      <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
       <script type="text/javascript" src="<?php echo $GLOBALS['webroot']; ?>/interface/forms/<?php echo $form_folder; ?>/js/eye_base.php?enc=<?php echo attr($encounter); ?>&providerID=<?php echo attr($providerID); ?>"></script>
   </head>
   <body>
@@ -928,7 +929,7 @@ foreach (explode(',', $given) as $item) {
                       <table >
                         <tr>
                           <td><input type="text" name="form_text_tobacco" id="form_box" size="20" value="<?php echo attr($PMSFH[0]['SOCH']['tobacco']['resnote']); ?>">&nbsp;</td>
-
+                          
                           <td class="text">
                             <input type="radio" name="radio_tobacco" id="radio_tobacco[current]" value="currenttobacco" onclick="smoking_statusClicked(this)" <?php if ($result2['tobacco']['restype'] =='currenttobacco') {
                                 echo "checked";
@@ -962,7 +963,7 @@ foreach (explode(',', $given) as $item) {
                         <tbody>
                           <tr>
                             <td><input type="text" name="form_coffee" id="form_box" size="20" value="<?php echo attr($result2['coffee']['resnote']); ?>">&nbsp;</td>
-
+                         
                             <td class="text"><input type="radio" name="radio_coffee" id="radio_coffee[current]" value="currentcoffee" <?php if ($PMSFH[0]['SOCH']['coffee']['restype'] =='currentcoffee') {
                                 echo "checked";
 } ?>><?php echo xlt('Current'); ?>&nbsp;</td>
@@ -1311,11 +1312,7 @@ foreach (explode(',', $given) as $item) {
 } ?>>
               <input type="text" name="ROSENDOCRINE" id="ROSENDOCRINE" onclick='clear_option(this)' value="<?php echo attr($ROSENDOCRINE); ?>"></td>
             </tr>
-            <tr>
-                <td colspan="4"><label>Comments:</label><br />
-                    <textarea name="ROSCOMMENTS" id="ROSCOMMENTS" ><?php echo text($ROSCOMMENTS); ?></textarea>
-                </td>
-            </tr>
+          <tr><td></td></tr>
         </table>
         <table id="row_PLACEHOLDER" name="row_PLACEHOLDER" width="90%">
           <tr>
@@ -1351,8 +1348,14 @@ foreach (explode(',', $given) as $item) {
     echo $type_index;
 } ?>');
 
-        $(function() {
-
+        $(document).ready(function() {
+            $('[title]').qtip({
+                position: {
+                    my: 'top Right',  // Position my top left...
+                    at: 'bottom Left', // at the bottom right of...
+                    target: 'mouse' // my target
+                }
+            });
             $('.datepicker').datetimepicker({
                 <?php $datetimepicker_timepicker = false; ?>
                 <?php $datetimepicker_showseconds = false; ?>
@@ -1360,9 +1363,7 @@ foreach (explode(',', $given) as $item) {
                 <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'); ?>
                 <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
             });
-          });
-
-          $('[title]').tooltip();
+        });
     </script>
   </body>
 </html>

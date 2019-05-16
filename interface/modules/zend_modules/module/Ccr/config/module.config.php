@@ -1,31 +1,15 @@
 <?php
-namespace Ccr;
-
-use Zend\ServiceManager\Factory\InvokableFactory;
-use Zend\Router\Http\Segment;
-use Ccr\Controller\CcrController;
-use Ccr\Controller\ModuleconfigController;
-use Interop\Container\ContainerInterface;
-use Ccr\Model\CcrTable;
-use Zend\Db\Adapter\Adapter;
-use Zend\Db\ResultSet\ResultSet;
-use Ccr\Model\Ccr;
-use Documents\Controller\DocumentsController;
-use Zend\Db\TableGateway\TableGateway;
-
 return array(
     'controllers' => array(
-        'factories' => [
-            CcrController::class => function (ContainerInterface $container, $requestedName) {
-                return new CcrController($container->get(CcrTable::class), $container->get(DocumentsController::class));
-            }
-        ],
+        'invokables' => array(
+            'Ccr'             => 'Ccr\Controller\CcrController',
+        ),
     ),
 
     'router' => array(
         'routes' => array(
             'ccr' => array(
-                'type'    => Segment::class,
+                'type'    => 'segment',
                 'options' => array(
                     'route'    => '/ccr[/:action][/:id]',
                     'constraints' => array(
@@ -33,7 +17,7 @@ return array(
                         'id'     => '[0-9]+',
                     ),
                     'defaults' => array(
-                        'controller' => CcrController::class,
+                        'controller' => 'Ccr',
                         'action'     => 'index',
                     ),
                 ),
@@ -53,22 +37,4 @@ return array(
             'ViewFeedStrategy',
         ),
     ),
-    'service_manager' => [
-        'factories' => [
-            // TODO: it is odd that this has to be available to the service manager to be dynamically instantiated... but its in the controller namespace.
-            ModuleconfigController::class => function (ContainerInterface $container, $requestedName) {
-                return new ModuleconfigController();
-            }
-            ,CcrTable::class =>  function (ContainerInterface $container, $requestedName) {
-                $dbAdapter = $container->get(Adapter::class);
-                $resultSetPrototype = new ResultSet();
-                $resultSetPrototype->setArrayObjectPrototype(new Ccr());
-                $tableGateway = new TableGateway('module_menu', $dbAdapter, null, $resultSetPrototype);
-                $table = new CcrTable($tableGateway);
-                return $table;
-            }
-        ]
-
-        
-    ]
 );

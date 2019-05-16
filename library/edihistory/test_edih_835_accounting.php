@@ -1,31 +1,26 @@
 <?php
 /*
  * test_edih_835_accounting.php
- *
+ * 
  * Copyright 2016 Kevin McCormick <kevin@kt61p>
- *
+ * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- *
- *
+ * 
+ * 
  */
-
-
-// comment out below exit when need to use this script
-exit;
-use OpenEMR\Billing\ParseERA;
 
 function edih_835_accounting($segments, $delimiters)
 {
@@ -67,7 +62,7 @@ function edih_835_accounting($segments, $delimiters)
             // This is a claim-level adjustment and should be unusual.
             // Handle it by creating a dummy zero-charge service item and
             // then populating the adjustments into it.  See also code in
-            // ParseERA::parse_era_2100() which will later plug in a payment reversal
+            // parse_era_2100() which will later plug in a payment reversal
             // amount that offsets these adjustments.
             $i = 0; // if present, the dummy service item will be first.
             if (!$out['svc'][$i]) {
@@ -111,7 +106,7 @@ function edih_835_accounting($segments, $delimiters)
         }
         else if ($segid == 'NM1' && $seg[1] == 'TT' && $out['loopid'] == '2100') {
             $out['crossover']     = 1;//Claim automatic forward case.
-
+            
         }
 	 *
 	 * else if ($segid == 'REF' && $seg[1] == '1W' && $out['loopid'] == '2100') {
@@ -123,7 +118,7 @@ function edih_835_accounting($segments, $delimiters)
         }
 	 *
 	 * else if ($segid == 'PER' && $out['loopid'] == '2100') {
-
+        
             $out['payer_insurance']  = trim($seg[2]);
             $out['warnings'] .= 'Claim contact information: ' .
                 $seg[4] . "\n";
@@ -208,7 +203,7 @@ function edih_835_accounting($segments, $delimiters)
             }
         }
         else if ($segid == 'SE') {
-            ParseERA::parse_era_2100($out, $cb);
+            parse_era_2100($out, $cb);
             $out['loopid'] = '';
             if ($out['st_control_number'] != trim($seg[2])) {
                 return 'Ending transaction set control number mismatch';
@@ -219,10 +214,10 @@ function edih_835_accounting($segments, $delimiters)
         }
 	 *
 	 *
-	 *
-	 *
+	 *  
+	 * 
 	 */
-
+     
     if (is_array($segments) && count($segments)) {
         $acct = array();
     } else {
@@ -287,7 +282,7 @@ function edih_835_accounting($segments, $delimiters)
             $out[$ck]['clp'][$i]['amount_patient']  = (isset($sar[5]) && $sar[5]) ? trim($sar[5]) : ""; // pt responsibility, copay + deductible
             $out[$ck]['clp'][$i]['payer_claim_id']  = (isset($sar[7]) && $sar[7]) ? trim($sar[7]) : ""; // payer's claim number
         }
-
+        
         if (strncmp('CAS'.$de, $seg, 4) === 0) {
             $sar = explode($de, $seg);
             if ($loop == '2100') {
@@ -295,7 +290,7 @@ function edih_835_accounting($segments, $delimiters)
                 // This is a claim-level adjustment and should be unusual.
                 // Handle it by creating a dummy zero-charge service item and
                 // then populating the adjustments into it.  See also code in
-                // ParseERA::parse_era_2100() which will later plug in a payment reversal
+                // parse_era_2100() which will later plug in a payment reversal
                 // amount that offsets these adjustments.
                 $j = 0; // if present, the dummy service item will be first.
                 if (!$out['svc'][$j]) {
@@ -437,6 +432,7 @@ if (strncmp('SVC'.$de, $seg, 4) === 0) {
     $loopid = '2110';
 }
 
+        }
     $acctng['lx'][$lx01] = array('ts3amt'=>0, 'fee'=>0, 'clmpmt'=>0, 'clmadj'=>0, 'prvadj'=>0, 'ptrsp'=>0);
 if ($chk) {
     $acctng['pmt'] = $bpr02;
@@ -450,7 +446,9 @@ if ($chk) {
         $bal = 'Not Balanced';
     }
 
-    $pmt_html .= "<tr class='pmt'><td colspan=4>Accounting " . text($bal) . "</td></tr>".PHP_EOL;
-    $pmt_html .= "<tr class='pmt'><td>Fee " . text($acctng['fee']) . "</td><td>Adj " . text($acctng['clmadj']) . "</td><td>PtRsp " . text($acctng['ptrsp']) . "</td></tr>".PHP_EOL;
-    $pmt_html .= "<tr class='pmt'><td>PMT " . text($acctng['pmt']) . "</td><td>CLP " . text($acctng['clmpmt']) . "</td><td>PLB " . text($acctng['prvadj']) . "</td></tr>".PHP_EOL;
+    $pmt_html .= "<tr class='pmt'><td colspan=4>Accounting $bal</td></tr>".PHP_EOL;
+    $pmt_html .= "<tr class='pmt'><td>Fee {$acctng['fee']}</td><td>Adj {$acctng['clmadj']}</td><td>PtRsp {$acctng['ptrsp']}</td></tr>".PHP_EOL;
+    $pmt_html .= "<tr class='pmt'><td>PMT {$acctng['pmt']}</td><td>CLP {$acctng['clmpmt']}</td><td>PLB {$acctng['prvadj']}</td></tr>".PHP_EOL;
+}
+
 }

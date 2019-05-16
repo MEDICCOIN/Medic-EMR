@@ -60,7 +60,6 @@ $formid = $_GET['id'];
 //
 if ($_POST['bn_save']) {
     $sets = "";
-    $sqlBindArray= array();
     $fres = sqlStatement("SELECT * FROM layout_options " .
     "WHERE form_id = 'SRH' AND uor > 0 AND field_id != '' AND " .
     "edit_options != 'H' " .
@@ -72,19 +71,17 @@ if ($_POST['bn_save']) {
             $sets .= ", ";
         }
 
-        $sets .= escape_sql_column_name($field_id, array('form_ippf_srh')) . " = ?";
-        array_push($sqlBindArray, $value);
+        $sets .= "$field_id = '" . add_escape_custom($value) . "'";
     }
 
     if ($formid) {
         // Updating an existing form.
-        $query = "UPDATE form_ippf_srh SET " . $sets . " WHERE id = ?";
-        array_push($sqlBindArray, $formid);
-        sqlStatement($query, $sqlBindArray);
+        $query = "UPDATE form_ippf_srh SET $sets WHERE id = '$formid'";
+        sqlStatement($query);
     } else {
         // Adding a new form.
-        $query = "INSERT INTO form_ippf_srh SET " . $sets;
-        $newid = sqlInsert($query, $sqlBindArray);
+        $query = "INSERT INTO form_ippf_srh SET $sets";
+        $newid = sqlInsert($query);
         addForm($encounter, "IPPF SRH Data", $newid, "ippf_srh", $pid, $userauthorized);
     }
 
@@ -96,17 +93,18 @@ if ($_POST['bn_save']) {
 
 $enrow = sqlQuery("SELECT p.fname, p.mname, p.lname, fe.date FROM " .
   "form_encounter AS fe, forms AS f, patient_data AS p WHERE " .
-  "p.pid = ? AND f.pid = ? AND f.encounter = ? AND " .
+  "p.pid = '$pid' AND f.pid = '$pid' AND f.encounter = '$encounter' AND " .
   "f.formdir = 'newpatient' AND f.deleted = 0 AND " .
-  "fe.id = f.form_id LIMIT 1", array($pid, $pid, $encounter));
+  "fe.id = f.form_id LIMIT 1");
 
 if ($formid) {
     $pprow = sqlQuery("SELECT * FROM form_ippf_srh WHERE " .
-    "id = ? AND activity = '1'", array($formid));
+    "id = '$formid' AND activity = '1'");
 }
 ?>
 <html>
 <head>
+<?php html_header_show();?>
 <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
 <style>
 

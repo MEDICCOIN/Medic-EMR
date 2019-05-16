@@ -1,11 +1,10 @@
 <?php
 /**
- * Function to check and/or sanitize things for security such as
- * directories names, file names, etc.
- * Also including csrf token management functions.
+* Function to check and/or sanitize things for security such as
+* directories names, file names, etc.
  *
  * @package   OpenEMR
- * @link      https://www.open-emr.org
+ * @link      http://www.open-emr.org
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @author    Roberto Vasquez <robertogagliotta@gmail.com>
  * @author    Shachar Zilbershlag <shaharzi@matrix.co.il>
@@ -13,74 +12,6 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-use OpenEMR\Common\Utils\RandomGenUtils;
-
-// Function to collect ip address(es)
-function collectIpAddresses()
-{
-    $mainIp = $_SERVER['REMOTE_ADDR'];
-    $stringIp = $mainIp;
-
-    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $forwardIp = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        $stringIp .= " (" . $forwardIp . ")";
-    }
-
-    return array(
-        'ip_string' => $stringIp,
-        'ip' => $mainIp,
-        'forward_ip' => $forwardIp
-    );
-}
-
-// Function to create a csrf_token
-function createCsrfToken()
-{
-    return RandomGenUtils::createUniqueToken();
-}
-
-// Function to collect the csrf token
-function collectCsrfToken()
-{
-    return $_SESSION['csrf_token'];
-}
-
-// Function to verify a csrf_token
-function verifyCsrfToken($token)
-{
-    if (empty(collectCsrfToken())) {
-        error_log("OpenEMR Error : OpenEMR is potentially not secure because CSRF token was not formed correctly.");
-        return false;
-    } elseif (empty($token)) {
-        return false;
-    } elseif (collectCsrfToken() == $token) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-function csrfNotVerified($toScreen = true, $toLog = true)
-{
-    if ($toScreen) {
-        echo xlt('Authentication Error');
-    }
-    if ($toLog) {
-        error_log("OpenEMR CSRF token authentication error");
-    }
-    die;
-}
-
-// Sanitize a json encoded entry.
-function json_sanitize($json)
-{
-    if (json_decode($json)) {
-        return json_encode(json_decode($json, true));
-    } else {
-        error_log("OPENEMR ERROR: " . $json . " is not a valid json ");
-        return false;
-    }
-}
 
 // If the label contains any illegal characters, then the script will die.
 function check_file_dir_name($label)
@@ -88,8 +19,6 @@ function check_file_dir_name($label)
     if (empty($label) || preg_match('/[^A-Za-z0-9_.-]/', $label)) {
         error_log("ERROR: The following variable contains invalid characters:" . $label);
         die(xlt("ERROR: The following variable contains invalid characters").": ". attr($label));
-    } else {
-        return $label;
     }
 }
 

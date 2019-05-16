@@ -1,18 +1,7 @@
 <?php
-/**
- * prior auth form
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
-
-require_once(dirname(__FILE__).'/../../globals.php');
-require_once($GLOBALS["srcdir"]."/api.inc");
-
+//------------Forms generated from formsWiz
+include_once(dirname(__FILE__).'/../../globals.php');
+include_once($GLOBALS["srcdir"]."/api.inc");
 function prior_auth_report($pid, $encounter, $cols, $id)
 {
     $count = 0;
@@ -29,7 +18,7 @@ function prior_auth_report($pid, $encounter, $cols, $id)
             }
 
             $key=ucwords(str_replace("_", " ", $key));
-            print "<td><span class=bold>" . xlt($key) . ": </span><span class=text>" . text($value) . "</span></td>";
+            print "<td><span class=bold>$key: </span><span class=text>$value</span></td>";
             $count++;
             if ($count == $cols) {
                 $count = 0;

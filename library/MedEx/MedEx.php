@@ -24,20 +24,27 @@
      * @author MedEx <support@MedExBank.com>
      * @link    http://www.MedExBank.com
      * @copyright Copyright (c) 2017 MedEx <support@MedExBank.com>
-     * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+     * @license https://www.gnu.org/licenses/agpl-3.0.en.html GNU Affero General Public License 3
      */
 
-$ignoreAuth=true;
-$_SERVER['HTTP_HOST']   = 'default'; //change for multi-site
+    $ignoreAuth=true;
+    $_SERVER['HTTP_HOST']   = 'default'; //change for multi-site
 
-require_once(dirname(__FILE__)."/../../interface/globals.php");
-require_once(dirname(__FILE__)."/../patient.inc");
-require_once(dirname(__FILE__)."/API.php");
+    require_once(dirname(__FILE__)."/../../interface/globals.php");
+    require_once(dirname(__FILE__)."/../patient.inc");
+    require_once(dirname(__FILE__)."/../log.inc");
+    require_once(dirname(__FILE__)."/API.php");
 
-
-if (!empty($_POST['callback_key'])) {
     $MedEx = new MedExApi\MedEx('MedExBank.com');
-    $response = $MedEx->login('1');
+    $logged_in = $MedEx->login();
+if (($logged_in) && (!empty($_POST['callback_key']))) {
+    $data                   = json_decode($_POST, true);
+    $token                  = $logged_in['token'];
+    $response['callback']   = $MedEx->callback->receive($data);
+    $response['practice']   = $MedEx->practice->sync($token);
+    $response['campaigns']  = $MedEx->campaign->events($token);
+    $response['generate']   = $MedEx->events->generate($token, $response['campaigns']['events']);
+    $response['success']    = "200";
     header('Content-type: application/json');
     echo json_encode($response);
     exit;

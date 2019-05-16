@@ -1,16 +1,6 @@
 <?php
-/**
- *
- * Installer class.
- *
- * @package OpenEMR
- * @link    https://www.open-emr.org
- * @author Andrew Moore <amoore@cpan.org>
- * @author Ranganath Pathak <pathak@scrs1.org>
- * @copyright Copyright (c) 2010 Andrew Moore <amoore@cpan.org>
- * @copyright Copyright (c) 2019 Ranganath Pathak <pathak@scrs1.org>
- * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+/* Copyright © 2010 by Andrew Moore */
+/* Licensing information appears at the end of this file. */
 
 class Installer
 {
@@ -25,8 +15,6 @@ class Installer
         $this->iuname                   = isset($cgi_variables['iuname']) ? ($cgi_variables['iuname']) : '';
         $this->iufname                  = isset($cgi_variables['iufname']) ? ($cgi_variables['iufname']) : '';
         $this->igroup                   = isset($cgi_variables['igroup']) ? ($cgi_variables['igroup']) : '';
-        $this->i2faEnable               = isset($cgi_variables['i2faenable']) ? ($cgi_variables['i2faenable']) : '';
-        $this->i2faSecret               = isset($cgi_variables['i2fasecret']) ? ($cgi_variables['i2fasecret']) : '';
         $this->server                   = isset($cgi_variables['server']) ? ($cgi_variables['server']) : ''; // mysql server (usually localhost)
         $this->loginhost                = isset($cgi_variables['loginhost']) ? ($cgi_variables['loginhost']) : ''; // php/apache server (usually localhost)
         $this->port                     = isset($cgi_variables['port']) ? ($cgi_variables['port']): '';
@@ -41,7 +29,6 @@ class Installer
         $this->clone_database           = isset($cgi_variables['clone_database']) ? ($cgi_variables['clone_database']) : '';
         $this->no_root_db_access        = isset($cgi_variables['no_root_db_access']) ? ($cgi_variables['no_root_db_access']) : ''; // no root access to database. user/privileges pre-configured
         $this->development_translations = isset($cgi_variables['development_translations']) ? ($cgi_variables['development_translations']) : '';
-        $this->new_theme                = isset($cgi_variables['new_theme']) ? ($cgi_variables['new_theme']) : '';
         // Make this true for IPPF.
         $this->ippf_specific = false;
 
@@ -58,6 +45,8 @@ class Installer
         $this->icd9 = dirname(__FILE__) . "/../../sql/icd9.sql";
         $this->cvx = dirname(__FILE__) . "/../../sql/cvx_codes.sql";
         $this->additional_users = dirname(__FILE__) . "/../../sql/official_additional_users.sql";
+        $this->medicemr = dirname(__FILE__) . "/../../sql/medicemr.sql";
+        $this->medicemr_multisites = dirname(__FILE__) . "/../../sql/medicemr_multisites.sql";
 
         // Record name of php-gacl installation files
         $this->gaclSetupScript1 = dirname(__FILE__) . "/../../gacl/setup.php";
@@ -218,7 +207,7 @@ class Installer
         if ($checkUser === false) {
             // there was an error in the check database user query, so return false
             return false;
-        } elseif ($checkUser->num_rows > 0) {
+        } else if ($checkUser->num_rows > 0) {
             // the mysql user already exists, so do not need to create the user, but need to set the password
             // Note need to try two different methods, first is for newer mysql versions and second is for older mysql versions (if the first method fails)
             $returnSql = $this->execute_sql("ALTER USER '" . $this->escapeSql($this->login) . "'@'" . $this->escapeSql($this->loginhost) . "' IDENTIFIED BY '" . $this->escapeSql($this->pass) . "'", false);
@@ -372,38 +361,12 @@ class Installer
             return false;
         }
 
-        // Create new 2fa if enabled
-        if (($this->i2faEnable) && (!empty($this->i2faSecret)) && (class_exists('Totp')) && (class_exists('OpenEMR\Common\Crypto\CryptoGen'))) {
-            // Encrypt the new secret with the hashed password
-            $cryptoGen = new OpenEMR\Common\Crypto\CryptoGen();
-            $secret = $cryptoGen->encryptStandard($this->i2faSecret, $hash);
-            if ($this->execute_sql("INSERT INTO login_mfa_registrations (user_id, name, method, var1, var2) VALUES (1, 'App Based 2FA', 'TOTP', '".$this->escapeSql($secret)."', '')") == false) {
-                $this->error_message = "ERROR. Unable to add initial user's 2FA credentials\n".
-                    "<p>".mysqli_error($this->dbh)." (#".mysqli_errno($this->dbh).")\n";
-                return false;
-            }
-        }
-
         // Add the official openemr users (services)
         if ($this->load_file($this->additional_users, "Additional Official Users") == false) {
             return false;
         }
 
         return true;
-    }
-
-    /**
-     * Generates the initial user's 2FA QR Code
-     * @return bool|string|void
-     */
-    public function get_initial_user_2fa_qr()
-    {
-        if (($this->i2faEnable) && (!empty($this->i2faSecret)) && (class_exists('Totp'))) {
-            $adminTotp = new Totp($this->i2faSecret, $this->iuser);
-            $qr = $adminTotp->generateQrCode();
-            return $qr;
-        }
-        return false;
     }
 
   /**
@@ -487,13 +450,9 @@ if ($it_died != 0) {
 
     public function insert_globals()
     {
-        if (!(function_exists('xl'))) {
-            function xl($s)
-            {
-                return $s;
-            }
-        } else {
-            $GLOBALS['temp_skip_translations'] = true;
+        function xl($s)
+        {
+            return $s;
         }
         require(dirname(__FILE__) . '/../globals.inc.php');
         foreach ($GLOBALS_METADATA as $grpname => $grparr) {
@@ -747,6 +706,12 @@ if ($it_died != 0) {
 
             $this->dumpfiles = $dumpfiles;
         }
+        
+        $this->dumpfiles[ $this->medicemr ] = "MedicEMR";
+        if (defined('MEDICEMR_MULTISITES')) {
+        	$this->dumpfiles[ $this->medicemr_multisites ] = "MedicEMR MultiSites";
+        }
+        
 
         return $this->dumpfiles;
     }
@@ -814,7 +779,6 @@ if ($it_died != 0) {
 
         $backup_file = $this->get_backup_filename();
         $cmd = "mysqldump -u " . escapeshellarg($login) .
-        " -h " . $host .
         " -p" . escapeshellarg($pass) .
         " --opt --skip-extended-insert --quote-names -r $backup_file " .
         escapeshellarg($dbase);
@@ -840,184 +804,17 @@ if ($it_died != 0) {
 
         return $backup_file;
     }
-    //RP_ADDED
-    public function getCurrentTheme()
-    {
-        $current_theme =  $this->execute_sql("SELECT gl_value FROM globals WHERE gl_name LIKE '%css_header%'");
-        $current_theme = mysqli_fetch_array($current_theme);
-        return $current_theme [0];
-    }
-
-    public function setCurrentTheme()
-    {
-        $this->getCurrentTheme();//why is this needed ?
-        return $this->execute_sql("UPDATE globals SET gl_value='". $this->escapeSql($this->new_theme) ."' WHERE gl_name LIKE '%css_header%'");
-    }
-
-    public function listThemes()
-    {
-        $themes_img_dir = "public/images/stylesheets/";
-        $arr_themes_img = array_values(array_filter(scandir($themes_img_dir), function ($item) {
-            return $item[0] !== '.';
-        }));
-        return $arr_themes_img;
-    }
-
-    private function extractFileName($theme_file_name = '')
-    {
-        $this->theme_file_name = $theme_file_name;
-        $under_score = strpos($theme_file_name, '_') + 1;
-        $dot = strpos($theme_file_name, '.');
-        $theme_value = substr($theme_file_name, $under_score, ($dot - $under_score));
-        $theme_title = ucwords(str_replace("_", " ", $theme_value));
-        return array('theme_value' => $theme_value, 'theme_title' => $theme_title);
-    }
-
-    public function displayThemesDivs()
-    {
-        $themes_number = count($this->listThemes());
-        for ($i=0; $i < $themes_number; $i++) {
-            $id = $i + 1;
-            $arr_theme_name = $this->listThemes();
-            $theme_file_name = $arr_theme_name[$i];
-            $arr_extracted_file_name = $this->extractFileName($theme_file_name);
-            $theme_value = $arr_extracted_file_name['theme_value'];
-            $theme_title = $arr_extracted_file_name['theme_title'];
-            $img_path = "public/images/stylesheets/";
-            $theme_file_path = $img_path . $theme_file_name;
-            $div_start = "                      <div class='row'>";
-            $div_end = "                      </div>";
-            $img_div = <<<FDIV
-                                        <div class="col-sm-2 checkboxgroup">
-                                            <label for="my_radio_button_id{$id}"><img height="160px" src="{$theme_file_path}" width="100%"></label>
-                                            <p style="margin:0">{$theme_title}</p><input id="my_radio_button_id{$id}" name="stylesheet" type="radio" value="{$theme_value}">
-                                        </div>
-FDIV;
-            $theme_img_number = $i % 6; //to ensure that last file in array will always generate 5 and will end the row
-            switch ($theme_img_number) {
-                case 0: //start row
-                    echo $div_start . "\r\n";
-                    echo $img_div . "\r\n";
-                    break;
-
-                case 1:
-                case 2:
-                case 3:
-                case 4:
-                    echo $img_div . "\r\n";
-                    break;
-
-                case 5://end row
-                    echo $img_div . "\r\n";
-                    echo $div_end . "\r\n";
-                    echo "<br>" . "\r\n";
-                    break;
-
-                default:
-                    echo $div_start . "\r\n";
-                    echo "<h5>Sorry no stylesheet images in directory</h5>";
-                    echo $div_end . "\r\n";
-                    break;
-            }
-        }
-        return;
-    }
-
-    public function displaySelectedThemeDiv()
-    {
-        $theme_file_name = $this->getCurrentTheme();
-        $arr_extracted_file_name = $this->extractFileName($theme_file_name);
-        $theme_value = $arr_extracted_file_name['theme_value'];
-        $theme_title = $arr_extracted_file_name['theme_title'];
-        $img_path = "public/images/stylesheets/";
-        $theme_file_path = $img_path . "style_". $theme_value .".png";
-
-        $display_selected_theme_div = <<<DSTD
-                        <div class="row">
-                            <div class="col-sm-12">
-                                <h4>Current Theme:</h4>
-                                <div class="col-sm-4 col-sm-offset-4 checkboxgroup">
-                                    <label for="nothing"><img  id="current_theme" src="{$theme_file_path}" width="100%"></label>
-                                    <p id="current_theme_title"style="margin:0">{$theme_title}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <br>
-DSTD;
-        echo $display_selected_theme_div . "\r\n";
-        return;
-    }
-
-    public function displayNewThemeDiv()
-    {
-        $theme_file_name = $this->new_theme;
-        $arr_extracted_file_name = $this->extractFileName($theme_file_name);
-        $theme_value = $arr_extracted_file_name['theme_value'];
-        $theme_title = $arr_extracted_file_name['theme_title'];
-        $img_path = "public/images/stylesheets/";
-        $theme_file_path = $img_path . "style_". $theme_value .".png";
-
-        $display_selected_theme_div = <<<DSTD
-                        <div class="row">
-                            <div class="col-sm-12">
-                                <div class="col-sm-4 col-sm-offset-4 checkboxgroup">
-                                    <label for="nothing"><img  id="current_theme" src="{$theme_file_path}" width="75%"></label>
-                                    <p id="current_theme_title"style="margin:0">{$theme_title}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <br>
-DSTD;
-        echo $display_selected_theme_div . "\r\n";
-        return;
-    }
-
-    public function setupHelpModal()
-    {
-        $setup_help_modal = <<<SETHLP
-    <div class="row">
-            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content  oe-modal-content" style="height:700px">
-                        <div class="modal-header clearfix">
-                            <button type="button" class="close" data-dismiss="modal" aria-label=Close>
-                            <span aria-hidden="true" style="color:#000000; font-size:1.5em;">×</span></button>
-                        </div>
-                        <div class="modal-body" style="height:80%;">
-                            <iframe src="" id="targetiframe" style="height:100%; width:100%; overflow-x: hidden; border:none"
-                            allowtransparency="true"></iframe>  
-                        </div>
-                        <div class="modal-footer" style="margin-top:0px;">
-                           <button class="btn btn-link btn-cancel oe-pull-away" data-dismiss="modal" type="button">Close</button>
-                           <!--<button class="btn btn-default btn-print oe-pull-away" data-dismiss="modal" id="print-help-href" type="button">Print</button>-->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <script>
-            $(function() {
-                $('#help-href').click (function(){
-                    document.getElementById('targetiframe').src = "Documentation/help_files/openemr_installation_help.php";
-                })
-            });
-            $(function() {
-                $('#print-help-href').click (function(){
-                    $("#targetiframe").get(0).contentWindow.print();
-                })
-            });
-            // Jquery draggable
-            $('.modal-dialog').draggable({
-                    handle: ".modal-header, .modal-footer"
-            });
-           $( ".modal-content" ).resizable({
-                aspectRatio: true,
-                minHeight: 300,
-                minWidth: 300
-            });
-        </script>
-SETHLP;
-        echo $setup_help_modal  ."\r\n";
-        return;
-    }
 }
+
+/*
+This file is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as publish by the Free Software
+Foundation.
+
+This file is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU Gneral Public License for more details.
+
+You should have received a copy of the GNU General Public Licence along with
+this file.  If not see <http://www.gnu.org/licenses/>.
+*/

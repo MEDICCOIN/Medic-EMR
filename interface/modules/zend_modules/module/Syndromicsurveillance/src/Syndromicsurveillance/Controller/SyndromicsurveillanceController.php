@@ -27,17 +27,13 @@ use Application\Listener\Listener;
 
 class SyndromicsurveillanceController extends AbstractActionController
 {
-    /**
-     * @var \Syndromicsurveillance\Model\SyndromicsurveillanceTable
-     */
-    protected $syndromicsurveillanceTable;
+    protected $encounterccdadispatchTable;
 
     protected $listenerObject;
     
-    public function __construct(\Syndromicsurveillance\Model\SyndromicsurveillanceTable $table)
+    public function __construct()
     {
         $this->listenerObject   = new Listener;
-        $this->syndromicsurveillanceTable = $table;
     }
     
     /*
@@ -50,13 +46,10 @@ class SyndromicsurveillanceController extends AbstractActionController
     */
     public function indexAction()
     {
-        $date_display_format = $GLOBALS['date_display_format'];
-        $default_from_date = date('Y-m-d', strtotime(date('Ymd')) - (86400*7));
-        $default_to_date = date('Y-m-d');  // be inclusive of today.
         $request        = $this->getRequest();
         $this->search   = $request->getPost('search', null);
-        $fromDate       = $request->getPost('form_date_from', null) ? $this->CommonPlugin()->date_format($request->getPost('form_date_from', null), 'yyyy-mm-dd', $date_display_format) : $default_from_date;
-        $toDate         = $request->getPost('form_date_to', null) ? $this->CommonPlugin()->date_format($request->getPost('form_date_to', null), 'yyyy-mm-dd', $date_display_format) : $default_to_date;
+        $fromDate       = $request->getPost('form_date_from', null) ? $this->CommonPlugin()->date_format($request->getPost('form_date_from', null), 'yyyy-mm-dd', $GLOBALS['date_display_format']) : date('Y-m-d', strtotime(date('Ymd')) - (86400*7));
+        $toDate         = $request->getPost('form_date_to', null) ? $this->CommonPlugin()->date_format($request->getPost('form_date_to', null), 'yyyy-mm-dd', $GLOBALS['date_display_format']) : date('Y-m-d');
         $code_selected  = $request->getPost('form_icd_codes', null);
         $provider_selected  = $request->getPost('form_provider_id', null);
         
@@ -116,10 +109,15 @@ class SyndromicsurveillanceController extends AbstractActionController
     /**
     * Table Gateway
     *
-    * @return \Syndromicsurveillance\Model\SyndromicsurveillanceTable
+    * @return type
     */
     public function getSyndromicsurveillanceTable()
     {
+        if (!$this->syndromicsurveillanceTable) {
+            $sm = $this->getServiceLocator();
+            $this->syndromicsurveillanceTable = $sm->get('Syndromicsurveillance\Model\SyndromicsurveillanceTable');
+        }
+
         return $this->syndromicsurveillanceTable;
     }
 }

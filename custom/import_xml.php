@@ -56,10 +56,6 @@ if (!acl_check('patients', 'demo', '', 'write')) {
 }
 
 if ($_POST['form_import']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $apatient    = array();
     $apcp        = array();
     $aemployer   = array();
@@ -189,7 +185,7 @@ if ($_POST['form_import']) {
 
     echo "<html>\n<body>\n<script language='JavaScript'>\n";
     if ($alertmsg) {
-        echo " alert('" . addslashes($alertmsg) . "');\n";
+        echo " alert('$alertmsg');\n";
     }
 
     echo " if (!opener.closed && opener.refreshme) opener.refreshme();\n";
@@ -205,7 +201,6 @@ if ($_POST['form_import']) {
 </head>
 <body class="body_top" onload="javascript:document.forms[0].form_import_data.focus()">
 <form method='post' action="import_xml.php" onsubmit="return top.restoreSession()">
-    <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
     <div class="container">
         <div class="row">
             <div class="col-xs-12">

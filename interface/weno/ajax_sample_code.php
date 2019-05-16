@@ -2,16 +2,14 @@
 /**
  * weno rx ajax sample code
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Sherwin Gaddis <sherwingaddis@gmail.com>
+ * @package OpenEMR
+ * @link    http://www.open-emr.org
+ * @author  Sherwin Gaddis <sherwingaddis@gmail.com>
  * @copyright Copyright (c) 2016-2017 Sherwin Gaddis <sherwingaddis@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once('../globals.php');
-
 use OpenEMR\Core\Header;
 
 ?>
@@ -35,10 +33,10 @@ use OpenEMR\Core\Header;
       <input type='submit' id='order' value='<?php print xla("Transmit Order") ?>' >
   </div>
     <div id="success"></div>
-
+      
 <script>
 
-$(function(){
+$(document).ready(function(){
 
 
     $("#transmit").hide();
@@ -62,12 +60,12 @@ $(function(){
                      "DOB" : "1951-01-03",
                      "Sex" : "M"
         }};
-
+         
          var provider = {"provider": {
-                     "provlname" : "Mark",
-                     "provfname" : "East",
+                     "provlname" : "Mark", 
+                     "provfname" : "East", 
                      "provnpi" : 1033137377,
-                     "facilityphone" : 7573331212,
+                     "facilityphone" : 7573331212,                   
                      "facilityfax" : 7574441212,
                      "facilityname" : "East Cardiology",
                      "facilitystreet" : "127 Albert Dr.",
@@ -84,7 +82,7 @@ $(function(){
                      "storenpi":321,
                      "pharmacy":1234567,
                      "pharmacyPhone":2109128143,
-                     "pharmacyFax":5128525926
+                     "pharmacyFax":5128525926                           
         }};
 
         var script = {"script": {
@@ -95,16 +93,16 @@ $(function(){
                      "refills" : 3,
                      "dateModified" : "2017-02-15",
                      "note" : "add not to pharmacy",
-                     "take" : "once a day"
+                     "take" : "once a day"                          
         }};
-
-
+            
+        
          var sendPatient = JSON.stringify(patient);
          var sendProvider = JSON.stringify(provider);
          var sendPharmacy = JSON.stringify(pharmacy);
-         var sendScript = JSON.stringify(script);
+         var sendScript = JSON.stringify(script);   
          var send = '['+sendPatient+','+sendProvider+','+sendPharmacy+','+sendScript+']';
-
+         
          $.ajax({
             type: 'POST',
         dataType: 'JSON',
@@ -113,19 +111,19 @@ $(function(){
 
           success: function(response){
               console.log(response);
-
+              
               $('#success').html('<p>'+response+'</p>');
           },
             error: function(xhr, status, error){
                  console.log(xhr);
                  console.log(status);
                  console.log(error);
-                 console.warn(xhr.responseText);
-          }
+                 console.warn(xhr.responseText);                             
+          }         
          });
-
+         
     });
-
+    
 });
 </script>
 

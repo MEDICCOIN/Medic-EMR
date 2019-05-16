@@ -1,22 +1,33 @@
 <?php
 /**
- * aftercare_plan new.php
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Naina Mohamed <naina@capminds.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2012-2013 Naina Mohamed <naina@capminds.com> CapMinds Technologies
- * @copyright Copyright (c) 2017-2019 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2012-2013 Naina Mohamed <naina@capminds.com> CapMinds Technologies
+ * Copyright (C) 2017 Brady Miller <brady.g.miller@gmail.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Naina Mohamed <naina@capminds.com>
+ * @author  Brady Miller <brady.g.miller@gmail.com>
+ * @link    http://www.open-emr.org
  */
 
 
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
+
+
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
 require_once("$srcdir/patient.inc");
 require_once("$srcdir/options.inc.php");
-
 formHeader("Form:AfterCare Planning");
 $returnurl = 'encounter_top.php';
 $formid = 0 + (isset($_GET['id']) ? $_GET['id'] : 0);
@@ -25,17 +36,18 @@ $obj = $formid ? formFetch("form_aftercare_plan", $formid) : array();
 ?>
 <html>
 <head>
+<?php html_header_show();?>
 
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 
 <script language="JavaScript">
- $(function() {
+ $(document).ready(function() {
   var win = top.printLogSetup ? top : opener.top;
   win.printLogSetup(document.getElementById('printbutton'));
 
@@ -55,17 +67,15 @@ $obj = $formid ? formFetch("form_aftercare_plan", $formid) : array();
 </br>
 <?php
 echo "<form method='post' name='my_form' " .
-  "action='$rootdir/forms/aftercare_plan/save.php?id=" . attr_url($formid) ."'>\n";
+  "action='$rootdir/forms/aftercare_plan/save.php?id=" . attr($formid) ."'>\n";
 ?>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
-
 <table  border="0">
 <tr>
 <td align="left" class="forms" class="forms"><?php echo xlt('Client Name'); ?>:</td>
         <td class="forms">
             <label class="forms-data"> <?php if (is_numeric($pid)) {
                 $result = getPatientData($pid, "fname,lname,squad");
-                echo text($result['fname'])." ".text($result['lname']);
+                echo htmlspecialchars(text($result['fname'])." ".text($result['lname']));
 }
 
    $patient_name=($result['fname'])." ".($result['lname']);
@@ -77,7 +87,7 @@ echo "<form method='post' name='my_form' " .
         <td class="forms">
         <label class="forms-data"> <?php if (is_numeric($pid)) {
             $result = getPatientData($pid, "*");
-            echo text($result['DOB']);
+            echo htmlspecialchars($result['DOB']);
 }
 
    $dob=($result['DOB']);

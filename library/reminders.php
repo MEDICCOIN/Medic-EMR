@@ -24,7 +24,7 @@
  *
  * @package OpenEMR
  * @author  Brady Miller <brady.g.miller@gmail.com>
- * @link    https://www.open-emr.org
+ * @link    http://www.open-emr.org
  */
 
 /**
@@ -32,9 +32,6 @@
  */
 require_once(dirname(__FILE__) . "/clinical_rules.php");
 require_once(dirname(__FILE__) . "/maviq_phone_api.php");
-
-//only used in commented out code
-use OpenEMR\Common\Crypto\CryptoGen;
 
 /**
  * Display the patient reminder widget.
@@ -56,7 +53,7 @@ function patient_reminder_widget($patient_id, $dateTarget = '')
 
     if (empty($listReminders)) {
         // No reminders to show.
-        echo xlt('No active patient reminders.');
+        echo htmlspecialchars(xl('No active patient reminders.'), ENT_NOQUOTES);
         return;
     }
 
@@ -72,9 +69,9 @@ function patient_reminder_widget($patient_id, $dateTarget = '')
         echo "</span></td><td style='padding:0 1em 0 1em;'><span class='small'>";
         // show reminder sent date
         if (empty($reminder['date_sent'])) {
-            echo xlt('Reminder Not Sent Yet');
+            echo htmlspecialchars(xl('Reminder Not Sent Yet'), ENT_NOQUOTES);
         } else {
-            echo text(xl('Reminder Sent On').": ".$reminder['date_sent']);
+            echo htmlspecialchars(xl('Reminder Sent On').": ".$reminder['date_sent'], ENT_NOQUOTES);
         }
 
         echo "</span></td></tr>";
@@ -394,8 +391,7 @@ function send_reminders()
     *     //  feature has been commented out for now.
     *     // Automated VOIP service provided by Maviq. Please visit http://signup.maviq.com for more information.
     *      $siteId = $GLOBALS['phone_gateway_username'];
-    *      $cryptoGen = new CryptoGen();
-    *      $token = $cryptoGen->decryptStandard($GLOBALS['phone_gateway_password']);
+    *      $token = $GLOBALS['phone_gateway_password'];
     *      $endpoint = $GLOBALS['phone_gateway_url'];
     *      $client = new MaviqClient($siteId, $token, $endpoint);
     *      //Set up params.

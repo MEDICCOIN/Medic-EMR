@@ -5,13 +5,27 @@
  * This Displays an About page for OpenEMR Displaying Version Number, Support Phone Number
  * If it have been entered in Globals along with the Manual and On Line Support Links
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Terry Hill <terry@lilysystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2016 Terry Hill <terry@lillysystems.com>
- * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016 Terry Hill <terry@lillysystems.com>
+ * Copyright (C) 2017 Brady Miller <brady.g.miller@gmail.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author Terry Hill <terry@lilysystems.com>
+ * @author Brady Miller <brady.g.miller@gmail.com>
+ * @link http://www.open-emr.org
+ *
+ * Please help the overall project by sending changes you make to the author and to the OpenEMR community.
+ *
  */
 
 
@@ -25,7 +39,7 @@ use OpenEMR\Services\VersionService;
 <head>
 
     <?php Header::setupHeader(["jquery-ui","jquery-ui-darkness"]); ?>
-    <title><?php echo xlt("About");?> OpenEMR</title>
+    <title><?php echo xl("About");?> MedicEMR</title>
     <style>
         .donations-needed {
             margin-top: 25px;
@@ -91,7 +105,22 @@ use OpenEMR\Services\VersionService;
                     productRegistrationController.displayRegistrationInformationIfDivExists(data);
                 }
             });
+            
+						jQuery('#donation_medicaddr_click').on('click', function(){
+						    var textArea = document.createElement("textarea");
+						    textArea.value = $('#donation_medicaddr').text();
+						    document.body.appendChild(textArea);
+						    textArea.select();
+						    document.execCommand("Copy");
+						    textArea.remove();
+						    $('#donation_medicaddr_copied').show().addClass('text-success');
+                return false;
+            });
         });
+    </script>
+
+    <script type="text/javascript">
+
     </script>
 </head>
 <?php
@@ -103,34 +132,43 @@ $version = $versionService->fetch();
         <div class="row">
             <div class="col-xs-12 col-md-4 col-md-offset-4 text-center">
                 <div class="page-header">
-                    <h1><?php echo xlt("About");?>&nbsp;OpenEMR</h1>
+                    <h1><?php echo xlt("About");?>&nbsp;MedicEMR</h1>
+                    <p>MedicEMR combines the opensource OpenEMR software with Medic Coin blockchain technology to create the first free opensource EMR software, MedicEMR, accepting crypto as a form of payment.</p>
+                </div>
+                <div class="page-header">
+                    <h2><?php echo xlt("About");?>&nbsp;Medic Coin</h2>
+                    <p>MedicCoin (MEDIC) is a community-driven crypto focused on improving the health of people throughout the world via innovative reward programs, recruiting others to help advance scientific research and donating to charities.</p>
+                	<a href="http://mediccoin.com" target="_blank" class="btn btn-default btn-block"><img border="0" height="16" src="<?php echo $GLOBALS['images_static_relative']; ?>/menu-logo.png"> Medic Coin homepage</a>
                 </div>
                 <h4><?php  echo xlt('Version Number'); ?>: <?php echo "v".text($openemr_version) ?></h4>
                 <span class="text product-registration"><span class="email"></span> <span class="id"></span></span><br>
                 <?php if (!empty($GLOBALS['support_phone_number'])) { ?>
-                    <span class="text"><?php  echo xlt('Support Phone Number'); ?>: <?php echo text($GLOBALS['support_phone_number']); ?></span><br>
+                    <span class="text"><?php  echo xlt('Support Phone Number'); ?>: <?php echo $GLOBALS['support_phone_number'] ?></span><br>
                 <?php } ?>
-                <a href="<?php echo "https://open-emr.org/wiki/index.php/OpenEMR_" . attr($version->getMajor()) . "." . attr($version->getMinor()) . "." . attr($version->getPatch()) . "_Users_Guide"; ?>" rel="noopener" target="_blank" class="btn btn-block btn-default"><i class="fa fa-fw fa-book"></i>&nbsp;<?php echo xlt('User Manual'); ?></a>
+                <a href="<?php echo "http://open-emr.org/wiki/index.php/OpenEMR_".attr($version->getMajor()).".".attr($version->getMinor()).".".attr($version->getPatch())."_Users_Guide"; ?>" target="_blank" class="btn btn-block btn-default"><i class="fa fa-fw fa-book"></i>&nbsp;<?php echo xlt('User Manual'); ?></a>
                 <?php if (!empty($GLOBALS['online_support_link'])) { ?>
-                    <a href='<?php echo attr($GLOBALS["online_support_link"]); ?>' rel="noopener" target="_blank" class="btn btn-default btn-block"><i class="fa fa-fw fa-question-circle"></i>&nbsp;<?php echo xlt('Online Support'); ?></a>
+                    <a href='<?php echo $GLOBALS["online_support_link"]; ?>' target="_blank" class="btn btn-default btn-block"><i class="fa fa-fw fa-question-circle"></i>&nbsp;<?php echo xlt('Online Support'); ?></a>
                 <?php } ?>
-                <a href="../../acknowledge_license_cert.html" rel="noopener" target="_blank" class="btn btn-default btn-block"><i class="fa fa-fw fa-info-circle"></i><?php echo xlt('Acknowledgments, Licensing and Certification'); ?></a>
+                <a href="../../acknowledge_license_cert.html" target="_blank" class="btn btn-default btn-block"><i class="fa fa-fw fa-info-circle"></i><?php echo xlt('Acknowledgments, Licensing and Certification'); ?></a>
                 <div class="donations-needed">
                     <span class="text"><?php echo xlt("Please consider sending in a donation to"); ?> OpenEMR:</span><br>
-                    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=V6EVVTYYK264C" rel="noopener" target="_blank" class="btn btn-lg btn-block"><i class="fa fa-2x fa-heart"></i><br/><?php echo xlt("DONATE NOW!"); ?></a>
+                    <a href="http://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=V6EVVTYYK264C" target="_blank" class="btn btn-lg btn-block"><i class="fa fa-2x fa-heart"></i><br/><?php echo xlt("DONATE NOW!"); ?></a>
                 </div>
-                <div class="review">
-                    <a href="https://www.softwareadvice.com/medical/openemr-review/?step=1" title="<?php echo xla("Voice your opinion"); ?>" rel="noopener" target="_blank"><img src="<?php echo $GLOBALS['images_static_relative']; ?>/review-logo.png"></a>
+                <div class="donations-needed">
+                    <span class="text"><?php echo xlt("Please consider sending in a donation to"); ?> MedicEMR:</span><br>
+                    <a id="donation_medicaddr_click" href="https://explorer.mediccoin.com/address/MWFwbBLJeicbDqQWLbGBCgPmiLLcPzrgro" target="_blank" class="btn btn-lg btn-block">
+                    	<img style="padding: 20px" src="https://explorer.mediccoin.com/qr/MWFwbBLJeicbDqQWLbGBCgPmiLLcPzrgro" />
+                    	<br/><br/><span id="donation_medicaddr">MWFwbBLJeicbDqQWLbGBCgPmiLLcPzrgro</span>
+                    	<br /><br />(Click to copy address) <span id="donation_medicaddr_copied" style="display:none">copied!</span>
+                    </a>
                 </div>
-
             </div>
         </div>
-    </div>
 
 
     <div class="product-registration-modal" style="display: none">
         <p class="context"><?php echo xlt("Register your installation with OEMR to receive important notifications, such as security fixes and new release announcements."); ?></p>
-        <input placeholder="<?php echo xla('email'); ?>" type="email" class="email" style="width: 100%; color: black" />
+        <input placeholder="<?php echo xlt('email'); ?>" type="email" class="email" style="width: 100%; color: black" />
         <p class="message" style="font-style: italic"></p>
     </div>
 </body>

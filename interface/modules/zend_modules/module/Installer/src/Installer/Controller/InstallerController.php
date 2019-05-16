@@ -29,27 +29,15 @@ use Zend\View\Model\JsonModel;
 use Zend\Json\Json;
 use Installer\Model\InstModule;
 use Application\Listener\Listener;
-use Installer\Model\InstModuleTable;
-use Zend\Db\Adapter\Adapter;
 
 class InstallerController extends AbstractActionController
 {
-    /**
-     * @var Installer\Model\InstModuleTable
-     */
     protected $InstallerTable;
     protected $listenerObject;
 
-    /**
-     * @var Zend\Db\Adapter\Adapter
-     */
-    private $dbAdapter;
-
-    public function __construct(InstModuleTable $installerTable)
+    public function __construct()
     {
         $this->listenerObject = new Listener;
-        $this->InstallerTable = $installerTable;
-        $this->dbAdapter = $adapter;
     }
 
     public function nolayout()
@@ -80,11 +68,13 @@ class InstallerController extends AbstractActionController
         ));
     }
 
-    /**
-     * @return Installer\Model\InstModuleTable
-     */
     public function getInstallerTable()
     {
+        if (!$this->InstallerTable) {
+            $sm = $this->getServiceLocator();
+            $this -> InstallerTable = $sm -> get('Installer\Model\InstModuleTable');
+        }
+
         return $this->InstallerTable;
     }
     
@@ -94,20 +84,36 @@ class InstallerController extends AbstractActionController
         $request  = $this->getRequest();
         if ($request->isPost()) {
             if ($request->getPost('mtype') == 'zend') {
-                // TODO: We want to be able to load the modules
-                // from the database.. however, this can be fairly slow so we might want to do some kind of APC caching of the module
-                // list that is loaded using the OpenEMR db connector and not the zend db connector, cache the modules, and then
-                // we can filter / update that list.  We'll have to inject the unloaded module list into the installer but that is fine.
                 $rel_path = "public/".$request->getPost('mod_name')."/";
+                $fName = $GLOBALS['srcdir']."/../".$GLOBALS['baseModDir'].$GLOBALS['zendModDir']."/config/application.config.php";
+                $tmp = include $fName;
+                $modName = trim($request->getPost('mod_name'));
+                $module_exist_in_config = false;
+                if (in_array($modName, $tmp['modules'], true)) {
+                    $module_exist_in_config = true;
+                }
 
-                // registering the table inserts the module record into the database.
-                // it's always loaded regardless, but it inserts it in the database as not activated
                 if ($this -> getInstallerTable() -> register($request->getPost('mod_name'), $rel_path, 0, $GLOBALS['zendModDir'])) {
+                    //add the Module name in the application config file if not already present
+                    $fileName = $GLOBALS['srcdir']."/../".$GLOBALS['baseModDir'].$GLOBALS['zendModDir']."/config/application.config.php";
+                    $data = include  $fileName;
+                    //TODO what if same name is already there for another module
+                    $data['modules'] = array_merge($data['modules'], array($request->getPost('mod_name')));
+                    //recreate the config file
+                    if (is_writable($fileName)) {
+                        if (!$module_exist_in_config) {
+                            $content = "<?php return array(";
+                            $content .= $this->getContent($data);
+                            $content .= ");";
+                            file_put_contents($fileName, $content);
+                        }
+                    } else {
+                        die($this->listenerObject->z_xlt("Unable to modify application config Please give write permission to")." $fileName");
+                    }
+
                     $status = true;
                 }
             } else {
-                // TODO: there doesn't appear to be any methodology in how to load these custom registered modules... which seems pretty odd.
-                // there aren't any in the system... but why have this then?
                 $rel_path = $request->getPost('mod_name')."/index.php";
                 if ($this -> getInstallerTable() -> register($request->getPost('mod_name'), $rel_path)) {
                     $status = true;
@@ -139,7 +145,7 @@ class InstallerController extends AbstractActionController
                     }
 
                     $status = $this->listenerObject->z_xlt("Dependency Problem") . ':' . implode(", ", $resp['value']) . " " . $this->listenerObject->z_xlt($plural) . " " . $this->listenerObject->z_xlt("Should be Enabled");
-                } elseif ($resp['status'] == 'failure' && ($resp['code'] == '300' || $resp['code'] == '400')) {
+                } else if ($resp['status'] == 'failure' && ($resp['code'] == '300' || $resp['code'] == '400')) {
                     $status = $resp['value'];
                 } else {
                     $status = $this->listenerObject->z_xlt("Success");
@@ -227,10 +233,11 @@ class InstallerController extends AbstractActionController
         $modId        = $request->getPost('mod_id');
 
         /** Configuration Details */
-        $result = $this->getInstallerTable()->getConfigSettings($modId);
+        $result = $this->getInstallerTable()->getConfigSettings($request->getPost('mod_id'));
         $configuration    = array();
         foreach ($result as $tmp) {
             $configuration[$tmp['field_name']] = $tmp;
+            array_push($config['moduleconfig'], $tmp);
         }
 
         //INSERT MODULE HOOKS IF NOT EXISTS
@@ -268,20 +275,22 @@ class InstallerController extends AbstractActionController
         }
 
         /** Configuration Form and Configuration Form Class */
-        $configForm = $this->getInstallerTable()->getFormObject($moduleDirectory);
+        /** Adapter in Forms  */
+        $dbAdapter = $this->getServiceLocator()->get('Zend\Db\Adapter\Adapter');
+        $configForm = $this->getInstallerTable()->getObject($moduleDirectory, 'Form', $dbAdapter);
     
         /** Setup Config Details */
-        $setup = $this->getInstallerTable()->getSetupObject($moduleDirectory);
+        $setup = $this->getInstallerTable()->getObject($moduleDirectory, 'Setup');
 
         return new ViewModel(array(
-          'mod_id'                  => $modId,
-          'TabSettings'             => $this->getInstallerTable()->getTabSettings($modId),
-          'ACL'                     => $this->getInstallerTable()->getSettings('ACL', $modId),
+          'mod_id'                  => $request->getPost('mod_id'),
+          'TabSettings'             => $this->getInstallerTable()->getTabSettings($request->getPost('mod_id')),
+          'ACL'                     => $this->getInstallerTable()->getSettings('ACL', $request->getPost('mod_id')),
           'OemrUserGroup'           => $this->getInstallerTable()->getOemrUserGroup(),
           'OemrUserGroupAroMap'     => $this->getInstallerTable()->getOemrUserGroupAroMap(),
           'ListActiveUsers'         => $this->getInstallerTable()->getActiveUsers(),
-          'ListActiveACL'           => $this->getInstallerTable()->getActiveACL($modId),
-          'ListActiveHooks'         => $this->getInstallerTable()->getActiveHooks($modId),
+          'ListActiveACL'           => $this->getInstallerTable()->getActiveACL($request->getPost('mod_id')),
+          'ListActiveHooks'         => $this->getInstallerTable()->getActiveHooks($request->getPost('mod_id')),
           'helperObject'            => $this->helperObject,
           'configuration'           => $configuration,
           'hangers'                 => $this->getInstallerTable()->getHangers(),

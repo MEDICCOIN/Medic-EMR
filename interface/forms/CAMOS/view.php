@@ -4,7 +4,7 @@
  *
  * @package   OpenEMR
  * @link      http://www.open-emr.org
- * @author    Mark Leeds <drleeds@gmail.com>
+ * @author    markleeds <markleeds>
  * @author    fndtn357 <fndtn357@gmail.com>
  * @author    cornfeed <jdough823@gmail.com>
  * @author    cfapress <cfapress>
@@ -12,19 +12,21 @@
  * @author    Robert Down <robertdown@live.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2008 cfapress <cfapress>
- * @copyright Copyright (c) 2006-2009 Mark Mark Leeds <drleeds@gmail.com>
+ * @copyright Copyright (c) 2009 markleeds <markleeds>
  * @copyright Copyright (c) 2011 cornfeed <jdough823@gmail.com>
  * @copyright Copyright (c) 2012 fndtn357 <fndtn357@gmail.com>
  * @copyright Copyright (c) 2016 Wakie87 <scott@npclinics.com.au>
- * @copyright Copyright (c) 2016-2019 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2016-2018 Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2017 Robert Down <robertdown@live.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 
+?>
+<!-- view.php -->
+<?php
 require_once("../../globals.php");
 require_once("../../../library/api.inc");
-
 formHeader("Form: CAMOS");
 $textarea_rows = 22;
 $textarea_cols = 90;
@@ -67,21 +69,21 @@ function show_edit(t) {
   }
 }
 </script>
+<?php html_header_show();?>
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 </head>
 <body class="body_top">
-<form method=post action="<?php echo $rootdir?>/forms/CAMOS/save.php?mode=delete&id=<?php echo attr_url($_GET["id"]); ?>" name="my_form">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
-<h1> <?php echo xlt('CAMOS'); ?> </h1>
-<input type="submit" name="delete" value="<?php echo xla('Delete Selected Items'); ?>" />
-<input type="submit" name="update" value="<?php echo xla('Update Selected Items'); ?>" />
+<form method=post action="<?php echo $rootdir?>/forms/CAMOS/save.php?mode=delete&id=<?php echo attr($_GET["id"]); ?>" name="my_form">
+<h1> <?php xl('CAMOS', 'e'); ?> </h1>
+<input type="submit" name="delete" value="<?php xl('Delete Selected Items', 'e'); ?>" />
+<input type="submit" name="update" value="<?php xl('Update Selected Items', 'e'); ?>" />
 <?php
 echo "<a href='{$GLOBALS['form_exit_url']}'>[" . xlt('do nothing') . "]</a>";
 ?>
 <br/><br/>
-<input type='button' value='<?php echo xla('Select All'); ?>'
+<input type='button' value='<?php xl('Select All', 'e'); ?>'
   onClick='checkall()'>
-<input type='button' value='<?php echo xla('Unselect All'); ?>'
+<input type='button' value='<?php xl('Unselect All', 'e'); ?>'
   onClick='uncheckall()'>
 <br/><br/>
 <?php
@@ -92,14 +94,14 @@ $encounter = $GLOBALS['encounter'];
 
 $query = "select t1.id, t1.content from ".mitigateSqlTableUpperCase("form_CAMOS")." as t1 join forms as t2 " .
   "on (t1.id = t2.form_id) where t2.form_name like 'CAMOS%' " .
-  "and t2.encounter like ? and t2.pid = ?";
+  "and t2.encounter like $encounter and t2.pid = $pid";
 
-$statement = sqlStatement($query, array($encounter, $pid));
+$statement = sqlStatement($query);
 while ($result = sqlFetchArray($statement)) {
-    print "<input type=button value='" . xla('Edit') . "' onClick='show_edit(" . attr_js('id_textarea_'.$result['id']) . ")'>";
-    print "<input type=checkbox name='ch_" . attr($result['id']) . "'> " . text($result['content']) . "<br/>";
-    print "<div id=id_textarea_" . attr($result['id']) . " style='display:none'>";
-    print "<textarea name=textarea_" . attr($result['id']) . " cols=" . attr($textarea_cols) . " rows=" . attr($textarea_rows) . " onFocus='content_focus()' onBlur='content_blur()' >" . text($result['content']) . "</textarea><br/>";
+    print "<input type=button value='" . xl('Edit') . "' onClick='show_edit(\"id_textarea_".$result['id']."\")'>";
+    print "<input type=checkbox name='ch_".$result['id']."'> ".$result['content']."<br/>";
+    print "<div id=id_textarea_".$result['id']." style='display:none'>";
+    print "<textarea name=textarea_".$result['id']." cols=$textarea_cols rows= $textarea_rows onFocus='content_focus()' onBlur='content_blur()' >".$result['content']."</textarea><br/>";
     print "</div>";
 }
 

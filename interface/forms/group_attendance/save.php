@@ -2,14 +2,26 @@
 /**
  * interface/forms/group_attendance/save.php
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Shachar Zilbershlag <shaharzi@matrix.co.il>
- * @author    Amiel Elboim <amielel@matrix.co.il>
- * @copyright Copyright (c) 2016 Shachar Zilbershlag <shaharzi@matrix.co.il>
- * @copyright Copyright (c) 2016 Amiel Elboim <amielel@matrix.co.il>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016 Shachar Zilbershlag <shaharzi@matrix.co.il>
+ * Copyright (C) 2016 Amiel Elboim <amielel@matrix.co.il>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Shachar Zilbershlag <shaharzi@matrix.co.il>
+ * @author  Amiel Elboim <amielel@matrix.co.il>
+ * @link    http://www.open-emr.org
  */
+
 
 
 require_once("../../globals.php");
@@ -40,7 +52,7 @@ if ($_GET['mode'] == 'new') {
         "VALUES(?,NOW(),?,?,?,?,?,?);";
     $sqlBindArray = array();
     array_push($sqlBindArray, $newid, $therapy_group, $_SESSION["authUser"], $_SESSION["authProvider"], $userauthorized, $encounter, '1');
-    sqlStatement($sql_for_table_ftga, $sqlBindArray);
+    sqlInsert($sql_for_table_ftga, $sqlBindArray);
 
     //Database insertions for participants
     participant_insertions($newid, $therapy_group, $group_encounter_data, $appt_data);
@@ -51,7 +63,7 @@ elseif ($_GET['mode'] == 'update') {
     $sql_for_form_tga = "UPDATE form_group_attendance SET date = NOW(), user = ?, groupname = ?, authorized = ? WHERE id = ?;";
     $sqlBindArray = array();
     array_push($sqlBindArray, $_SESSION["authUser"], $_SESSION["authProvider"], $userauthorized, $id);
-    sqlStatement($sql_for_form_tga, $sqlBindArray);
+    sqlInsert($sql_for_form_tga, $sqlBindArray);
 
     //Delete from therapy_groups_participant_attendance table
     $sql_delete_from_table_tgpa = "DELETE FROM therapy_groups_participant_attendance WHERE form_id = ?;";

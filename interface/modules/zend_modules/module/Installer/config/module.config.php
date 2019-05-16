@@ -20,33 +20,18 @@
 *
 * +------------------------------------------------------------------------------+
 */
-use Interop\Container\ContainerInterface;
-use Zend\ServiceManager\Factory\InvokableFactory;
-use Zend\Router\Http\Segment;
-use Zend\ServiceManager\AbstractPluginManager;
-use Zend\Db\ResultSet\ResultSet;
-use Installer\Model\InstModule;
-use Zend\Db\Adapter\Adapter;
 
 return array(
     'controllers' => array(
-        'factories' => [
-            Installer\Controller\InstallerController::class => function (ContainerInterface $container, $requestedName) {
-                $dbAdapter = $container->get(Adapter::class);
-                $resultSetPrototype = new ResultSet();
-                $resultSetPrototype->setArrayObjectPrototype(new InstModule());
-                $tableGateway = new Installer\Model\InstModuleTableGateway('InstModule', $dbAdapter, null, $resultSetPrototype);
-
-                $InstModuleTable = new Installer\Model\InstModuleTable($tableGateway, $container);
-                return new Installer\Controller\InstallerController($InstModuleTable);
-            },
-        ]
+        'invokables' => array(
+            'Installer\Controller\Installer' => 'Installer\Controller\InstallerController',
+        ),
     ),
 
     'router' => array(
         'routes' => array(
             'Installer' => array(
-                'type'    => Segment::class,
+                'type'    => 'segment',
                 'options' => array(
                     'route'    => '/Installer[/:action][/:id]',
                     'constraints' => array(
@@ -54,7 +39,7 @@ return array(
                         'id'     => '[0-9]+',
                     ),
                     'defaults' => array(
-                        'controller' => Installer\Controller\InstallerController::class,
+                        'controller' => 'Installer\Controller\Installer',
                         'action'     => 'index',
                     ),
                 ),

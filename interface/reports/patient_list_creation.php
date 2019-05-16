@@ -6,7 +6,7 @@
  * @link      http://www.open-emr.org
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2014 Ensoftek, Inc
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -18,12 +18,6 @@ require_once("../drugs/drugs.inc.php");
 require_once("$srcdir/payment_jav.inc.php");
 
 use OpenEMR\Core\Header;
-
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
 
 $search_options = array("Demographics"=>xl("Demographics"),"Problems"=>xl("Problems"),"Medications"=>xl("Medications"),"Allergies"=>xl("Allergies"),"Lab results"=>xl("Lab Results"),"Communication"=>xl("Communication"));
 $comarr = array("allow_sms"=>xl("Allow SMS"),"allow_voice"=>xl("Allow Voice Message"),"allow_mail"=>xl("Allow Mail Message"),"allow_email"=>xl("Allow Email"));
@@ -61,7 +55,7 @@ $communication = trim($_POST["communication"]);
                 ToDate = d.date_to.value;
                 if ( (FromDate.length > 0) && (ToDate.length > 0) ) {
                     if ( FromDate > ToDate ){
-                        alert(<?php echo xlj('To date must be later than From date!'); ?>);
+                        alert("<?php echo xls('To date must be later than From date!'); ?>");
                         return false;
                     }
                 }
@@ -136,7 +130,7 @@ $communication = trim($_POST["communication"]);
                 $("#theform").submit();
             }
 
-            $(function() {
+            $(document).ready(function() {
                 $(".numeric_only").keydown(function(event) {
                     //alert(event.keyCode);
                     // Allow only backspace and delete
@@ -195,7 +189,6 @@ $communication = trim($_POST["communication"]);
             </p>
         </div>
         <form name='theform' id='theform' method='post' action='patient_list_creation.php' onSubmit="return Form_Validate();">
-            <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
             <div id="report_parameters">
                 <input type='hidden' name='form_refresh' id='form_refresh' value=''/>
                 <table>
@@ -406,8 +399,8 @@ $communication = trim($_POST["communication"]);
             }
 
             //Sorting By filter fields
-            $sortby = $_POST['sortby'];
-            $sortorder = $_POST['sortorder'];
+            $sortby = $_REQUEST['sortby'];
+            $sortorder = $_REQUEST['sortorder'];
 
              // This is for sorting the records.
             switch ($srch_option) {
@@ -446,17 +439,17 @@ $communication = trim($_POST["communication"]);
             }
 
             for ($i = 0; $i < count($sort); $i++) {
-                $sortlink[$i] = "<a href=\"#\" onclick=\"sortingCols(" . attr_js($sort[$i]) . ",'asc');\" ><img src='" .  $GLOBALS['images_static_relative'] . "/sortdown.gif' border=0 alt=\"".xla('Sort Up')."\"></a>";
+                $sortlink[$i] = "<a href=\"#\" onclick=\"sortingCols('$sort[$i]','asc');\" ><img src=\"../../images/sortdown.gif\" border=0 alt=\"".xla('Sort Up')."\"></a>";
             }
 
             for ($i = 0; $i < count($sort); $i++) {
                 if ($sortby == $sort[$i]) {
                     switch ($sortorder) {
                         case "asc":
-                            $sortlink[$i] = "<a href=\"#\" onclick=\"sortingCols(" . attr_js($sortby) . ",'desc');\" ><img src='" .  $GLOBALS['images_static_relative'] . "/sortup.gif' border=0 alt=\"".xla('Sort Up')."\"></a>";
+                            $sortlink[$i] = "<a href=\"#\" onclick=\"sortingCols('$sortby','desc');\" ><img src=\"../../images/sortup.gif\" border=0 alt=\"".htmlspecialchars(xl('Sort Up'), ENT_QUOTES)."\"></a>";
                             break;
                         case "desc":
-                            $sortlink[$i] = "<a href=\"#\" onclick=\"sortingCols('" . attr_js($sortby) . "','asc');\" onclick=\"top.restoreSession()\"><img src='" . $GLOBALS['images_static_relative'] . "/sortdown.gif' border=0 alt=\"".xla('Sort Down')."\"></a>";
+                            $sortlink[$i] = "<a href=\"#\" onclick=\"sortingCols('$sortby','asc');\" onclick=\"top.restoreSession()\"><img src=\"../../images/sortdown.gif\" border=0 alt=\"".xla('Sort Down')."\"></a>";
                             break;
                     } break;
                 }
@@ -480,11 +473,11 @@ $communication = trim($_POST["communication"]);
                     break;
             }
 
-            if (!empty($_POST['sortby']) && !empty($_POST['sortorder'])) {
-                if ($_POST['sortby'] =="communications") {
-                    $odrstmt = "ORDER BY ROUND((LENGTH(communications) - LENGTH(REPLACE(communications, ',', '')))/LENGTH(',')) ".escape_sort_order($_POST['sortorder']).", communications ".escape_sort_order($_POST['sortorder']);
+            if (!empty($_REQUEST['sortby']) && !empty($_REQUEST['sortorder'])) {
+                if ($_REQUEST['sortby'] =="communications") {
+                    $odrstmt = "ORDER BY ROUND((LENGTH(communications) - LENGTH(REPLACE(communications, ',', '')))/LENGTH(',')) ".escape_sort_order($_REQUEST['sortorder']).", communications ".escape_sort_order($_REQUEST['sortorder']);
                 } else {
-                    $odrstmt = "ORDER BY ".escape_identifier($_POST['sortby'], $sort, true)." ".escape_sort_order($_POST['sortorder']);
+                    $odrstmt = "ORDER BY ".escape_identifier($_REQUEST['sortby'], $sort, true)." ".escape_sort_order($_REQUEST['sortorder']);
                 }
             }
 
@@ -541,7 +534,8 @@ $communication = trim($_POST["communication"]);
                         $patInfoArr['patient_ethinic'] = $row['patient_ethinic'];
                         $patInfoArr['users_provider'] = $row['users_provider'];
                     }
-                    $patFinalDataArr[] = $patInfoArr;
+
+                            $patFinalDataArr[] = $patInfoArr;
                 }
                 ?>
 
@@ -552,7 +546,7 @@ $communication = trim($_POST["communication"]);
                 <div id = "report_results">
                     <table>
                         <tr>
-                            <td class="text"><strong><?php echo xlt('Total Number of Patients')?>:</strong>&nbsp;<span id="total_patients"><?php echo text(count(array_unique($patArr))); ?></span></td>
+                            <td class="text"><strong><?php echo xlt('Total Number of Patients')?>:</strong>&nbsp;<span id="total_patients"><?php echo attr(count(array_unique($patArr)));?></span></td>
                         </tr>
                     </table>
 

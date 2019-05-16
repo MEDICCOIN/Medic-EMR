@@ -12,7 +12,6 @@ require_once("drugs.inc.php");
 require_once("$srcdir/options.inc.php");
 
 use OpenEMR\Services\FacilityService;
-use PHPMailer\PHPMailer\PHPMailer;
 
 $facilityService = new FacilityService();
 
@@ -33,7 +32,7 @@ function send_email($subject, $body)
     $mail->Subject = $subject;
     $mail->AddAddress($recipient);
     if (!$mail->Send()) {
-        error_log('There has been a mail error sending to' . " " . $recipient .
+        error_log(xl('There has been a mail error sending to', '', '', ' ') . $recipient .
         " " . $mail->ErrorInfo);
     }
 }
@@ -173,9 +172,9 @@ if ($dconfig['disclaimer']) {
 $label_text = $row['fname'] . ' ' . $row['lname'] . ' ' . $row['date_modified'] .
 ' RX#' . sprintf('%06u', $row['prescription_id']) . "\n" .
 $row['name'] . ' ' . $row['size'] . ' ' .
-generate_display_field(array('data_type'=>'1','list_id'=>'drug_units'), $row['unit']) . ' ' .
-xl('QTY') . ' ' . $row['quantity'] . "\n" .
-xl('Take') . ' ' . $row['dosage'] . ' ' .
+generate_display_field(array('data_type'=>'1','list_id'=>'drug_units'), $row['unit']) .
+xl('QTY', '', ' ', ' ') . $row['quantity'] . "\n" .
+xl('Take', '', '', ' ') . $row['dosage'] . ' ' .
 generate_display_field(array('data_type'=>'1','list_id'=>'drug_form'), $row['form']) .
 ($row['dosage'] > 1 ? 's ' : ' ') .
 generate_display_field(array('data_type'=>'1','list_id'=>'drug_interval'), $row['interval']) .
@@ -217,6 +216,7 @@ if (false) { // if PDF output is desired
 <html>
     <script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js"></script>
 <head>
+    <?php html_header_show();?>
 <style type="text/css">
 body {
     font-family: sans-serif;

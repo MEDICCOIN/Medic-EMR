@@ -8,7 +8,7 @@
 //
 require_once('AbstractCqmReport.php');
 
-class NQF_Unimplemented extends AbstractCqmReport implements RsUnimplementedIF
+class NFQ_Unimplemented extends AbstractCqmReport implements RsUnimplementedIF
 {
     public function __construct()
     {

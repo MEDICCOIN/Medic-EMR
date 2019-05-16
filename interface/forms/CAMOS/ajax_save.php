@@ -1,27 +1,11 @@
 <?php
-/**
- * CAMOS ajax_save.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Mark Leeds <drleeds@gmail.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (C) 2006-2009 Mark Leeds <drleeds@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+//------------This file inserts your field data into the MySQL database
+include_once("../../globals.php");
+include_once("../../../library/api.inc");
+include_once("../../../library/forms.inc");
+include_once("content_parser.php");
 
-
-require_once("../../globals.php");
-require_once("../../../library/api.inc");
-require_once("../../../library/forms.inc");
-require_once("content_parser.php");
-
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
-}
-
-$field_names = array('category' => $_POST["category"], 'subcategory' => $_POST["subcategory"], 'item' => $_POST["item"], 'content' => $_POST['content']);
+$field_names = array('category' => formData("category"), 'subcategory' => formData("subcategory"), 'item' => formData("item"), 'content' => strip_escape_custom($_POST['content']));
 $camos_array = array();
 process_commands($field_names['content'], $camos_array);
 
@@ -37,7 +21,7 @@ if (preg_match("/^[\s\\r\\n\\\\r\\\\n]*$/", $field_names['content']) == 0) { //m
   //   before being submitted to the database. Will also continue to support placeholder conversion on report
   //   views to support notes within database that still contain placeholders (ie. notes that were created previous to
   //   version 4.0).
-    $field_names['content'] = replace($pid, $encounter, $field_names['content']);
+    $field_names['content'] = add_escape_custom(replace($pid, $encounter, $field_names['content']));
     reset($field_names);
     $newid = formSubmit("form_CAMOS", $field_names, $_GET["id"], $userauthorized);
     addForm($encounter, $CAMOS_form_name, $newid, "CAMOS", $pid, $userauthorized);
@@ -52,7 +36,7 @@ foreach ($camos_array as $val) {
             //   before being submitted to the database. Will also continue to support placeholder conversion on report
             //   views to support notes within database that still contain placeholders (ie. notes that were created previous to
             //   version 4.0).
-            $val[$k] = trim(replace($pid, $encounter, $v));
+            $val[$k] = trim(add_escape_custom(replace($pid, $encounter, $v)));
         }
 
         $CAMOS_form_name = "CAMOS-".$val['category'].'-'.$val['subcategory'].'-'.$val['item'];
@@ -62,4 +46,4 @@ foreach ($camos_array as $val) {
     }
 }
 
-echo "<font color=red><b>" . xlt('submitted') . ": " . text(time()) . "</b></font>";
+echo "<font color=red><b>" . xl('submitted') . ": " . time() . "</b></font>";

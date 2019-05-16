@@ -6,7 +6,7 @@
  * @link    http://www.MedExBank.com
  * @author  MedEx <support@MedExBank.com>
  * @copyright Copyright (c) 2017 MedEx <support@MedExBank.com>
- * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @license https://www.gnu.org/licenses/agpl-3.0.en.html GNU Affero General Public License 3
  */
 
 require_once "../../globals.php";
@@ -22,6 +22,8 @@ if ($_REQUEST['go'] == 'sms_search') {
     $query = "SELECT * FROM patient_data WHERE fname LIKE ? OR lname LIKE ?";
     $result = sqlStatement($query, array($param, $param));
     while ($frow = sqlFetchArray($result)) {
+        //$field_id  = $frow['field_id'];
+        //$newdata[$field_id] = get_layout_form_value($frow);
         $data['Label'] = 'Name';
         $data['value'] = $frow['fname'] . " " . $frow['lname'];
         $data['pid'] = $frow['pid'];
@@ -29,6 +31,7 @@ if ($_REQUEST['go'] == 'sms_search') {
         $data['allow'] = $frow['hipaa_allowsms'];
         $results[] = $data;
     }
+    //echo $query. " -- ".$param;
     echo json_encode($results);
     exit;
 }
@@ -56,7 +59,8 @@ if ($_REQUEST['go'] == 'Preferences') {
         if ($result['output'] == false) {
             $result['success'] = "medex_prefs updated";
         }
-        $result = $MedEx->login('1');
+        $result['logged_in'] = $MedEx->login();
+        $result['response'] = $MedEx->practice->sync($result['logged_in']['token']);
         echo json_encode($result);
     }
     exit;
@@ -106,7 +110,7 @@ if ($_REQUEST['MedEx'] == "start") {
             while ($frow = sqlFetchArray($fetch)) {
                 $facilities[] = $frow['id'];
             }
-            $runQuery = "SELECT * FROM users WHERE username != '' AND active = '1' AND authorized = '1'";
+            $runQuery = "SELECT * FROM users WHERE username != '' AND active = '1' AND authorized='1'";
             $prove = sqlStatement($runQuery);
             while ($prow = sqlFetchArray($prove)) {
                 $providers[] = $prow['id'];
@@ -119,17 +123,21 @@ if ($_REQUEST['MedEx'] == "start") {
 								PHONE_country_code,LABELS_local,LABELS_choice)
 							VALUES (?,?,?,?,?,?,?,?,?,?)";
             sqlStatement($sqlINSERT, array($response['customer_id'], $response['API_key'], $_POST['new_email'], $facilities, $providers, "1", "1", "1", "1", "5160"));
-            sqlQuery("UPDATE `background_services` SET `active`='1',`execute_interval`='5' WHERE `name`='MedEx'");
+            sqlQuery("UPDATE `background_services` SET `active`='1',`execute_interval`='29' WHERE `name`='MedEx'");
         }
 
-        $info = $MedEx->login('1');
+        $logged_in = $MedEx->login();
 
-        if ($info['status']['token']) {
-            $info['status']['show'] = xlt("Sign-up successful for") . " " . $data['company'] . ".<br />" . xlt("Proceeding to Preferences") . ".<br />" .
+        if ($logged_in) {
+            $token      = $logged_in['token'];
+            $response['practice']   = $MedEx->practice->sync($token);
+            $response['campaigns']  = $MedEx->campaign->events($token);
+            $response['generate']   = $MedEx->events->generate($token, $response['campaigns']['events']);
+            $response['success']    = "200";
+            $response['show'] = xlt("Sign-up successful for") . " " . $data['company'] . ".<br />" . xlt("Proceeding to Preferences") . ".<br />" .
                 xlt("If this page does not refresh, reload the Messages page manually") . ".<br />";
             //get js to reroute user to preferences.
-            echo json_encode($info['status']);
-            sqlQuery("UPDATE `background_services` SET `active`='1',`execute_interval`='29' WHERE `name`='MedEx'");
+            echo json_encode($response);
         } else {
             $response_prob = array();
             $response_prob['show'] = xlt("We ran into some problems connecting your EHR to the MedEx servers") . ".<br >
@@ -137,7 +145,6 @@ if ($_REQUEST['MedEx'] == "start") {
                 .xlt('Run Setup again or contact support for assistance').
                 " <a href='https://medexbank.com/cart/upload/'>MedEx Bank</a>.<br />";
             echo json_encode($response_prob);
-            sqlQuery("UPDATE `background_services` SET `active`='0' WHERE `name`='MedEx'");
         }
         //then redirect user to preferences with a success message!
     } else {
@@ -161,31 +168,14 @@ if (($_REQUEST['pid']) && ($_REQUEST['action'] == "new_recall")) {
      *  And when that day comes we'll put it here...
      *  The other option is to use Visit Categories here.  Maybe both?  Consensus?
      */
-    $query = "SELECT ORDER_DETAILS FROM form_eye_mag_orders WHERE PID=? AND ORDER_DATE_PLACED < NOW() ORDER BY ORDER_DATE_PLACED DESC LIMIT 1";
+    $query = "SELECT PLAN FROM form_eye_mag WHERE PID=? AND date < NOW() ORDER BY date DESC LIMIT 1";
     $result2 = sqlQuery($query, array($_REQUEST['pid']));
-    if (!empty($result2)) {
-        $result['PLAN'] = $result2['ORDER_DETAILS'];
+    if ($result2) {
+        $result['PLAN'] = $result2['PLAN'];
     }
-
-    $query = "SELECT * FROM openemr_postcalendar_events WHERE pc_pid =? ORDER BY pc_eventDate DESC LIMIT 1";
+    $query = "SELECT pc_eventDate FROM openemr_postcalendar_events WHERE pc_pid =? ORDER BY pc_eventDate DESC LIMIT 1";
     $result2 = sqlQuery($query, array($_REQUEST['pid']));
-    if ($result2) { //if they were never actually scheduled this would be blank
-        $result['DOLV']     = oeFormatShortDate($result2['pc_eventDate']);
-        $result['provider'] = $result2['pc_aid'];
-        $result['facility'] = $result2['pc_facility'];
-    }
-    /**
-     * Is there an existing Recall in place already????
-     * If so we need to use that info...
-     */
-    $query = "SELECT * from medex_recalls where r_pid=?";
-    $result3 = sqlQuery($query, array($_REQUEST['pid']));
-    if ($result3) {
-        $result['recall_date']  = $result3['r_eventDate'];
-        $result['PLAN']         = $result3['r_reason'];
-        $result['facility']     = $result3['r_facility'];
-        $result['provider']     = $result3['r_provider'];
-    }
+    $result['DOLV'] = $result2['pc_eventDate'];
     echo json_encode($result);
     exit;
 }
@@ -222,6 +212,14 @@ if ($_REQUEST['action'] == "process") {
     $_SESSION['pc_eidList'] = $pc_eidList[0];
     $pidList = json_decode($_POST['parameter'], true);
     $_SESSION['pidList'] = $pidList;
+    if ($_POST['item'] == "SMS") {
+        $sql = "UPDATE hipaa_reminders SET r_phone_done=NOW(),r_phone_bywhom=? WHERE r_pid IN (" . $_SESSION['pidList'] . ")";
+        sqlQuery($sql, array($_SESSION['authUser']));
+    }
+    if ($_POST['item'] == "AVM") {
+        $sql = "UPDATE hipaa_reminders SET r_vm_sent=NOW(),r_vm_sent_by=? WHERE r_pid IN (" . $_SESSION['pidList'] . ")";
+        sqlQuery($sql, array($_SESSION['authUser']));
+    }
     if ($_POST['item'] == "postcards") {
         foreach ($pidList as $pid) {
             $sql = "INSERT INTO medex_outgoing (msg_pc_eid, msg_type, msg_reply, msg_extra_text) VALUES (?,?,?,?)";

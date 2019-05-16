@@ -1,7 +1,8 @@
 <?php
 /**
  * This class is responsible for shuttling SQL queries to the audit table. All
- * work is delegated to the existing SQL auditing function @see EventAuditLogger::auditSQLEvent
+ * work is delegated to the existing SQL auditing function `auditSQLEvent` in
+ * `library/log.inc`.
  *
  * Copyright (C) 2016 Matthew Vita <matthewvita48@gmail.com>
  *
@@ -24,7 +25,6 @@
 namespace OpenEMR\Common\Database;
 
 use \Doctrine\DBAL\Logging\SQLLogger;
-use OpenEMR\Common\Logging\EventAuditLogger;
 use OpenEMR\Common\Logging\Logger;
 
 final class Auditor implements SQLLogger
@@ -82,7 +82,7 @@ final class Auditor implements SQLLogger
     {
         $sql = $this->queries[$this->currentQueryIndex]['sql'];
         $params = $this->queries[$this->currentQueryIndex]['params'];
-        EventAuditLogger::instance()->auditSQLEvent($sql, true, $params);
+        auditSQLEvent($sql, true, $params);
         unset($this->queries[$this->currentQueryIndex]);
     }
 }

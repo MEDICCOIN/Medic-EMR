@@ -1,27 +1,34 @@
 <?php
 /**
+ *
  * QRDA Download
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Ensoftek
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2015 Ensoftek, Inc
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2015 Ensoftek, Inc
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Ensoftek
+ * @link    http://www.open-emr.org
  */
+
+
+
 
 
 require_once("../interface/globals.php");
 require_once "$srcdir/report_database.inc";
 require_once("$srcdir/options.inc.php");
 require_once("qrda_category1.inc");
-
-use OpenEMR\Core\Header;
-
-if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-    csrfNotVerified();
-}
 
 $report_id = (isset($_GET['report_id'])) ? trim($_GET['report_id']) : "";
 $provider_id = (isset($_GET['provider_id'])) ? trim($_GET['provider_id']) : "";
@@ -33,21 +40,29 @@ $type_report = (($type_report == "amc") || ($type_report == "amc_2011") || ($typ
                   ($type_report == "cqm") || ($type_report == "cqm_2011") || ($type_report == "cqm_2014")) ? $type_report : "standard";
 
 ?>
+
 <html>
 
 <head>
-<?php Header::setupHeader(['no_bootstrap', 'no_fontawesome', 'common', 'opener', 'jquery-ui']); ?>
+<?php html_header_show();?>
 
+<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
+<script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/textformat.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-4-3/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/jquery-ui-1.8.5.custom.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/common.js"></script>
 <script language="JavaScript">
-    var reportID = <?php echo js_escape($report_id); ?>;
-    var provider_id = <?php echo js_escape($provider_id);?>;
+    var reportID = '<?php echo attr($report_id); ?>';
+    var provider_id = '<?php echo attr($provider_id);?>';
     var zipFileArray = new Array();
     var failureMessage = "";
-    $(function(){
-        $("#checkAll").on("change", function() {
-            var checked =  ( $("#checkAll").prop("checked") ) ? true : false;
+    $(document).ready(function(){
+        $("#checkAll").change(function() {
+            var checked =  ( $("#checkAll").attr("checked") ) ? true : false;
             $("#thisForm input:checkbox").each(function() {
-                $(this).prop("checked", checked);
+                $(this).attr("checked", checked);
             });
         });
     });
@@ -61,7 +76,7 @@ $type_report = (($type_report == "amc") || ($type_report == "amc_2011") || ($typ
             criteriaArray.push($(this).attr("id"));
         });
         if ( criteriaArray.length == 0 ) {
-            alert(<?php echo xlj('Please select at least one criteria to download');?>);
+            alert("<?php echo xls('Please select at least one criteria to download');?>");
             return false;
         }
         for( var i=0 ; i < criteriaArray.length ; i++) {
@@ -83,8 +98,7 @@ $type_report = (($type_report == "amc") || ($type_report == "amc_2011") || ($typ
                 reportID: reportID,
                 counter: counter,
                 ruleID: $("#text" + counter).val(),
-                provider_id: provider_id,
-                csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+                provider_id: provider_id
             },
             context: document.body,
             success :
@@ -105,7 +119,7 @@ $type_report = (($type_report == "amc") || ($type_report == "amc_2011") || ($typ
                 if ( zipFileArray.length ) {
                     var zipFiles = zipFileArray.join(",");
                     //console.log(zipFiles);
-                    window.location = 'ajax_download.php?fileName=' + encodeURIComponent(zipFiles) + '&csrf_token_form=' + <?php echo js_url(collectCsrfToken()); ?>;
+                    window.location = 'ajax_download.php?fileName=' + zipFiles;
                     zipFileArray.length = 0;
                 }
                 if ( failureMessage ) {
@@ -150,10 +164,10 @@ $type_report = (($type_report == "amc") || ($type_report == "amc_2011") || ($typ
         <th scope="col" class="multiDownload">
             <input type="checkbox" name="checkAll" id="checkAll"/>
             <div style="display:none" id=downloadAll>
-                <img class="downloadIcon" src="<?php echo $GLOBALS['images_static_relative'];?>/downbtn.gif" onclick=downloadAllXML(); />
+                <img class='downloadIcon' src='<?php echo $GLOBALS['webroot'];?>/images/downbtn.gif' onclick=downloadAllXML(); />
             </div>
-            <div style="display:none" id=spinAll>;
-                <img src="<?php echo $GLOBALS['webroot'];?>/interface/pic/ajax-loader.gif"/>
+            <div style='display:none' id=spinAll>;
+                <img src='<?php echo $GLOBALS['webroot'];?>/interface/pic/ajax-loader.gif'/>
             </div>
         </th>
         <th scope="col">
@@ -205,7 +219,7 @@ $type_report = (($type_report == "amc") || ($type_report == "amc_2011") || ($typ
                 echo "</td>";
                 echo "<td align=center>";
                 echo "<div id=download" . attr($counter) . ">";
-                echo "<img class='downloadIcon' src='" . $GLOBALS['images_static_relative'] . "/downbtn.gif' onclick=downloadXML(" . attr_js($counter) . ",1); />";
+                echo "<img class='downloadIcon' src='" . $GLOBALS['webroot'] . "/images/downbtn.gif' onclick=downloadXML(" . attr($counter) . ",1); />";
                 echo "</div>";
                 echo "<div style='display:none' id=spin" . attr($counter) . ">";
                 echo "<img src='" . $GLOBALS['webroot'] . "/interface/pic/ajax-loader.gif'/>";
@@ -213,7 +227,7 @@ $type_report = (($type_report == "amc") || ($type_report == "amc_2011") || ($typ
                 echo "</td>";
                 echo "<td>";
                 echo "<div style='display:none' id=checkmark" . attr($counter) . ">";
-                echo "<img src='" . $GLOBALS['images_static_relative'] . "/checkmark.png' />";
+                echo "<img src='" . $GLOBALS['webroot'] . "/images/checkmark.png' />";
                 echo "</div>";
                 echo "</td>";
                 echo "</tr>";

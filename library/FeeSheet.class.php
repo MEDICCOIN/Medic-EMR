@@ -18,10 +18,14 @@
  * http://www.gnu.org/licenses/licenses.html#GPL .
  *
  * @package OpenEMR
- * @license https://www.gnu.org/licenses/licenses.html#GPL GNU GPL V3+
+ * @license http://www.gnu.org/licenses/licenses.html#GPL GNU GPL V3+
  * @author  Rod Roark <rod@sunsetsystems.com>
  * @link    http://www.open-emr.org
  */
+
+
+
+
 
 require_once(dirname(__FILE__) . "/../interface/globals.php");
 require_once(dirname(__FILE__) . "/acl.inc");
@@ -31,10 +35,7 @@ require_once(dirname(__FILE__) . "/options.inc.php");
 require_once(dirname(__FILE__) . "/appointment_status.inc.php");
 require_once(dirname(__FILE__) . "/classes/Prescription.class.php");
 require_once(dirname(__FILE__) . "/forms.inc");
-
-use OpenEMR\Billing\BillingUtilities;
-use OpenEMR\Common\Logging\EventAuditLogger;
-
+require_once(dirname(__FILE__) . "/log.inc");
 // For logging checksums set this to true.
 define('CHECKSUM_LOGGING', true);
 
@@ -205,7 +206,7 @@ class FeeSheet
   //
     public function logFSMessage($action)
     {
-        EventAuditLogger::instance()->newEvent(
+        newEvent(
             'fee-sheet',
             $_SESSION['authUser'],
             $_SESSION['authProvider'],
@@ -238,7 +239,7 @@ class FeeSheet
         if (CHECKSUM_LOGGING) {
             $comment = "Checksum = '$ret'";
             $comment .= ", Saved = " . ($saved ? "true" : "false");
-            EventAuditLogger::instance()->newEvent("checksum", $_SESSION['authUser'], $_SESSION['authProvider'], 1, $comment, $this->pid);
+            newEvent("checksum", $_SESSION['authUser'], $_SESSION['authProvider'], 1, $comment, $this->pid);
         }
 
         return $ret;
@@ -283,7 +284,7 @@ class FeeSheet
     public function insert_lbf_item($form_id, $field_id, $field_value)
     {
         if ($form_id) {
-            sqlStatement("INSERT INTO lbf_data (form_id, field_id, field_value) " .
+            sqlInsert("INSERT INTO lbf_data (form_id, field_id, field_value) " .
             "VALUES (?, ?, ?)", array($form_id, $field_id, $field_value));
         } else {
             $form_id = sqlInsert("INSERT INTO lbf_data (field_id, field_value) " .
@@ -569,7 +570,7 @@ class FeeSheet
   //
     public function loadServiceItems()
     {
-        $billresult = BillingUtilities::getBillingByEncounter($this->pid, $this->encounter, "*");
+        $billresult = getBillingByEncounter($this->pid, $this->encounter, "*");
         if ($billresult) {
             foreach ($billresult as $iter) {
                 if (!$this->ALLOW_COPAYS && $iter["code_type"] == 'COPAY') {
@@ -777,7 +778,7 @@ class FeeSheet
 
                     if (!$id) {
                         // adding new copay from fee sheet into ar_session and ar_activity tables
-                        $session_id = sqlInsert(
+                        $session_id = idSqlStatement(
                             "INSERT INTO ar_session " .
                             "(payer_id, user_id, pay_total, payment_type, description, patient_id, payment_method, " .
                             "adjustment_code, post_to_date) " .
@@ -852,7 +853,7 @@ class FeeSheet
                 if ($id) {
                     if ($del) {
                         $this->logFSMessage(xl('Service deleted'));
-                        BillingUtilities::deleteBilling($id);
+                        deleteBilling($id);
                     } else {
                         $tmp = sqlQuery(
                             "SELECT * FROM billing WHERE id = ? AND (billed = 0 or billed is NULL) AND activity = 1",
@@ -919,7 +920,7 @@ class FeeSheet
                 else if (!$del) {
                     $this->logFSMessage(xl('Service added'));
                     $code_text = lookup_code_descriptions($code_type.":".$code);
-                    BillingUtilities::addBilling(
+                    addBilling(
                         $this->encounter,
                         $code_type,
                         $code,

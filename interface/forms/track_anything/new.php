@@ -2,21 +2,22 @@
 /**
  * Encounter form to track any clinical parameter.
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Joe Slam <trackanything@produnis.de>
- * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @package OpenEMR
+ * @link    http://www.open-emr.org
+ * @author  Joe Slam <trackanything@produnis.de>
+ * @author  Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2014 Joe Slam <trackanything@produnis.de>
  * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
+// Some initial api-inputs
 
 
 require_once("../../globals.php");
 require_once("$srcdir/api.inc");
 require_once("$srcdir/forms.inc");
 require_once("$srcdir/acl.inc");
-
 formHeader("Form: Track anything");
 
 // check if we are inside an encounter
@@ -38,15 +39,15 @@ echo "<html><head>";
 ?>
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 <link rel="stylesheet" href="<?php echo $web_root; ?>/interface/forms/track_anything/style.css" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 <script type="text/javascript" src="../../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
 <script type="text/javascript" src="../../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
 
 <script type="text/javascript">
-$(function(){
+$(document).ready(function(){
     $('.datetimepicker').datetimepicker({
         <?php $datetimepicker_timepicker = true; ?>
         <?php $datetimepicker_showseconds = true; ?>
@@ -150,7 +151,7 @@ if ($formid) {
 
             // store data to track_anything_db
             $query = "INSERT INTO form_track_anything_results (track_anything_id, track_timestamp, itemid, result) VALUES (?, ?, ?, ?)";
-            sqlStatement($query, array($formid,$thedate,$thisid,$thisvalue));
+            sqlInsert($query, array($formid,$thedate,$thisid,$thisvalue));
         }
     }
 

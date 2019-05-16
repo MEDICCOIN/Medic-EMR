@@ -7,28 +7,23 @@
  * @author    Rod Roark <rod@sunsetsystems.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2006-2016 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once("../globals.php");
-require_once("$srcdir/patient.inc");
-require_once("../drugs/drugs.inc.php");
+ require_once("../globals.php");
+ require_once("$srcdir/patient.inc");
+ require_once("../drugs/drugs.inc.php");
 
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
-
-$form_from_date = isset($_POST['form_from_date']) ? DateToYYYYMMDD($_POST['form_from_date']) : date('Y-01-01'); // From date filter
-$form_to_date = isset($_POST['form_to_date']) ? DateToYYYYMMDD($_POST['form_to_date']) : date('Y-m-d');   // To date filter
+ $form_from_date  = fixDate($_POST['form_from_date'], date('Y-01-01'));
+ $form_to_date    = fixDate($_POST['form_to_date'], date('Y-m-d'));
 ?>
 <html>
 <head>
-<title><?php echo xlt('Destroyed Drugs'); ?></title>
+<?php html_header_show();?>
+<title><?php xl('Destroyed Drugs', 'e'); ?></title>
 <link rel='stylesheet' href='<?php echo $css_header ?>' type='text/css'>
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 
 <style>
 table.mymaintable, table.mymaintable td, table.mymaintable th {
@@ -42,13 +37,13 @@ table.mymaintable td, table.mymaintable th {
 
 <script type="text/javascript" src="../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
 <script type="text/javascript" src="../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-1-9-1/jquery.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-9-1/index.js"></script>
 <script type="text/javascript" src="../../library/js/report_helper.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 
 <script language="JavaScript">
 
-$(function() {
+$(document).ready(function() {
     oeFixedHeaderSetup(document.getElementById('mymaintable'));
     var win = top.printLogSetup ? top : opener.top;
     win.printLogSetup(document.getElementById('printbutton'));
@@ -56,7 +51,7 @@ $(function() {
     $('.datepicker').datetimepicker({
         <?php $datetimepicker_timepicker = false; ?>
         <?php $datetimepicker_showseconds = false; ?>
-        <?php $datetimepicker_formatInput = true; ?>
+        <?php $datetimepicker_formatInput = false; ?>
         <?php require($GLOBALS['srcdir'] . '/js/xl/jquery-datetimepicker-2-5-4.js.php'); ?>
         <?php // can add any additional javascript settings to datetimepicker here; need to prepend first setting with a comma ?>
     });
@@ -69,25 +64,26 @@ $(function() {
 
 <center>
 
-<h2><?php echo xlt('Destroyed Drugs'); ?></h2>
+<h2><?php xl('Destroyed Drugs', 'e'); ?></h2>
 
-<form name='theform' method='post' action='destroyed_drugs_report.php' onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<form name='theform' method='post' action='destroyed_drugs_report.php'>
 
 <table border='0' cellpadding='3'>
 
  <tr>
   <td>
-    <?php echo xlt('From'); ?>:
+    <?php xl('From', 'e'); ?>:
    <input type='text' class='datepicker' name='form_from_date' id='form_from_date'
-    size='10' value='<?php echo attr(oeFormatShortDate($form_from_date)); ?>'>
+    size='10' value='<?php echo $form_from_date ?>'
+    title=<?php xl('yyyy-mm-dd', 'e', '\'', '\''); ?>>
 
-   &nbsp;<?php echo xlt('To'); ?>:
+   &nbsp;<?php xl('To', 'e'); ?>:
    <input type='text' class='datepicker' name='form_to_date' id='form_to_date'
-    size='10' value='<?php echo attr(oeFormatShortDate($form_to_date)); ?>'>
+    size='10' value='<?php echo $form_to_date ?>'
+    title=<?php xl('yyyy-mm-dd', 'e', '\'', '\''); ?>>
 
    &nbsp;
-   <input type='submit' name='form_refresh' value='<?php echo xla('Refresh'); ?>'>
+   <input type='submit' name='form_refresh' value=<?php xl('Refresh', 'e'); ?>>
    &nbsp;
    <input type='button' value='<?php echo xla('Print'); ?>' id='printbutton' />
   </td>
@@ -104,36 +100,36 @@ $(function() {
  <thead>
  <tr bgcolor="#dddddd">
   <td class='dehead'>
-    <?php echo xlt('Drug Name'); ?>
+    <?php xl('Drug Name', 'e'); ?>
   </td>
   <td class='dehead'>
-    <?php echo xlt('NDC'); ?>
+    <?php xl('NDC', 'e'); ?>
   </td>
   <td class='dehead'>
-    <?php echo xlt('Lot'); ?>
+    <?php xl('Lot', 'e'); ?>
   </td>
   <td class='dehead'>
-    <?php echo xlt('Qty'); ?>
+    <?php xl('Qty', 'e'); ?>
   </td>
   <td class='dehead'>
-    <?php echo xlt('Date Destroyed'); ?>
+    <?php xl('Date Destroyed', 'e'); ?>
   </td>
   <td class='dehead'>
-    <?php echo xlt('Method'); ?>
+    <?php xl('Method', 'e'); ?>
   </td>
   <td class='dehead'>
-    <?php echo xlt('Witness'); ?>
+    <?php xl('Witness', 'e'); ?>
   </td>
   <td class='dehead'>
-    <?php echo xlt('Notes'); ?>
+    <?php xl('Notes', 'e'); ?>
   </td>
  </tr>
  </thead>
  <tbody>
 <?php
 if ($_POST['form_refresh']) {
-    $where = "i.destroy_date >= ? AND " .
-    "i.destroy_date <= ?";
+    $where = "i.destroy_date >= '$form_from_date' AND " .
+    "i.destroy_date <= '$form_to_date'";
 
     $query = "SELECT i.inventory_id, i.lot_number, i.on_hand, i.drug_id, " .
     "i.destroy_date, i.destroy_method, i.destroy_witness, i.destroy_notes, " .
@@ -144,7 +140,7 @@ if ($_POST['form_refresh']) {
     "ORDER BY d.name, i.drug_id, i.destroy_date, i.lot_number";
 
   // echo "<!-- $query -->\n"; // debugging
-    $res = sqlStatement($query, array($form_from_date, $form_to_date));
+    $res = sqlStatement($query);
 
     $last_drug_id = 0;
     while ($row = sqlFetchArray($res)) {
@@ -157,31 +153,31 @@ if ($_POST['form_refresh']) {
     ?>
    <tr>
     <td class='detail'>
-        <?php echo text($drug_name); ?>
+        <?php echo $drug_name ?>
   </td>
   <td class='detail'>
-        <?php echo text($ndc_number); ?>
+        <?php echo $ndc_number ?>
   </td>
   <td class='detail'>
-     <a href='../drugs/destroy_lot.php?drug=<?php echo attr_url($row['drug_id']); ?>&lot=<?php echo attr_url($row['inventory_id']); ?>'
+     <a href='../drugs/destroy_lot.php?drug=<?php echo $row['drug_id'] ?>&lot=<?php echo $row['inventory_id'] ?>'
     style='color:#0000ff' target='_blank'>
-        <?php echo text($row['lot_number']); ?>
+        <?php echo $row['lot_number'] ?>
    </a>
   </td>
   <td class='detail'>
-        <?php echo text($row['on_hand']); ?>
+        <?php echo $row['on_hand'] ?>
   </td>
   <td class='detail'>
         <?php echo text(oeFormatShortDate($row['destroy_date'])); ?>
   </td>
   <td class='detail'>
-        <?php echo text($row['destroy_method']); ?>
+        <?php echo $row['destroy_method'] ?>
   </td>
   <td class='detail'>
-        <?php echo text($row['destroy_witness']); ?>
+        <?php echo $row['destroy_witness'] ?>
   </td>
   <td class='detail'>
-        <?php echo text($row['destroy_notes']); ?>
+        <?php echo $row['destroy_notes'] ?>
   </td>
  </tr>
 <?php

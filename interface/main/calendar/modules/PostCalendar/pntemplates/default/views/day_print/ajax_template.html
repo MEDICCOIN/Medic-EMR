@@ -204,7 +204,7 @@ div.tiny { width:1px; height:1px; font-size:1px; }
 }
 </style>
 
-[-headerTemplate assets='no_bootstrap|no_fontawesome|no_main-theme|no_dialog'-]
+<script type="text/javascript" src="../../../library/textformat.js"></script>
 
 [-php-]
 
@@ -549,6 +549,7 @@ echo "<P>";
 
 </body>
 
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
 <script language='JavaScript'>
 $(document).ready(function(){
     var win = top.printLogPrint ? top : opener.top;

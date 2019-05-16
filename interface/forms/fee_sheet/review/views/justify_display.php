@@ -2,11 +2,22 @@
 /**
  * knockoutjs template for rendering the interface for justifying procedures
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Kevin Yeh <kevin.y@integralemr.com>
- * @copyright Copyright (c) 2013 Kevin Yeh <kevin.y@integralemr.com> and OEMR <www.oemr.org>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2013 Kevin Yeh <kevin.y@integralemr.com> and OEMR <www.oemr.org>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Kevin Yeh <kevin.y@integralemr.com>
+ * @link    http://www.open-emr.org
  */
 ?>
 <script type="text/html" id="justify-display">
@@ -32,11 +43,11 @@
                             </tr>
                         </tbody>
                     </table>
-                </span>
+                </span> 
                 <select data-bind="value: searchType, options: diag_code_types, optionsText: 'key'"></select>
             </span>
         </span>
-        <table class="table table-condensed">
+        <table>
             <thead>
                 <tr>
                     <th class='sort' data-bind="event: {click: sort_justify}" title="<?php echo xla('Click to sort') ?>">#</th>
@@ -47,7 +58,7 @@
             <tbody data-bind="foreach: $data.diagnosis_options">
                 <tr data-bind="attr:{class: source, encounter_issue: encounter_issue}">
                     <td class="priority" data-bind="text: priority()!=99999 ? priority() : ''"/></td>
-                    <td class=""><input type="checkbox" data-bind="checked: selected, event:{click: function(data,event){return check_justify(data,event,$parent);}}" /></td>
+                    <td class="checkbox"><input type="checkbox" data-bind="checked: selected, event:{click: function(data,event){return check_justify(data,event,$parent);}}" /></td>
                     <td class="problem_info"><input type="checkbox" data-bind="visible: $data.prob_id()==null && $data.allowed_to_create_problem_from_diagnosis()=='TRUE', checked: create_problem" title="<?php echo xla('Check to create problem from this diagnosis');?>"/></td>
                     <td class="info" data-bind="text: code, attr:{title:code_type}"></td>
                     <td class="info">

@@ -20,7 +20,7 @@
 *
 * @package OpenEMR
 * @author Terry Hill <terry@lillysystems.com>
-* @link https://www.open-emr.org
+* @link http://www.open-emr.org
 */
 
 /**

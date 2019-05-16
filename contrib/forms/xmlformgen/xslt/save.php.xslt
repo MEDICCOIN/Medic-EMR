@@ -137,7 +137,7 @@ foreach($field_names as $key=>$val)
 
 /* escape form data for entry to the database. */
 foreach ($field_names as $k => $var) {
-  $field_names[$k] = add_escape_custom($var);
+  $field_names[$k] = formDataCore($var);
 }
 
 if ($encounter == '') $encounter = date('Ymd');
@@ -220,7 +220,7 @@ elseif ($_GET['mode'] == 'update') {
 
     /* update the data in the form's table */
     $success = formUpdate($table_name, $field_names, $_GET['id'], $userauthorized);
-    /* sqlStatement('update '.$table_name." set pid = {".$_SESSION['pid']."},groupname='".$_SESSION['authProvider']."',user='".$_SESSION['authUser']."',authorized=$userauthorized,activity=1,date = NOW(), where id=$id"); */
+    /* sqlInsert('update '.$table_name." set pid = {".$_SESSION['pid']."},groupname='".$_SESSION['authProvider']."',user='".$_SESSION['authUser']."',authorized=$userauthorized,activity=1,date = NOW(), where id=$id"); */
 }
 ]]></xsl:text>
 </xsl:if>

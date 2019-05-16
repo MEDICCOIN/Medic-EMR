@@ -1,19 +1,10 @@
 <?php
-/**
- * Sports Physical Form
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Jason Morrill
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2009 Jason Morrill
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+/*
+ * Sports Physical Form created by Jason Morrill: January 2009
  */
 
-
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
 
 /** CHANGE THIS - name of the database table associated with this form **/
 $table_name = "form_example";
@@ -48,9 +39,10 @@ if ($record['sig_date'] != "") {
 ?>
 
 <html><head>
+<?php html_header_show();?>
 
 <!-- supporting javascript code -->
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/textformat.js"></script>
 
 <!-- page styles -->
@@ -64,9 +56,7 @@ if ($record['sig_date'] != "") {
 Printed on <?php echo date("F d, Y", time()); ?>
 
 <form method=post action="">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
-
-<span class="title"><?php echo xlt($form_name); ?></span><br>
+<span class="title"><?php xl($form_name, 'e'); ?></span><br>
 
 <!-- container for the main body of the form -->
 <div id="print_form_container">
@@ -76,33 +66,33 @@ Printed on <?php echo date("F d, Y", time()); ?>
 <tr><td>
 Date:
    <input type='text' size='10' name='form_date' id='form_date'
-    value='<?php echo attr($record['form_date']);?>'
-    title='<?php echo xla('yyyy-mm-dd'); ?>'
+    value='<?php echo stripslashes($record['form_date']);?>'
+    title='<?php xl('yyyy-mm-dd', 'e'); ?>'
     />
 </td></tr>
 <tr><td>
-Name: <input id="name" name="name" type="text" size="50" maxlength="250" value="<?php echo attr($record['name']);?>">
+Name: <input id="name" name="name" type="text" size="50" maxlength="250" value="<?php echo stripslashes($record['name']);?>">
 Date of Birth:
    <input type='text' size='10' name='dob' id='dob'
-    value='<?php echo attr($record['dob']);?>'
-    title='<?php echo xla('yyyy-mm-dd Date of Birth'); ?>'
+    value='<?php echo stripslashes($record['dob']);?>'
+    title='<?php xl('yyyy-mm-dd Date of Birth', 'e'); ?>'
     />
 </td></tr>
 <tr><td>
-Phone: <input name="phone" id="phone" type="text" size="15" maxlength="15" value="<?php echo attr($record['phone']);?>">
+Phone: <input name="phone" id="phone" type="text" size="15" maxlength="15" value="<?php echo stripslashes($record['phone']);?>">
 </td></tr>
 <tr><td>
-Address: <input name="address" id="address" type="text" size="80" maxlength="250" value="<?php echo attr($record['address']);?>">
+Address: <input name="address" id="address" type="text" size="80" maxlength="250" value="<?php echo stripslashes($record['address']);?>">
 </td></tr>
 </table>
 </div>
 
 <div id="print_bottom">
 Use this space to express notes <br>
-<textarea name="notes" id="notes" cols="80" rows="4"><?php echo attr($record['notes']);?></textarea>
+<textarea name="notes" id="notes" cols="80" rows="4"><?php echo stripslashes($record['notes']);?></textarea>
 <br><br>
 <div style="text-align:right;">
-Signature?
+Signature? 
 <input type="radio" id="sig" name="sig" value="y" <?php if ($record["sig"] == 'y') {
     echo "CHECKED";
 } ?>>Yes
@@ -111,10 +101,10 @@ Signature?
     echo "CHECKED";
 } ?>>No
 &nbsp;&nbsp;
-Date of signature:
+Date of signature: 
    <input type='text' size='10' name='sig_date' id='sig_date'
-    value='<?php echo attr($record['sig_date']);?>'
-    title='<?php echo xla('yyyy-mm-dd'); ?>' />
+    value='<?php echo stripslashes($record['sig_date']);?>'
+    title='<?php xl('yyyy-mm-dd', 'e'); ?>' />
 </div>
 </div>
 

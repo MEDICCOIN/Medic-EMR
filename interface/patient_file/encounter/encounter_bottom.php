@@ -1,20 +1,12 @@
 <?php
-/**
- * encounter_bottom.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+// Cloned from patient_encounter.php.
 
-
-require_once("../../globals.php");
-require_once("$srcdir/encounter.inc");
+include_once("../../globals.php");
+include_once("$srcdir/encounter.inc");
 ?>
 <html>
 <head>
+<?php html_header_show();?>
 </head>
 <frameset rows="*" cols="200,400,*">
     <?php

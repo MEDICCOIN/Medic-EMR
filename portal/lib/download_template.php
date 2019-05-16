@@ -27,12 +27,15 @@
 require_once(dirname(__file__) . "/../verify_session.php");
 
 require_once($GLOBALS['srcdir'] . '/acl.inc');
+require_once($GLOBALS['srcdir'] . '/htmlspecialchars.inc.php');
+require_once($GLOBALS['srcdir'] . '/formdata.inc.php');
+require_once($GLOBALS['srcdir'] . '/formatting.inc.php');
 require_once($GLOBALS['srcdir'] . '/appointments.inc.php');
 require_once($GLOBALS['srcdir'] . '/options.inc.php');
 
 $form_filename = $_POST['docid'];
 $pid = $_POST['pid'];
-// $user = $_POST['user'];
+// $user = strip_escape_custom($_POST['user']);
 
 $nextLocation = 0; // offset to resume scanning
 $keyLocation = false; // offset of a potential {string} to replace
@@ -125,10 +128,10 @@ function doSubs($s)
     $nextLocation = 0;
     $groupLevel = 0;
     $groupCount = 0;
-
+    
     while (($keyLocation = strpos($s, '{', $nextLocation)) !== false) {
         $nextLocation = $keyLocation + 1;
-
+        
         if (keySearch($s, '{PatientSignature}')) {
             $fn = $GLOBALS['web_root'] . '/portal/sign/assets/signhere.png';
             $sigfld = '<span>';
@@ -228,7 +231,7 @@ function doSubs($s)
             $patientid = $ptrow['pid'];
             $DOS = substr($enrow['date'], 0, 10);
             // Prefer appointment comment if one is present.
-            $evlist = fetchEvents($DOS, $DOS, " AND pc_pid = ? ", null, false, 0, array($patientid));
+            $evlist = fetchEvents($DOS, $DOS, " AND pc_pid = '$patientid' ");
             foreach ($evlist as $tmp) {
                 if ($tmp['pc_pid'] == $pid && ! empty($tmp['pc_hometext'])) {
                     $cc = $tmp['pc_hometext'];
@@ -342,7 +345,7 @@ function doSubs($s)
             $s = keyReplace($s, dataFixup($data, $title));
         }
     } // End if { character found.
-
+    
     return $s;
 }
 // Get patient demographic info.
@@ -365,12 +368,9 @@ if ($encounter) {
 }
 
 $templatedir = $GLOBALS['OE_SITE_DIR'] . '/documents/onsite_portal_documents/templates';
-
-check_file_dir_name($form_filename);
 $templatepath = "$templatedir/$form_filename";
 // test if this is folder with template, if not, must be for a specific patient
 if (! file_exists($templatepath)) {
-    check_file_dir_name($pid);
     $templatepath = "$templatedir/" . $pid . "/$form_filename";
 }
 

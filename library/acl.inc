@@ -78,7 +78,6 @@
   //   trans       Transactions, e.g. referrals (write optional)
   //   docs        Documents (write,addonly optional)
   //   docs_rm     Documents Delete
-  //   pat_rep     Patient Report
   //   notes       Patient Notes (write,addonly optional)
   //   sign        Sign Lab Results (write,addonly optional)
   //   reminder    Patient Reminders (write,addonly optional)
@@ -359,7 +358,7 @@ function aco_exist($section_name, $aco_name)
   //
   // Returns a sorted array of all available Group Titles.
   //
-function acl_get_group_title_list($include_superusers = true)
+function acl_get_group_title_list()
 {
     global $phpgacl_location;
     if (isset($phpgacl_location)) {
@@ -370,10 +369,7 @@ function acl_get_group_title_list($include_superusers = true)
         $arr_group_titles = array();
         foreach ($arr_group_ids as $value) {
             $arr_group_data = $gacl->get_group_data($value, 'ARO');
-            // add if $include_superusers is true or group not include admin|super rule.
-            if ($include_superusers || !is_group_include_superuser($arr_group_data[3])) {
-                $arr_group_titles[$value] = $arr_group_data[3];
-            }
+            $arr_group_titles[$value] = $arr_group_data[3];
         }
         sort($arr_group_titles);
         return $arr_group_titles;
@@ -431,7 +427,8 @@ function add_user_aros($username, $group)
             array_push($current_user_groups, $group);
         }
     }
-    $user_data = sqlFetchArray(sqlStatement("SELECT * FROM users WHERE username = ?", array($username)));
+    $user_data = sqlFetchArray(sqlStatement("select * from users where username='" .
+    $username . "'"));
     set_user_aro(
         $current_user_groups,
         $username,
@@ -465,7 +462,8 @@ function remove_user_aros($username, $group)
             }
         }
     }
-    $user_data = sqlFetchArray(sqlStatement("SELECT * FROM users WHERE username = ?", array($username)));
+    $user_data = sqlFetchArray(sqlStatement("select * from users where username='" .
+    $username . "'"));
     set_user_aro(
         $new_user_groups,
         $username,
@@ -1006,13 +1004,4 @@ function fetchPostCalendarCategoryACO($pc_catid)
         array($pc_catid)
     );
     return $aco['aco_spec'];
-}
-
-// check if aro group have superuser rule
-function is_group_include_superuser($aro_group_name)
-{
-    global $phpgacl_location;
-    include_once("$phpgacl_location/gacl_api.class.php");
-    $gacl = new gacl_api();
-    return empty($gacl->search_acl('admin', 'super', false, false, $aro_group_name)) ? false : true;
 }

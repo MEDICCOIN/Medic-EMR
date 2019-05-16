@@ -20,7 +20,7 @@
 *
 * @package OpenEMR
 * @author Terry Hill <terry@lillysystems.com>
-* @link https://www.open-emr.org
+* @link http://www.open-emr.org
 *
 * Please help the overall project by sending changes you make to the author and to the OpenEMR community.
 *
@@ -139,7 +139,7 @@ function fetch_Patient_Tracker_Events($from_date, $to_date, $provider_id = null,
 #check to see if a status code exist as a check in
 function is_checkin($option)
 {
-
+  
     $row = sqlQuery("SELECT toggle_setting_1 FROM list_options WHERE " .
     "list_id = 'apptstat' AND option_id = ? AND activity = 1", array($option));
     if (empty($row['toggle_setting_1'])) {
@@ -152,7 +152,7 @@ function is_checkin($option)
 #check to see if a status code exist as a check out
 function is_checkout($option)
 {
-
+  
     $row = sqlQuery("SELECT toggle_setting_2 FROM list_options WHERE " .
     "list_id = 'apptstat' AND option_id = ? AND activity = 1", array($option));
     if (empty($row['toggle_setting_2'])) {
@@ -168,14 +168,14 @@ function is_checkout($option)
 #   2. If the tracker item does exist, but the encounter has not been set
 function is_tracker_encounter_exist($apptdate, $appttime, $pid, $eid)
 {
-    #Check to see if there is an encounter in the patient_tracker table.
-    $enc_yn = sqlQuery("SELECT encounter from patient_tracker WHERE `apptdate` = ? AND encounter > 0 " .
-        "AND `eid` = ? AND `pid` = ?", array($apptdate, $eid, $pid));
-    if (!$enc_yn['encounter'] || $enc_yn === false) {
-        return (0);
+  #Check to see if there is an encounter in the patient_tracker table.
+    $enc_yn = sqlQuery("SELECT encounter from patient_tracker WHERE `apptdate` = ? AND `appttime` = ? " .
+                      "AND `eid` = ? AND `pid` = ?", array($apptdate,$appttime,$eid,$pid));
+    if ($enc_yn['encounter'] == '0' || $enc_yn == '0') {
+        return(false);
     }
 
-    return ($enc_yn['encounter']);
+    return(true);
 }
 
  # this function will return the tracker id that is managed
@@ -214,7 +214,7 @@ function manage_tracker_status($apptdate, $appttime, $eid, $pid, $user, $status 
         );
         #If there is a status or a room, then add a tracker item.
         if (!empty($status) || !empty($room)) {
-            sqlStatement(
+            sqlInsert(
                 "INSERT INTO `patient_tracker_element` " .
                 "(`pt_tracker_id`, `start_datetime`, `user`, `status`, `room`, `seq`) " .
                 "VALUES (?,?,?,?,?,'1')",
@@ -232,7 +232,7 @@ function manage_tracker_status($apptdate, $appttime, $eid, $pid, $user, $status 
                  array(($tracker['lastseq']+1),$tracker_id)
              );
             #Add a tracker item.
-            sqlStatement(
+            sqlInsert(
                 "INSERT INTO `patient_tracker_element` " .
                 "(`pt_tracker_id`, `start_datetime`, `user`, `status`, `room`, `seq`) " .
                 "VALUES (?,?,?,?,?,?)",
@@ -282,7 +282,7 @@ function collectApptStatusSettings($option)
 }
 
 # This is used to collect the tracker elements for the Patient Flow Board Report
-# returns the elements in an array
+# returns the elements in an array 
 function collect_Tracker_Elements($trackerid)
 {
     $res = sqlStatement("SELECT * FROM patient_tracker_element WHERE pt_tracker_id = ? ORDER BY LENGTH(seq), seq ", array($trackerid));
@@ -293,7 +293,7 @@ function collect_Tracker_Elements($trackerid)
     return $returnval;
 }
 
-#used to determine check in time
+#used to determine check in time 
 function collect_checkin($trackerid)
 {
     $tracker = sqlQuery(

@@ -6,10 +6,8 @@
  * @link      http://www.open-emr.org
  * @author    Roberto Vasquez <robertogagliotta@gmail.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
- * @author    Sherwin Gaddis <sherwingaddis@gmail.com>
  * @copyright Copyright (c) 2015 Roberto Vasquez <robertogagliotta@gmail.com>
  * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Sherwin Gaddis <sherwingaddis@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -17,9 +15,6 @@
 require_once($GLOBALS['fileroot'] . "/library/classes/Prescription.class.php");
 require_once($GLOBALS['fileroot'] . "/library/registry.inc");
 require_once($GLOBALS['fileroot'] . "/library/amc.php");
-
-use OpenEMR\Common\Http\oeHttp;
-use PHPMailer\PHPMailer\PHPMailer;
 
 class C_Prescription extends Controller
 {
@@ -42,9 +37,6 @@ class C_Prescription extends Controller
         $this->assign("SIMPLIFIED_PRESCRIPTIONS", $GLOBALS['simplified_prescriptions']);
         $this->pconfig = $GLOBALS['oer_config']['prescriptions'];
         $this->RxList = new RxList();
-
-        // Assign the CSRF_TOKEN_FORM
-        $this->assign("CSRF_TOKEN_FORM", collectCsrfToken());
 
         if ($GLOBALS['inhouse_pharmacy']) {
             // Make an array of drug IDs and selectors for the template.
@@ -72,19 +64,19 @@ class C_Prescription extends Controller
                     $drug_attributes .= ',';
                 }
 
-                $drug_attributes .=    "["  .
-                    js_escape($row['name'])       . ","  . //  0
-                    js_escape($row['form'])       . ","  . //  1
-                    js_escape($row['dosage'])     . "," . //  2
-                    js_escape($row['size'])       . ","  . //  3
-                    js_escape($row['unit'])       . ","   . //  4
-                    js_escape($row['route'])      . ","   . //  5
-                    js_escape($row['period'])     . ","   . //  6
-                    js_escape($row['substitute']) . ","   . //  7
-                    js_escape($row['quantity'])   . ","   . //  8
-                    js_escape($row['refills'])    . ","   . //  9
-                    js_escape($row['quantity'])   . ","   . //  10 quantity per_refill
-                    js_escape($row['drug_code'])  . "]";    //  11 rxnorm drug code
+                $drug_attributes .=    "['"  .
+                    attr($row['name'])       . "',"  . //  0
+                    attr($row['form'])       . ",'"  . //  1
+                    attr($row['dosage'])     . "','" . //  2
+                    attr($row['size'])       . "',"  . //  3
+                    attr($row['unit'])       . ","   . //  4
+                    attr($row['route'])      . ","   . //  5
+                    attr($row['period'])     . ","   . //  6
+                    attr($row['substitute']) . ","   . //  7
+                    attr($row['quantity'])   . ","   . //  8
+                    attr($row['refills'])    . ","   . //  9
+                    attr($row['quantity'])   . ","   . //  10 quantity per_refill
+                    attr($row['drug_code'])  . "]";    //  11 rxnorm drug code
             }
 
             $this->assign("DRUG_ARRAY_VALUES", $drug_array_values);
@@ -112,8 +104,6 @@ class C_Prescription extends Controller
             $this->prescriptions[0]->set_patient_id($patient_id);
         }
 
-        $this->assign("GBL_CURRENCY_SYMBOL", $GLOBALS['gbl_currency_symbol']);
-
         // If quantity to dispense is not already set from a POST, set its
         // default value.
         if (! $this->get_template_vars('DISP_QUANTITY')) {
@@ -136,55 +126,10 @@ class C_Prescription extends Controller
             $this->assign("prescriptions", Prescription::prescriptions_factory($id));
         }
 
-        // Collect interactions if the global is turned on
-        if ($GLOBALS['rx_show_drug_drug']) {
-            $interaction = "";
-            // Ensure RxNorm installed
-            $rxn = sqlQuery("SELECT table_name FROM information_schema.tables WHERE table_name = 'RXNCONSO' OR table_name = 'rxconso'");
-            if ($rxn == false) {
-                $interaction = xlt("Could not find RxNorm Table! Please install.");
-            } elseif ($rxn == true) {
-                //   Grab medication list from prescriptions list and load into array
-                $pid = $GLOBALS['pid'];
-                $medList = sqlStatement("SELECT drug FROM prescriptions WHERE active = 1 AND patient_id = ?", array($pid));
-                $nameList = array();
-                while ($name = sqlFetchArray($medList)) {
-                    $drug = explode(" ", $name['drug']);
-                    $rXn = sqlQuery("SELECT `rxcui` FROM `" . mitigateSqlTableUpperCase('RXNCONSO') . "` WHERE `str` LIKE ?", array("%" . $drug[0] . "%"));
-                    $nameList[] = $rXn['rxcui'];
-                }
-                if (count($nameList) < 2) {
-                    $interaction = xlt("Need more than one drug.");
-                } else {
-                    // If there are drugs to compare, collect the data
-                    // (array_filter removes empty items)
-                    $rxcui_list = implode("+", array_filter($nameList));
-                    // Unable to urlencode the $rxcui, since this breaks the + items on call to rxnav.nlm.nih.gov; so need to include it in the path
-                    $response = oeHttp::get('https://rxnav.nlm.nih.gov/REST/interaction/list.json?rxcuis=' . $rxcui_list);
-                    $data = $response->body();
-                    $json = json_decode($data, true);
-                    if (!empty($json['fullInteractionTypeGroup'][0]['fullInteractionType'])) {
-                        foreach ($json['fullInteractionTypeGroup'][0]['fullInteractionType'] as $item) {
-                            $interaction .= '<div class="alert alert-danger">';
-                            $interaction .= xlt('Comment') . ":" . text($item['comment']) . "</br>";
-                            $interaction .= xlt('Drug1 Name{{Drug1 Interaction}}') . ":" . text($item['minConcept'][0]['name']) . "</br>";
-                            $interaction .= xlt('Drug2 Name{{Drug2 Interaction}}') . ":" . text($item['minConcept'][1]['name']) . "</br>";
-                            $interaction .= xlt('Severity') . ":" . text($item['interactionPair'][0]['severity']) . "</br>";
-                            $interaction .= xlt('Description') . ":" . text($item['interactionPair'][0]['description']);
-                            $interaction .= '</div>';
-                        }
-                    } else {
-                        $interaction = xlt('No interactions found');
-                    }
-                }
-            }
-            $this->assign("INTERACTION", $interaction);
-        }
+                // flag to indicate the CAMOS form is regsitered and active
+                $this->assign("CAMOS_FORM", isRegistered("CAMOS"));
 
-        // flag to indicate the CAMOS form is regsitered and active
-        $this->assign("CAMOS_FORM", isRegistered("CAMOS"));
-
-        $this->display($GLOBALS['template_dir'] . "prescription/" . $this->template_mod . "_list.html");
+                $this->display($GLOBALS['template_dir'] . "prescription/" . $this->template_mod . "_list.html");
     }
 
     function block_action($id, $sort = "")
@@ -240,17 +185,12 @@ class C_Prescription extends Controller
         if (empty($_POST['active'])) {
             $_POST['active'] = '-1';
         }
-        if (!empty($_POST['start_date'])) {
-            $_POST['start_date'] = DateToYYYYMMDD($_POST['start_date']);
-        }
 
         $this->prescriptions[0] = new Prescription($_POST['id']);
         parent::populate_object($this->prescriptions[0]);
         //echo $this->prescriptions[0]->toString(true);
         $this->prescriptions[0]->persist();
         $_POST['process'] = "";
-
-        $this->assign("GBL_CURRENCY_SYMBOL", $GLOBALS['gbl_currency_symbol']);
 
         // If the "Prescribe and Dispense" button was clicked, then
         // redisplay as in edit_action() but also replicate the fee and
@@ -932,7 +872,7 @@ class C_Prescription extends Controller
             $this->assign("drug_options", $list);
             $this->assign("drug_values", array_keys($list));
         } else {
-            $this->assign("NO_RESULTS", xl("No results found for") . ": " .$_POST['drug']);
+            $this->assign("NO_RESULTS", "No results found for: " .$_POST['drug'] . "<br />");
         }
 
         //print_r($_POST);

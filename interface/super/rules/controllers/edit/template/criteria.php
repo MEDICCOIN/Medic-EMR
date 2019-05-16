@@ -5,15 +5,14 @@
  // modify it under the terms of the GNU General Public License
  // as published by the Free Software Foundation; either version 2
  // of the License, or (at your option) any later version.
-
-use OpenEMR\Core\Header;
-
 ?>
 <html>
 <head>
-    <?php Header::setupHeader(['no_bootstrap', 'no_fontawesome', 'no_textformat', 'no_dialog']); ?>
-
+    <?php html_header_show();?>
+    <link rel="stylesheet" href="<?php echo $GLOBALS['css_header'] ?>" type="text/css">
+    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
     <link rel="stylesheet" href="<?php css_src('rules.css') ?>" type="text/css">
+
 </head>
 
 <body class='body_top'>
@@ -56,7 +55,7 @@ use OpenEMR\Core\Header;
     <!-- ----------------- -->
 
     </form>
-
+    
 </div>
 
 <div id="required_msg" class="small">

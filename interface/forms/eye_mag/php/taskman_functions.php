@@ -4,14 +4,27 @@
  *
  * Function which extend taskman.php, current a email-to-fax gateway
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Ray Magauran <magauran@MedFetch.com>
- * @copyright Copyright (c) 2016 Raymond Magauran <magauran@MedFetch.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ *
+ * Copyright (C) 2016 Raymond Magauran <magauran@MedFetch.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Ray Magauran <magauran@MedFetch.com>
+ * @link http://www.open-emr.org
  */
 
-use Mpdf\Mpdf;
 use OpenEMR\Services\FacilityService;
 
 $facilityService = new FacilityService();
@@ -50,13 +63,13 @@ function make_task($ajax_req)
 
     if ($task['ID'] && $task['COMPLETED'] =='2') {
         $send['comments'] = xlt('This fax has already been sent.')." ".
-                            xlt('If you made changes and want to re-send it, delete the original (in Communications) or wait 60 seconds, and try again.')." ".
-                            xlt('Filename').": ". text($filename);
+                            xlt('If you made changes and want to re-send it, delete the original (in Communications) and try again.')." ".
+                            xlt('Filename').": ".$filename;
         echo json_encode($send);
         exit;
     } else if ($task['ID'] && $task['COMPLETED'] =='1') {
         if ($task['DOC_TYPE'] == 'Fax') {
-            $send['DOC_link'] = "<a href='".$webroot."/openemr/controller.php?document&view&patient_id=".attr($task['PATIENT_ID'])."&doc_id=".attr($task['DOC_ID'])."'
+            $send['DOC_link'] = "<a href='".$webroot."/openemr/controller.php?document&view&patient_id=".$task['PATIENT_ID']."&doc_id=".$task['DOC_ID']."'
 								target='_blank' title='".xla('View the Summary Report sent to Fax Server.')."'>
 								<i class='fa fa-file-pdf-o fa-fw'></i></a>
 								<i class='fa fa-repeat fa-fw'
@@ -80,8 +93,8 @@ function make_task($ajax_req)
     } else if (!$task['ID']) {
         $sql = "INSERT into form_taskman
 				(REQ_DATE, FROM_ID,  TO_ID,  PATIENT_ID,  DOC_TYPE,  DOC_ID,  ENC_ID) VALUES
-				(NOW(), ?, ?, ?, ?, ?, ?)";
-        sqlQuery($sql, array($from_id, $to_id, $patient_id, $doc_type, $doc_id, $enc));
+				(NOW(), '$from_id', '$to_id','$patient_id','$doc_type','$doc_id','$enc')";
+        sqlQuery($sql);
     } else {
         $send['comments'] = xlt('Currently working on making this document')."...\n";
     }
@@ -107,7 +120,7 @@ function process_tasks($task)
 
     if ($task['DOC_TYPE'] == "Fax") {
         //now return any objects you need to Eye Form
-        $send['DOC_link'] = "<a href='".$webroot."/openemr/controller.php?document&view&patient_id=".attr($task['PATIENT_ID'])."&doc_id=".attr($task['DOC_ID'])."'
+        $send['DOC_link'] = "<a href='".$webroot."/openemr/controller.php?document&view&patient_id=".$task['PATIENT_ID']."&doc_id=".$task['DOC_ID']."'
 								target='_blank' title=".xlt('Report was faxed. Click to view.').">
 								<i class='fa fa-file-pdf-o fa-fw'></i>
 							</a>";
@@ -249,31 +262,14 @@ function make_document($task)
 
     $pt_name    = $patientData['fname'].' '.$patientData['lname'];
     $encounter = $task['ENC_ID'];
-    $query = "select  *,form_encounter.date as encounter_date
-              
-               from forms,form_encounter,form_eye_base, 
-                form_eye_hpi,form_eye_ros,form_eye_vitals,
-                form_eye_acuity,form_eye_refraction,form_eye_biometrics,
-                form_eye_external, form_eye_antseg,form_eye_postseg,
-                form_eye_neuro,form_eye_locking
-                    where
-                    forms.deleted != '1'  and
-                    forms.formdir='eye_mag' and
-                    forms.encounter=form_encounter.encounter  and
-                    forms.form_id=form_eye_base.id and
-                    forms.form_id=form_eye_hpi.id and
-                    forms.form_id=form_eye_ros.id and
-                    forms.form_id=form_eye_vitals.id and
-                    forms.form_id=form_eye_acuity.id and
-                    forms.form_id=form_eye_refraction.id and
-                    forms.form_id=form_eye_biometrics.id and
-                    forms.form_id=form_eye_external.id and
-                    forms.form_id=form_eye_antseg.id and
-                    forms.form_id=form_eye_postseg.id and
-                    forms.form_id=form_eye_neuro.id and
-                    forms.form_id=form_eye_locking.id and
-                    forms.form_id =? and
-                    forms.pid=?";
+    $query="select form_encounter.date as encounter_date,form_eye_mag.id as form_id,form_encounter.*, form_eye_mag.*
+            from form_eye_mag ,forms,form_encounter
+            where
+            form_encounter.encounter =? and
+            form_encounter.encounter = forms.encounter and
+            form_eye_mag.id=forms.form_id and
+            forms.deleted != '1' and
+            form_eye_mag.pid=? ";
     $encounter_data =sqlQuery($query, array($encounter,$task['PATIENT_ID']));
     @extract($encounter_data);
     $providerID  =  getProviderIdOfEncounter($encounter);
@@ -281,6 +277,7 @@ function make_document($task)
     $dated = new DateTime($encounter_date);
     $dated = $dated->format('Y/m/d');
     $visit_date = oeFormatShortDate($dated);
+    //$visit_date = $encounter_date;
     $pid = $task['PATIENT_ID'];
     $PDF_OUTPUT='1';
 
@@ -325,29 +322,26 @@ function make_document($task)
         $sql = "DELETE from documents where documents.url like ?";
         sqlQuery($sql, array("%".$filename));
     }
-
-    $config_mpdf = array(
-        'tempDir' => $GLOBALS['MPDF_WRITE_DIR'],
-        'mode' => $GLOBALS['pdf_language'],
-        'format' => $GLOBALS['pdf_size'],
-        'default_font_size' => '9',
-        'default_font' => '',
-        'margin_left' => $GLOBALS['pdf_left_margin'],
-        'margin_right' => $GLOBALS['pdf_right_margin'],
-        'margin_top' => $GLOBALS['pdf_top_margin'],
-        'margin_bottom' => $GLOBALS['pdf_bottom_margin'],
-        'margin_header' => '',
-        'margin_footer' => '',
-        'orientation' => $GLOBALS['pdf_layout'],
-        'shrink_tables_to_fit' => 1,
-        'use_kwt' => true,
-        'keep_table_proportions' => true
+    
+    $pdf = new mPDF(
+        $GLOBALS['pdf_language'],
+        $GLOBALS['pdf_size'],
+        '9',
+        '',
+        $GLOBALS['pdf_left_margin'],
+        $GLOBALS['pdf_right_margin'],
+        $GLOBALS['pdf_top_margin'],
+        $GLOBALS['pdf_bottom_margin'],
+        '', // default header margin
+        '', // default footer margin
+        $GLOBALS['pdf_layout']
     );
-
-    $pdf = new mPDF($config_mpdf);
     if ($_SESSION['language_direction'] == 'rtl') {
         $pdf->SetDirectionality('rtl');
     }
+    $pdf->shrink_tables_to_fit = 1;
+    $keep_table_proportions = true;
+    $pdf->use_kwt = true;
 
     ob_start();
     ?><html>
@@ -451,7 +445,7 @@ function make_document($task)
                         <td class='col1'>
                             <?php echo xlt('Comments'); ?>:
                         </td>
-                        <td class='col2'><?php echo xlt('Report of visit'); ?>: <?php echo text($pt_name); ?> on <?php echo text($visit_date); ?>
+                        <td class='col2'><?php echo xlt('Report of visit'); ?>: <?php echo text($pt_name); ?> on <?php echo $visit_date; ?>
                         </td>
                     </tr>
             </table>
@@ -464,7 +458,6 @@ function make_document($task)
         //	We could just add another attachment, stopping here at the coversheet, and adding the doc_name that we sent...
         //	No.  We actually need a physical copy of what we sent, since the report itself can be overwritten.  Keep it legal.
         //	Unless the Report.pdf can be merged with the cover sheet.  Until then, just redo it all.
-        $tmp_files_remove = array();
         echo narrative($pid, $encounter, $task['DOC_TYPE'], $form_id);
         ?>
     </body>
@@ -474,7 +467,6 @@ function make_document($task)
     $content = ob_get_clean();
 
     // Fix a nasty html2pdf bug - it ignores document root!
-    // TODO - now use mPDF, so should test if still need this fix
     $i = 0;
     $wrlen = strlen($web_root);
     $wsrlen = strlen($webserver_root);
@@ -495,25 +487,21 @@ function make_document($task)
     //$pdf->writeHTML($styles, 1);
     //$pdf->writeHTML($content, 2);
 
-    $pdf->writeHTML($content);
+    $pdf->writeHTML($content, 0); // false or zero works for both mPDF and HTML2PDF
 
-    // tmp file in temporary_files_dir
-    $temp_filename = tempnam($GLOBALS['temporary_files_dir'], "oer");
-    $pdf->Output($temp_filename, 'F');
-    foreach ($tmp_files_remove as $tmp_file) {
-        // Remove the tmp files that were created
-        unlink($tmp_file);
-    }
-
+    $tmpdir = $GLOBALS['OE_SITE_DIR'] . '/documents/temp/'; // Best to get a known system temp directory to ensure a writable directory.
+    $temp_filename = $tmpdir . $filename;
+    $content_pdf = $pdf->Output($temp_filename, 'F');
     $type = "application/pdf";
     $size = filesize($temp_filename);
-    $return = addNewDocument($filename, $type, $temp_filename, 0, $size, $task['FROM_ID'], $task['PATIENT_ID'], $category_id);
-    unlink($temp_filename);
 
+    $return = addNewDocument($filename, $type, $temp_filename, 0, $size, $task['FROM_ID'], $task['PATIENT_ID'], $category_id);
     $task['DOC_ID'] = $return['doc_id'];
     $task['DOC_url'] = $filepath.'/'.$filename;
     $sql = "UPDATE documents set encounter_id=? where id=?"; //link it to this encounter
     sqlQuery($sql, array($encounter,$task['DOC_ID']));
+
+    unlink($temp_filename);
 
     return $task;
 }

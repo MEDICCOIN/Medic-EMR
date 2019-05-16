@@ -197,7 +197,7 @@ div.tiny { width:1px; height:1px; font-size:1px; }
 }
 </style>
 
-[-headerTemplate assets='no_bootstrap|no_fontawesome|no_main-theme|no_textformat|no_dialog'-]
+<script type="text/javascript" src="[-php-] echo $GLOBALS['assets_static_relative'] [-/php-]/jquery-min-1-2-2/index.js"></script>
 
 </head>
 <body>
@@ -259,6 +259,7 @@ foreach ($providers as $provider) {
     $addPagebreak = true;
 
     echo "<div id='bigCalHeader'>";
+    //echo "<img src='/images/cfa_logo_small.gif' style='position:relative; z-index:-100'/>";
 
     echo "<div id='bigCalText'>";
     // output the provider name

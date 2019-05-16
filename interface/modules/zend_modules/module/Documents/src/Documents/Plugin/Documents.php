@@ -20,7 +20,6 @@
 */
 namespace Documents\Plugin;
 
-use OpenEMR\Common\Crypto\CryptoGen;
 use Zend\Mvc\Controller\Plugin\AbstractPlugin;
 use Documents\Model\DocumentsTable;
 use Application\Model\ApplicationTable;
@@ -44,6 +43,31 @@ class Documents extends AbstractPlugin
     }
 
     /**
+     * encrypt - Encrypts a plain text
+     * Supports AES-256-CBC encryption
+     * @param String $plain_text Plain Text to be encrypted
+     * @param String $key Encryption Key
+     * @return String
+     */
+    public function encrypt($plaintext, $key)
+    {
+                $obj = new \C_Document();
+                $obj->encrypt($plaintext, $key);
+    }
+
+    /**
+     * decrypt  - Decrypts an Encrypted String
+     * @param String $crypttext Encrypted String
+     * @param String $key Decryption Key
+     * @return String
+     */
+    public function decrypt($crypttext, $key)
+    {
+                $obj = new \C_Document();
+                $obj->decrypt($crypttext, $key);
+    }
+
+    /**
      * couchDB - Couch DB Connection
      *               - Uses Doctrine  CouchDBClient
      * @return Object $connection
@@ -53,8 +77,7 @@ class Documents extends AbstractPlugin
         $host       = $GLOBALS['couchdb_host'];
         $port       = $GLOBALS['couchdb_port'];
         $usename    = $GLOBALS['couchdb_user'];
-        $cryptoGen  = new CryptoGen();
-        $password   = $cryptoGen->decryptStandard($GLOBALS['couchdb_pass']);
+        $password   = $GLOBALS['couchdb_pass'];
         $database   = $GLOBALS['couchdb_dbase'];
         $enable_log = ($GLOBALS['couchdb_log'] == 1) ? true : false;
 
@@ -114,7 +137,7 @@ class Documents extends AbstractPlugin
         $count  = 0;
         $module = array();
         foreach ($result as $row) {
-            $content = $this->getDocument($row['id']);
+            $content = \Documents\Plugin\Documents::getDocument($row['id']);
             $module[$count]['doc_id']   = $row['id'];
             if (preg_match("/<ClinicalDocument/", $content)) {
                 if (preg_match("/2.16.840.1.113883.3.88.11.32.1/", $content)) {

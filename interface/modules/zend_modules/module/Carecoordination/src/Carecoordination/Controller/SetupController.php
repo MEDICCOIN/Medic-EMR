@@ -27,16 +27,11 @@ use Application\Listener\Listener;
 
 class SetupController extends AbstractActionController
 {
-    /**
-     * @var \Carecoordination\Model\SetupTable
-     */
     protected $setupTable;
-
     protected $listenerObject;
     
-    public function __construct(\Carecoordination\Model\SetupTable $setupTable)
+    public function __construct()
     {
-        $this->setupTable = $setupTable;
         $this->listenerObject   = new Listener;
     }
     
@@ -128,18 +123,21 @@ class SetupController extends AbstractActionController
         }
 
         $this->getSetupTable()->updateExistingMappedFields(array($existing_id,1));
-        // Only reference I found for the framework for this is here
-        // @see https://framework.zend.com/apidoc/2.3/classes/Zend.Mvc.Controller.Plugin.Redirect.html
         return $this->redirect()->toRoute('setup', array('action'=>'index'));
     }
     
     /**
     * Table Gateway
     *
-    * @return \Carecoordination\Model\SetupTable
+    * @return type
     */
     public function getSetupTable()
     {
+        if (!$this->setupTable) {
+            $sm = $this->getServiceLocator();
+            $this->setupTable = $sm->get('Carecoordination\Model\SetupTable');
+        }
+
         return $this->setupTable;
     }
     

@@ -7,21 +7,14 @@
  * @author  Anil N <aniln@ensoftek.com>
  * @author  Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2014 Ensoftek
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 
 require_once("../globals.php");
-
-use OpenEMR\Common\Crypto\CryptoGen;
-use OpenEMR\Common\Logging\EventAuditLogger;
-
-if (!empty($_GET)) {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
+require_once("$srcdir/log.inc");
+require_once("$srcdir/crypto.php");
 
 ?>
 <html>
@@ -29,12 +22,14 @@ if (!empty($_GET)) {
 
 <title><?php echo xlt("Audit Log Tamper Report"); ?></title>
 
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<?php html_header_show();?>
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
+<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
+
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 
 <style>
 #logview {
@@ -117,8 +112,8 @@ if ($_GET["form_patient"]) {
 
 ?>
 <?php
-$form_user = $_GET['form_user'];
-$form_pid = $_GET['form_pid'];
+$form_user = $_REQUEST['form_user'];
+$form_pid = $_REQUEST['form_pid'];
 if ($form_patient == '') {
     $form_pid = '';
 }
@@ -126,7 +121,6 @@ if ($form_patient == '') {
 ?>
 <br>
 <FORM METHOD="GET" name="theform" id="theform" onSubmit='top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 <?php
 
 $sortby = $_GET['sortby'];
@@ -149,7 +143,7 @@ $sortby = $_GET['sortby'];
 &nbsp;&nbsp;<span class='text'><?php echo xlt('Patient'); ?>: </span>
 </td>
 <td>
-<input type='text' size='20' name='form_patient' style='width:100%;cursor:pointer;cursor:hand' value='<?php echo ($form_patient) ? attr($form_patient) : xla('Click To Select'); ?>' onclick='sel_patient()' title='<?php echo xla('Click to select patient'); ?>' />
+<input type='text' size='20' name='form_patient' style='width:100%;cursor:pointer;cursor:hand' value='<?php echo attr($form_patient) ? attr($form_patient) : xla('Click To Select'); ?>' onclick='sel_patient()' title='<?php echo xlt('Click to select patient'); ?>' />
 <input type='hidden' name='form_pid' value='<?php echo attr($form_pid); ?>' />
 </td>
 </tr>
@@ -180,7 +174,7 @@ $check_sum = isset($_GET['check_sum']);
   <th id="sortby_date" class="text" title="<?php echo xla('Sort by Tamper date/time'); ?>"><?php echo xlt('Tamper Date'); ?></th>
   <th id="sortby_user" class="text" title="<?php echo xla('Sort by User'); ?>"><?php echo xlt('User'); ?></th>
   <th id="sortby_pid" class="text" title="<?php echo xla('Sort by PatientID'); ?>"><?php echo xlt('PatientID'); ?></th>
-  <th id="sortby_comments" class="text" title="<?php echo xla('Sort by Comments'); ?>"><?php echo xlt('Comments'); ?></th>
+  <th id="sortby_comments" class="text" title="<?php echo  xla('Sort by Comments'); ?>"><?php echo xlt('Comments'); ?></th>
     <?php  if ($check_sum) {?>
   <th id="sortby_newchecksum" class="text" title="<?php xla('Sort by New Checksum'); ?>"><?php echo xlt('Tampered Checksum'); ?></th>
   <th id="sortby_oldchecksum" class="text" title="<?php xla('Sort by Old Checksum'); ?>"><?php echo xlt('Original Checksum'); ?></th>
@@ -191,7 +185,7 @@ $check_sum = isset($_GET['check_sum']);
 $eventname = $_GET['eventname'];
 $type_event = $_GET['type_event'];
 ?>
-<input type="hidden" name="event" value="<?php echo attr($eventname)."-".attr($type_event) ?>">
+<input type=hidden name=event value=<?php echo attr($eventname)."-".attr($type_event) ?>>
 <?php
 $type_event = "update";
 $tevent="";
@@ -212,10 +206,7 @@ if (($eventname == "") && ($type_event != "")) {
 
 $dispArr = array();
 $icnt = 1;
-if ($ret = EventAuditLogger::instance()->getEvents(array('sdate' => $start_date,'edate' => $end_date, 'user' => $form_user, 'patient' => $form_pid, 'sortby' => $_GET['sortby'], 'levent' =>$gev, 'tevent' =>$tevent))) {
-    // Set up crypto object (object will increase performance since caches used keys)
-    $cryptoGen = new CryptoGen();
-
+if ($ret = getEvents(array('sdate' => $start_date,'edate' => $end_date, 'user' => $form_user, 'patient' => $form_pid, 'sortby' => $_GET['sortby'], 'levent' =>$gev, 'tevent' =>$tevent))) {
     foreach ($ret as $iter) {
         //translate comments
         $patterns = array ('/^success/','/^failure/','/ encounter/');
@@ -225,7 +216,7 @@ if ($ret = EventAuditLogger::instance()->getEvents(array('sdate' => $start_date,
         $log_id = $iter['id'];
         $commentEncrStatus = "No";
         $encryptVersion = 0;
-        $logEncryptData = EventAuditLogger::instance()->logCommentEncryptData($log_id);
+        $logEncryptData = logCommentEncryptData($log_id);
 
         if (count($logEncryptData) > 0) {
             $commentEncrStatus = $logEncryptData['encrypt'];
@@ -245,41 +236,17 @@ if ($ret = EventAuditLogger::instance()->getEvents(array('sdate' => $start_date,
         }
 
         if ($commentEncrStatus == "Yes") {
-            if ($encryptVersion == 3) {
+            if ($encryptVersion == 1) {
                 // Use new openssl method
                 if (extension_loaded('openssl')) {
-                    $trans_comments = $cryptoGen->decryptStandard($iter["comments"]);
-                    if ($trans_comments !== false) {
-                        $trans_comments = preg_replace($patterns, $replace, trim($trans_comments));
-                    } else {
-                        $trans_comments = xl("Unable to decrypt these comments since decryption failed.");
-                    }
-                } else {
-                    $trans_comments = xl("Unable to decrypt these comments since the PHP openssl module is not installed.");
-                }
-            } else if ($encryptVersion == 2) {
-                // Use new openssl method
-                if (extension_loaded('openssl')) {
-                    $trans_comments = $cryptoGen->aes256DecryptTwo($iter["comments"]);
-                    if ($trans_comments !== false) {
-                        $trans_comments = preg_replace($patterns, $replace, trim($trans_comments));
-                    } else {
-                        $trans_comments = xl("Unable to decrypt these comments since decryption failed.");
-                    }
-                } else {
-                    $trans_comments = xl("Unable to decrypt these comments since the PHP openssl module is not installed.");
-                }
-            } else if ($encryptVersion == 1) {
-                // Use new openssl method
-                if (extension_loaded('openssl')) {
-                    $trans_comments = preg_replace($patterns, $replace, trim($cryptoGen->aes256DecryptOne($iter["comments"])));
+                    $trans_comments = preg_replace($patterns, $replace, trim(aes256Decrypt($iter["comments"])));
                 } else {
                     $trans_comments = xl("Unable to decrypt these comments since the PHP openssl module is not installed.");
                 }
             } else { //$encryptVersion == 0
                 // Use old mcrypt method
                 if (extension_loaded('mcrypt')) {
-                    $trans_comments = preg_replace($patterns, $replace, trim($cryptoGen->aes256Decrypt_mycrypt($iter["comments"])));
+                    $trans_comments = preg_replace($patterns, $replace, trim(aes256Decrypt_mycrypt($iter["comments"])));
                 } else {
                     $trans_comments = xl("Unable to decrypt these comments since the PHP mycrypt module is not installed.");
                 }
@@ -315,7 +282,7 @@ if (count($dispArr) == 0) {?>
                 $colspan=6;
             }
             ?>
-        <TD class="text" colspan="<?php echo attr($colspan);?>" align="center"><?php echo xlt('No audit log tampering detected in the selected date range.'); ?></TD>
+        <TD class="text" colspan="<?php echo $colspan;?>" align="center"><?php echo xlt('No audit log tampering detected in the selected date range.'); ?></TD>
      </TR>
 <?php
 } else {?>
@@ -331,7 +298,7 @@ if (count($dispArr) == 0) {?>
 <script language="javascript">
 
 // jQuery stuff to make the page a little easier to use
-$(function(){
+$(document).ready(function(){
     // funny thing here... good learning experience
     // the TR has TD children which have their own background and text color
     // toggling the TR color doesn't change the TD color
@@ -366,3 +333,4 @@ $(function(){
 </script>
 
 </html>
+

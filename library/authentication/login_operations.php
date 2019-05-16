@@ -2,20 +2,27 @@
 /**
  * This is a library of commonly used functions for managing data for authentication
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Kevin Yeh <kevin.y@integralemr.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2013 Kevin Yeh <kevin.y@integralemr.com>
- * @copyright Copyright (c) 2013 OEMR <www.oemr.org>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2013 Kevin Yeh <kevin.y@integralemr.com> and OEMR <www.oemr.org>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Kevin Yeh <kevin.y@integralemr.com>
+ * @link    http://www.open-emr.org
  */
 
+require_once("$srcdir/authentication/common_operations.php");
 
-require_once(dirname(__FILE__) . "/common_operations.php");
 
-use OpenEMR\Common\Logging\EventAuditLogger;
 
 /**
  *
@@ -26,7 +33,7 @@ use OpenEMR\Common\Logging\EventAuditLogger;
  */
 function validate_user_password($username, &$password, $provider)
 {
-    $ip = collectIpAddresses();
+    $ip=$_SERVER['REMOTE_ADDR'];
 
     $valid=false;
 
@@ -43,8 +50,6 @@ function validate_user_password($username, &$password, $provider)
         if (is_array($userSecure)) {
             $phash=oemr_password_hash($password, $userSecure[COL_SALT]);
             if ($phash!=$userSecure[COL_PWD]) {
-                EventAuditLogger::instance()->newEvent('login', $username, $provider, 0, "failure: " . $ip['ip_string'] . ". user password incorrect");
-                incrementLoginFailedCounter($username);
                 return false;
             }
 
@@ -84,7 +89,7 @@ function validate_user_password($username, &$password, $provider)
     $userInfo = privQuery($getUserSQL, array($username));
 
     if ($userInfo['active'] != 1) {
-        EventAuditLogger::instance()->newEvent('login', $username, $provider, 0, "failure: " . $ip['ip_string'] . ". user not active or not found in users table");
+        newEvent('login', $username, $provider, 0, "failure: $ip. user not active or not found in users table");
         $password='';
         return false;
     }
@@ -104,21 +109,11 @@ function validate_user_password($username, &$password, $provider)
             if ($userInfo['see_auth'] > '2') {
                 $_SESSION['userauthorized'] = '1';
             }
-            $valid=true;
-        } else {
-            EventAuditLogger::instance()->newEvent('login', $username, $provider, 0, "failure: " . $ip['ip_string'] . ". user not in group: $provider");
-            $valid=false;
-        }
-    }
 
-    // Check if user exceeds max number of failed logins
-    if ($valid) {
-        if (checkLoginFailedCounter($username)) {
-            EventAuditLogger::instance()->newEvent('login', $username, $provider, 1, "success: " . $ip['ip_string']);
-            resetLoginFailedCounter($username);
+            newEvent('login', $username, $provider, 1, "success: $ip");
             $valid=true;
         } else {
-            EventAuditLogger::instance()->newEvent('login', $username, $provider, 0, "failure: " . $ip['ip_string'] . ". user exceeded maximum number of failed logins");
+            newEvent('login', $username, $provider, 0, "failure: $ip. user not in group: $provider");
             $valid=false;
         }
     }
@@ -126,15 +121,12 @@ function validate_user_password($username, &$password, $provider)
     return $valid;
 }
 
-function verify_user_gacl_group($user, $provider)
+function verify_user_gacl_group($user)
 {
     global $phpgacl_location;
-
-    $ip = collectIpAddresses();
-
     if (isset($phpgacl_location)) {
         if (acl_get_group_titles($user) == 0) {
-            EventAuditLogger::instance()->newEvent('login', $user, $provider, 0, "failure: " . $ip['ip_string'] . ". user not in any phpGACL groups. (bad username?)");
+            newEvent('login', $user, $provider, 0, "failure: $ip. user not in any phpGACL groups. (bad username?)");
             return false;
         }
     }
@@ -156,15 +148,15 @@ function active_directory_validation($user, $pass)
         'account_suffix'        => $GLOBALS['account_suffix'],
 
         // You can use the host name or the IP address of your controllers.
-        'hosts'    => [$GLOBALS['domain_controllers']],
+        'domain_controllers'    => [$GLOBALS['domain_controllers']],
 
         // Your base DN.
         'base_dn'               => $GLOBALS['base_dn'],
 
         // The account to use for querying / modifying users. This
         // does not need to be an actual admin account.
-        'username'        => $user,
-        'password'        => $pass,
+        'admin_username'        => $user,
+        'admin_password'        => $pass,
     );
 
     // Add a connection provider to Adldap.
@@ -172,36 +164,10 @@ function active_directory_validation($user, $pass)
 
     // If a successful connection is made, the provider will be returned.
     try {
-        $prov = $ad->connect('', $user.$GLOBALS['account_suffix'], $pass);
-        $valid = $prov->auth()->attempt($user, $pass, true);
+        $prov = $ad->connect();
+        $valid = $prov->auth()->attempt($user, $pass);
     } catch (Exception $e) {
-        error_log($e->getMessage());
     }
 
     return $valid;
-}
-
-function resetLoginFailedCounter($user)
-{
-    privStatement("UPDATE `users_secure` SET `login_fail_counter` = 0 WHERE BINARY `username` = ?", [$user]);
-}
-
-function incrementLoginFailedCounter($user)
-{
-    privStatement("UPDATE `users_secure` SET `login_fail_counter` = login_fail_counter+1 WHERE BINARY `username` = ?", [$user]);
-}
-
-function checkLoginFailedCounter($user)
-{
-    if ($GLOBALS['password_max_failed_logins'] == 0 || $GLOBALS['use_active_directory']) {
-        // skip the check if turned off or using active directory for login
-        return true;
-    }
-
-    $query = privQuery("SELECT `login_fail_counter` FROM `users_secure` WHERE BINARY `username` = ?", [$user]);
-    if ($query['login_fail_counter'] >= $GLOBALS['password_max_failed_logins']) {
-        return false;
-    } else {
-        return true;
-    }
 }

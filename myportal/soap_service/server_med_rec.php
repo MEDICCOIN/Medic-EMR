@@ -24,11 +24,10 @@
 //           Jacob T Paul <jacob@zhservices.com>
 //
 // +------------------------------------------------------------------------------+
+
+
+
 require_once("server_audit.php");
-
-use OpenEMR\Common\Crypto\CryptoGen;
-use OpenEMR\Common\Logging\EventAuditLogger;
-
 class Userforms extends UserAudit
 {
 
@@ -55,6 +54,7 @@ class Userforms extends UserAudit
             $type = $data[3];
             global $ISSUE_TYPES;
             require_once("../../library/forms.inc");
+            require_once("../../library/billing.inc");
             require_once("../../library/pnotes.inc");
             require_once("../../library/patient.inc");
             require_once("../../library/options.inc.php");
@@ -441,7 +441,7 @@ class Userforms extends UserAudit
                 try {
                     $event = isset($data['event']) ? $data['event'] : 'patient-record';
                     $menu_item = isset($data['menu_item']) ? $data['menu_item'] : 'Dashboard';
-                    EventAuditLogger::instance()->newEvent($event, 1, '', 1, '', $pid, $log_from = 'patient-portal', $menu_item);
+                    newEvent($event, 1, '', 1, '', $pid, $log_from = 'patient-portal', $menu_item);
                 } catch (Exception $e) {
                 }
 
@@ -603,10 +603,9 @@ class Userforms extends UserAudit
                     return("$config_err $err");
                 }
 
-                $phimail_username = $GLOBALS['phimail_username'];
-                $cryptoGen = new CryptoGen();
-                $phimail_password = $cryptoGen->decryptStandard($GLOBALS['phimail_password']);
-                $ret = phimail_write_expect_OK($fp, "AUTH $phimail_username $phimail_password\n");
+                    $phimail_username = $GLOBALS['phimail_username'];
+                    $phimail_password = $GLOBALS['phimail_password'];
+                    $ret = phimail_write_expect_OK($fp, "AUTH $phimail_username $phimail_password\n");
                 if ($ret!==true) {
                     return("$config_err 4");
                 }
@@ -689,7 +688,7 @@ class Userforms extends UserAudit
 
                 if (substr($ret, 5)=="ERROR") {
                     //log the failure
-                    EventAuditLogger::instance()->newEvent("transmit-ccd", $reqBy, $_SESSION['authProvider'], 0, $ret, $pid);
+                    newEvent("transmit-ccd", $reqBy, $_SESSION['authProvider'], 0, $ret, $pid);
                     return( xl("The message could not be sent at this time."));
                 }
 
@@ -701,11 +700,11 @@ class Userforms extends UserAudit
                     $msg_id=explode(" ", trim($ret), 4);
                 if ($msg_id[0]!="QUEUED" || !isset($msg_id[2])) { //unexpected response
                     $ret = "UNEXPECTED RESPONSE: " . $ret;
-                    EventAuditLogger::instance()->newEvent("transmit-ccd", $reqBy, $_SESSION['authProvider'], 0, $ret, $pid);
+                    newEvent("transmit-ccd", $reqBy, $_SESSION['authProvider'], 0, $ret, $pid);
                     return( xl("There was a problem sending the message."));
                 }
 
-                    EventAuditLogger::instance()->newEvent("transmit-".$xml_type, $reqBy, $_SESSION['authProvider'], 1, $ret, $pid);
+                    newEvent("transmit-".$xml_type, $reqBy, $_SESSION['authProvider'], 1, $ret, $pid);
                     $adodb=$GLOBALS['adodb']['db'];
 
             //            $sql="INSERT INTO direct_message_log (msg_type,msg_id,sender,recipient,status,status_ts,patient_id,user_id) " .

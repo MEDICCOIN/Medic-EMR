@@ -20,7 +20,6 @@
 
 namespace Multipledb\Model;
 
-use OpenEMR\Common\Crypto\CryptoGen;
 use Zend\Db\Sql\Expression;
 use Zend\Db\TableGateway\TableGateway;
 use Zend\Db\Sql\Predicate;
@@ -75,8 +74,7 @@ class MultipledbTable
     {
 
         if ($db['password']) {
-            $cryptoGen = new CryptoGen();
-            $db['password'] = $cryptoGen->encryptStandard($db['password']);
+            $db['password'] = my_encrypt($db['password']);
         } else {
             unset($db['password']);
         }

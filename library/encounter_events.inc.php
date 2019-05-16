@@ -75,7 +75,7 @@ function todaysEncounterCheck($patient_id, $enc_date = '', $reason = '', $fac_id
 {
     global $today;
     $encounter = todaysEncounterIf($patient_id);
-    if ($encounter && (int)$GLOBALS['auto_create_new_encounters'] !== 2) {
+    if ($encounter) {
         if ($return_existing) {
             return $encounter;
         } else {
@@ -416,14 +416,9 @@ function InsertEvent($args, $from = 'general')
  */
 function &__increment($d, $m, $y, $f, $t)
 {
-    if ($t == REPEAT_DAYS_EVERY_WEEK) {
-        $old_appointment_date = date('Y-m-d', mktime(0, 0, 0, $m, $d, $y));
-        $next_appointment_date = getTheNextAppointment($old_appointment_date, $f);
-        return $next_appointment_date;
-    }
 
     if ($t == REPEAT_EVERY_DAY) {
-        $d = $d+$f;
+        return date('Y-m-d', mktime(0, 0, 0, $m, ($d+$f), $y));
     } elseif ($t == REPEAT_EVERY_WORK_DAY) {
         // a workday is defined as Mon,Tue,Wed,Thu,Fri
         // repeating on every or Nth work day means to not include
@@ -447,23 +442,24 @@ function &__increment($d, $m, $y, $f, $t)
             if ($nextWorkDOW == $GLOBALS['weekend_days'][0]) {
                 $f+=2;
             } elseif ($nextWorkDOW == $GLOBALS['weekend_days'][1]) {
-                $f++;
+                 $f++;
             }
         } elseif (count($GLOBALS['weekend_days']) === 1 && $nextWorkDOW === $GLOBALS['weekend_days'][0]) {
             $f++;
         }
 
-        $d = $d+$f;
+        return date('Y-m-d', mktime(0, 0, 0, $m, ($d+$f), $y));
     } elseif ($t == REPEAT_EVERY_WEEK) {
-        $d = $d+(7*$f);
+        return date('Y-m-d', mktime(0, 0, 0, $m, ($d+(7*$f)), $y));
     } elseif ($t == REPEAT_EVERY_MONTH) {
-        $m = $m+$f;
+        return date('Y-m-d', mktime(0, 0, 0, ($m+$f), $d, $y));
     } elseif ($t == REPEAT_EVERY_YEAR) {
-        $y = $y+$f;
+        return date('Y-m-d', mktime(0, 0, 0, $m, $d, ($y+$f)));
+    } elseif ($t == REPEAT_DAYS_EVERY_WEEK) {
+        $old_appointment_date = date('Y-m-d', mktime(0, 0, 0, $m, $d, $y));
+        $next_appointment_date = getTheNextAppointment($old_appointment_date, $f);
+        return $next_appointment_date;
     }
-
-    $dtYMD = date('Y-m-d', mktime(0, 0, 0, $m, $d, $y));
-    return $dtYMD;
 }
 
 function getTheNextAppointment($appointment_date, $freq)

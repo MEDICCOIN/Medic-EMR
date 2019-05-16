@@ -22,12 +22,9 @@
 */
 namespace Carecoordination\Controller;
 
-use Application\Listener\Listener;
-use OpenEMR\Common\Logging\EventAuditLogger;
-use OpenEMR\Common\System\System;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
-use Carecoordination\Controller\EncountermanagerController;
+use Application\Listener\Listener;
 use Exception;
 
 class EncounterccdadispatchController extends AbstractActionController
@@ -44,6 +41,8 @@ class EncounterccdadispatchController extends AbstractActionController
 
     protected $createdtime;
 
+    protected $serviceManager;
+
     protected $listenerObject;
 
     protected $recipients;
@@ -54,12 +53,10 @@ class EncounterccdadispatchController extends AbstractActionController
 
     protected $latest_ccda;
 
-    public function __construct(
-        \Carecoordination\Model\EncounterccdadispatchTable $encounterccdadispatchTable
-    ) {
-    
+    public function __construct($serviceManager = null)
+    {
         $this->listenerObject   = new Listener;
-        $this->encounterccdadispatchTable = $encounterccdadispatchTable;
+        $this->serviceManager = $serviceManager;
     }
 
     /**
@@ -152,7 +149,7 @@ class EncounterccdadispatchController extends AbstractActionController
                         $event = isset($parameterArray['event']) ? $parameterArray['event'] : 'patient-record';
                         $menu_item = isset($parameterArray['menu_item']) ? $parameterArray['menu_item'] : 'Dashboard';
 
-                        EventAuditLogger::instance()->newEvent($event, $this->patient_username, '', 1, '', $this->patient_id, $log_from = 'patient-portal', $menu_item, $ccdaDocumentId);
+                        newEvent($event, $this->patient_username, '', 1, '', $this->patient_id, $log_from = 'patient-portal', $menu_item, $ccdaDocumentId);
                     } catch (Exception $e) {
                     }
                 }
@@ -192,7 +189,7 @@ class EncounterccdadispatchController extends AbstractActionController
                     $event = isset($parameterArray['event']) ? $parameterArray['event'] : 'patient-record';
                     $menu_item = isset($parameterArray['menu_item']) ? $parameterArray['menu_item'] : 'Dashboard';
 
-                    EventAuditLogger::instance()->newEvent($event, $this->patient_username, '', 1, '', $this->patient_id, $log_from = 'patient-portal', $menu_item, $ccdaDocumentId);
+                    newEvent($event, $this->patient_username, '', 1, '', $this->patient_id, $log_from = 'patient-portal', $menu_item, $ccdaDocumentId);
                 } catch (Exception $e) {
                 }
 
@@ -334,7 +331,6 @@ class EncounterccdadispatchController extends AbstractActionController
                 $this->create_data($this->patient_id, $this->encounter_id, $this->sections, $send, $this->components);
                 $content            = $this->socket_get("$mirth_ip", "6661", $this->data);
 
-                // TODO: Is this supposed to be mispelled by the mirth server like this??  Seems odd...
                 if ($content=='Authetication Failure') {
                     echo $this->listenerObject->z_xlt($content);
                     die();
@@ -372,7 +368,7 @@ class EncounterccdadispatchController extends AbstractActionController
             }
 
             if ($downloadccda) {
-                $this->forward()->dispatch(EncountermanagerController::class, array('action'    => 'downloadall',
+                $this->forward()->dispatch('encountermanager', array('action'    => 'downloadall',
                                                             'pids'      => $this->params('pids')));
             } else {
                 die;
@@ -420,42 +416,22 @@ class EncounterccdadispatchController extends AbstractActionController
 
         // Connect to the server.
         $result = socket_connect($socket, $ip, $port);
-        $system = new System();
         if ($result === false) {
-            // 1 -> Care coordination module, 2-> portal, 3 -> Both so the local service is on if it's greater than 0
-            if ($GLOBALS['ccda_alt_service_enable'] > 0) { // we're local service
+            if ($GLOBALS['ccda_alt_service_enable'] > 1) { // we're local service
                 $path = $GLOBALS['fileroot'] . "/ccdaservice";
                 if (IS_WINDOWS) {
-                    // TODO: we need to test the system commands / escape commands on windows.
                     $cmd = "node " . $path . "/serveccda.js";
-                    $pipeHandle = popen("start /B " . $cmd, "r");
-                    if ($pipeHandle === false) {
-                        throw new Exception("Failed to start local ccdaservice");
-                    }
-                    if (pclose($pipeHandle) === -1) {
-                        error_log("Failed to close pipehandle for ccdaservice");
-                    }
+                    pclose(popen("start /B " . $cmd, "r"));
                 } else {
-                    $command = 'nodejs';
-                    if (!$system->command_exists($command)) {
-                        if ($system->command_exists('node')) { // older or custom Ubuntu systems that have node rather than nodejs command
-                            $command = 'node';
-                        } else {
-                            error_log("Node is not installed on the system.  Connection failed");
-                            throw new Exception('Connection Failed.');
-                        }
-                    }
-                    $cmd = $system->escapeshellcmd("$command " . $path . "/serveccda.js");
+                    $cmd = "nodejs " . $path . "/serveccda.js";
                     exec($cmd . " > /dev/null &");
                 }
                 sleep(2); // give cpu a rest
                 $result = socket_connect($socket, $ip, $port);
                 if ($result === false) { // hmm something is amiss with service. user will likely try again.
-                    error_log("Failed to start and connect to local ccdaservice server on ip " . text($ip) . " and port " . (int)$port);
                     throw new Exception("Connection Failed");
                 }
             } else {
-                error_log("Failed to connect to mirth server on ip " . text($ip) . " and port " . (int)$port);
                 throw new Exception("Connection Failed");
             }
         }
@@ -783,6 +759,14 @@ class EncounterccdadispatchController extends AbstractActionController
     */
     public function getEncounterccdadispatchTable()
     {
+        if (!$this->encounterccdadispatchTable) {
+            if (($this->serviceManager == null)) {
+                $this->serviceManager = $this->getServiceLocator();
+            }
+
+            $this->encounterccdadispatchTable = $this->serviceManager->get('Carecoordination\Model\EncounterccdadispatchTable');
+        }
+
         return $this->encounterccdadispatchTable;
     }
 

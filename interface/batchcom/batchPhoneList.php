@@ -13,12 +13,7 @@
  */
 
 require_once("../globals.php");
-
 use OpenEMR\Core\Header;
-
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
-}
 
 ?>
 <html>

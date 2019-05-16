@@ -77,7 +77,6 @@ class ModuleconfigController extends AbstractActionController
   
     public function getDependedModulesConfig()
     {
-        $dependedModules = array();
         return $dependedModules;
     }
 }

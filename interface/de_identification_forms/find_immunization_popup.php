@@ -6,8 +6,8 @@
  * @link      http://www.open-emr.org
  * @author    Visolve <vicareplus_engg@visolve.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2010 ViCarePlus, Visolve <vicareplus_engg@visolve.com>
- * @copyright Copyright (c) 2018-2019 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) ViCarePlus, Visolve <vicareplus_engg@visolve.com>
+ * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -22,7 +22,8 @@ $form_code_type = $_POST['form_code_type'];
 ?>
 <html>
 <head>
-<title><?php echo xlt('Immunization'); ?></title>
+<?php html_header_show(); ?>
+<title><?php xl('Immunization', 'e'); ?></title>
 <link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
 <style>
 td { font-size:10pt; }
@@ -54,9 +55,9 @@ td { font-size:10pt; }
    }
   }
   if(!str)
-    alert(<?php echo xlj("Select Immunizations"); ?>);
+    alert('<?php echo xl("Select Immunizations");?>');
   if (opener.closed || ! opener.set_related)
-   alert(<?php echo xlj('The destination form was closed'); ?>);
+   alert("<?php echo xl('The destination form was closed');?>");
   else
    opener.set_related(str,"immunizations");
 
@@ -100,7 +101,7 @@ function check_search_str()
  var search_str = document.getElementById('search_term').value;
  if(search_str.length < 3)
  {
-  alert(<?php echo xlj("Search string should have at least three characters"); ?>);
+  alert('<?php echo xl("Search string should have at least three characters");?>');
   return false;
  }
  top.restoreSession();
@@ -110,8 +111,6 @@ function check_search_str()
 </head>
 <body class="body_top">
 <form method='post' name='theform'  action='find_immunization_popup.php' onsubmit="return check_search_str();">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
-
 <center>
 <table border='0' cellpadding='5' cellspacing='0'>
  <tr>
@@ -121,11 +120,11 @@ function check_search_str()
  <tr>
   <td>
    <b>
-    <?php echo xlt('Search for'); ?>
+    <?php xl('Search for', 'e'); ?>
    <input type='text' name='search_term' id='search_term' size='12' value='<?php echo attr($_REQUEST['search_term']); ?>'
-    title='<?php echo xla('Any part of the immunization id or immunization name'); ?>' />
+    title='<?php xl('Any part of the immunization id or immunization name', 'e'); ?>' />
    &nbsp;
-   <input type='submit' name='bn_search' value='<?php echo xla('Search'); ?>' />
+   <input type='submit' name='bn_search' value='<?php xl('Search', 'e'); ?>' />
    </b>
   </td>
  </tr>
@@ -138,12 +137,6 @@ function check_search_str()
 </form>
 <form method='post' name='select_immunization'>
 <?php if ($_REQUEST['bn_search']) { ?>
-    <?php
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-    ?>
-
 <table border='0'>
  <tr>
   <td colspan="4">
@@ -154,11 +147,13 @@ function check_search_str()
       "WHERE (list_id = 'immunizations' and title LIKE ? AND activity = 1) " ;
     $res = sqlStatement($query, array('%'.$search_term.'%'));
 if ($row = sqlFetchArray($res)) {
-    $no_of_items = $row['count'];
+    $no_of_items = addslashes($row['count']);
     if ($no_of_items < 1) {
         ?>
      <script language='JavaScript'>
-        alert(<?php echo xlj('Search string does not match with list in database'); ?> + '\n' + <?php echo xlj('Please enter new search string'); ?>);
+        alert("<?php echo xl('Search string does not match with list in database');
+        echo '\n';
+        echo xl('Please enter new search string');?>");
      document.theform.search_term.value=" ";
      document.theform.search_term.focus();
      </script>
@@ -172,10 +167,10 @@ if ($row = sqlFetchArray($res)) {
     $row_count = 0;
     while ($row = sqlFetchArray($res)) {
         $row_count = $row_count + 1;
-        $itercode = $row['option_id'];
-        $itertext = ucfirst(strtolower(trim($row['title'])));
+        $itercode = addslashes($row['option_id']);
+        $itertext = addslashes(ucfirst(strtolower(trim($row['title']))));
         ?>
-       <input type="checkbox" id="chkbox" value= "<?php echo attr($itercode) . "-" . attr($itertext); ?>" > <?php echo text($itercode) . "    " . text($itertext) . "</br>";
+       <input type="checkbox" id="chkbox" value= "<?php echo $itercode."-".$itertext; ?>" > <?php echo $itercode."    ".$itertext."</br>";
     }
 }
 
@@ -185,13 +180,13 @@ if ($row = sqlFetchArray($res)) {
 </tr>
  </table>
 <center>
- <input type='button' name='select_all' value='<?php echo xla('Select All'); ?>' onclick="chkbox_select_all(document.select_immunization.chkbox);"/>
+ <input type='button' name='select_all' value='<?php xl('Select All', 'e'); ?>' onclick="chkbox_select_all(document.select_immunization.chkbox);"/>
 
- <input type='button' name='select_none' value='<?php echo xla('Unselect All'); ?>' onclick="chkbox_select_none(document.select_immunization.chkbox);"/>
+ <input type='button' name='select_none' value='<?php xl('Unselect All', 'e'); ?>' onclick="chkbox_select_none(document.select_immunization.chkbox);"/>
 
- <input type='button' name='submit' value='<?php echo xla('Submit'); ?>' onclick="window_submit(document.select_immunization.chkbox);"/>
+ <input type='button' name='submit' value='<?php xl('Submit', 'e'); ?>' onclick="window_submit(document.select_immunization.chkbox);"/>
 
- <input type='button' name='cancel' value='<?php echo xla('Cancel'); ?>' onclick="window_close();"/>
+ <input type='button' name='cancel' value='<?php xl('Cancel', 'e'); ?>' onclick="window_close();"/>
 
  </center>
 <?php } ?>

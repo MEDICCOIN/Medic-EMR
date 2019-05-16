@@ -1,22 +1,17 @@
 <?php
-/*
- * Print billing report.
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Julia Longtin
- * @author Stephen Waite <stephen.waite@cmsvt.com>
- * @copyright Copyright (c) 2012 Julia Longtin
- * @copyright Copyright (c) 2018 Stephen Waite <stephen.waite@cmsvt.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+/* Copyright (C) 2012 Julia Longtin */
 
-require_once("../globals.php");
-require_once("$srcdir/patient.inc");
-require_once("$srcdir/../interface/reports/report.inc.php");
-require_once("$srcdir/billrep.inc");
-require_once("$srcdir/forms.inc");
-require_once("$srcdir/report.inc");
+
+
+
+include_once("../globals.php");
+
+include_once("$srcdir/patient.inc");
+include_once("$srcdir/../interface/reports/report.inc.php");
+include_once("$srcdir/billrep.inc");
+include_once("$srcdir/forms.inc");
+include_once("$srcdir/billing.inc");
+include_once("$srcdir/report.inc");
 
 //how many columns to use when displaying information
 $COLS=6;
@@ -64,6 +59,7 @@ if (!isset($_GET["mode"])) {
 
 <html>
 <head>
+<?php html_header_show();?>
 
 <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
 
@@ -178,7 +174,7 @@ if ($ret = getBillsBetweenReport($code_type)) {
 
             print "<font class=bold>" . xlt("Patient Data") . ":</font><br>";
             printRecDataOne($patient_data_array, getRecPatientData($iter{"pid"}), $COLS);
-
+        
             print "<font class=bold>" . xlt("Employer Data") . ":</font><br>";
             printRecDataOne($employer_data_array, getRecEmployerData($iter{"pid"}), $COLS);
 
@@ -190,7 +186,7 @@ if ($ret = getBillsBetweenReport($code_type)) {
 
             print "<font class=bold>" . xlt("Tertiary Insurance Data") . ":</font><br>";
             printRecDataOne($insurance_data_array, getRecInsuranceData($iter{"pid"}, "tertiary"), $COLS);
-
+        
             //==================================
             print "</td></tr><tr>\n";
             $old_pid = $iter{"pid"};

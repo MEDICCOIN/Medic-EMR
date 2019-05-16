@@ -1,6 +1,5 @@
 <?php
-require_once(dirname(__FILE__) . "/../interface/reports/report.inc.php");
-
+    require_once(dirname(__FILE__) . "/../interface/reports/report.inc.php");
 function GenerateTheQueryPart()
 {
     global $query_part,$query_part2,$billstring,$auth;
@@ -154,27 +153,27 @@ function getBillsListBetween(
     "order by billing.pid, billing.date ASC";
 
     $res = sqlStatement($sql, array($code_type));
-    $array = array();
+    $string = "( ";
     for ($iter=0; $row=sqlFetchArray($res); $iter++) {
-        array_push($array, $row{"id"});
+        $string .= $row{"id"}.",";
     }
 
-    return $array;
+    $string = substr($string, 0, strlen($string)-1);
+    $string .= ")";
+    return $string;
 }
 
-function billCodesList($list, $skip = [])
+function billCodesList($list, $skip = "()")
 {
-    if (empty($list)) {
+    if ($list == "()") {
         return;
     }
 
-    $sqlBindArray = array_diff($list, $skip);
-    if (empty($sqlBindArray)) {
-        return;
+    if ($skip == "()") {
+        sqlStatement("update billing set billed=1 where id in $list");
+    } else {
+        sqlStatement("update billing set billed=1 where id in $list and id not in $skip");
     }
-
-    $in = str_repeat('?,', count($sqlBindArray) - 1) . '?';
-    sqlStatement("update billing set billed=1 where id in ($in)", $sqlBindArray);
 
     return;
 }

@@ -1,13 +1,23 @@
 /**
  * Basic javascript setup for the fee sheet review features
+ * 
+ * Copyright (C) 2013 Kevin Yeh <kevin.y@integralemr.com> and OEMR <www.oemr.org>
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Kevin Yeh <kevin.y@integralemr.com>
- * @copyright Copyright (c) 2013 Kevin Yeh <kevin.y@integralemr.com> and OEMR <www.oemr.org>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Kevin Yeh <kevin.y@integralemr.com>
+ * @link    http://www.open-emr.org
  */
-
 var fee_sheet_new=webroot+"/interface/forms/fee_sheet/new.php";
 
 
@@ -31,8 +41,7 @@ function add_review_button()
     var template=$("<div class='review'></div>").appendTo(td);
     template.attr("data-bind","template: {name: 'review-display', data: review}");
     // This makes the Review button first in the row.
-   // $("[name='search_term']").parent().parent().prepend(td); // left the  original code alone
-    $("#copay_review tr:first").append(td);
+    $("[name='search_term']").parent().parent().prepend(td);
     return td;
 }
 
@@ -41,10 +50,11 @@ function get_fee_sheet_options(level)
     fee_sheet_options=[];
     var fso=$.ajax(ajax_fee_sheet_options,{type:"GET",data:{pricelevel: level},async:false,dataType:"json"});
     var json_options=JSON.parse(fso.responseText)['fee_sheet_options'];
-    for (var idx=0; idx<json_options.length; idx++) {
+    for(var idx=0;idx<json_options.length;idx++)
+        {
             var cur=json_options[idx];
             fee_sheet_options.push(new fee_sheet_option(cur.code,cur.code_type,cur.description,cur.price));
-    }
+        }
     return fee_sheet_options;
 }
 

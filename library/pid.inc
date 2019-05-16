@@ -1,18 +1,11 @@
 <?php
-/**
- * pid.inc
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 
 require_once(dirname(__FILE__). "/../interface/globals.php");
-
-use OpenEMR\Common\Logging\EventAuditLogger;
+require_once(dirname(__FILE__)."/log.inc");
 
 // Function called to set the global session variable for patient id (pid) number.
 function setpid($new_pid)
@@ -43,5 +36,5 @@ function setpid($new_pid)
     $_SESSION['pid'] = $new_pid_int;
     $pid = $new_pid_int;
 
-    EventAuditLogger::instance()->newEvent("view", $_SESSION["authUser"], $_SESSION["authProvider"], 1, '', $pid);
+    newEvent("view", $_SESSION["authUser"], $_SESSION["authProvider"], 1, '', $pid);
 }

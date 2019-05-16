@@ -199,7 +199,7 @@ div.tiny { width:1px; height:1px; font-size:1px; }
 }
 </style>
 
-[-headerTemplate assets='no_bootstrap|no_fontawesome|no_main-theme|no_dialog'-]
+<script type="text/javascript" src="../../../library/textformat.js"></script>
 
 </head>
 <body>
@@ -700,6 +700,7 @@ function PrintDatePicker($caldate, $DOWlist, $daynames) {
 
 </body>
 
+<script type="text/javascript" src="[-php-] echo $GLOBALS['assets_static_relative'] [-/php-]/jquery-min-1-2-2/index.js"></script>
 <script>
 $(document).ready(function(){
     var win = top.printLogPrint ? top : opener.top;

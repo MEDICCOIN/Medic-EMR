@@ -1,36 +1,11 @@
 <?php
-/**
- * dupecheck index.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
-
 require_once("../../../interface/globals.php");
 require_once("./Utils.php");
-
-use OpenEMR\Core\Header;
-
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-    foreach ($_POST as $key => $value) {
-        $parameters[$key] = $value;
-    }
-}
-
-if (!acl_check('admin', 'super')) {
-    die(xlt("Not Authorized"));
-}
 
 /* Use this code to identify duplicate patients in OpenEMR
  *
  */
+$parameters = GetParameters();
 
 // establish some defaults
 if (! isset($parameters['sortby'])) {
@@ -48,10 +23,13 @@ if (! isset($parameters['match_name']) &&
     $parameters['match_name'] = 'on';
     $parameters['match_dob'] = 'on';
 }
+    
+$oemrdb = $GLOBALS['dbh'];
 ?>
+
 <html>
 <head>
-<?php Header::setupHeader(['no_bootstrap', 'no_fontawesome', 'no_main-theme', 'no_textformat', 'no_dialog']); ?>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-2-2/index.js"></script>
 <style>
 body {
     font-family: arial, helvetica, times new roman;
@@ -73,7 +51,7 @@ body {
 .match_block table td {
     padding: 5px;
 }
-
+    
 .highlight {
     background-color: #99a;
     color: white;
@@ -84,34 +62,49 @@ body {
 .bold {
     font-weight: bold;
 }
-
+    
 </style>
 </head>
 <body>
 <form name="search_form" id="search_form" method="post" action="index.php">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 <input type="hidden" name="go" value="Go">
 Matching criteria:
-<input type="checkbox" name="match_name" id="match_name" <?php echo ($parameters['match_name']) ? "CHECKED" : ""; ?>>
+<input type="checkbox" name="match_name" id="match_name" <?php if ($parameters['match_name']) {
+    echo "CHECKED";
+} ?>> 
 <label for="match_name">Name</label>
-<input type="checkbox" name="match_dob" id="match_dob" <?php echo ($parameters['match_dob']) ? "CHECKED" : ""; ?>>
+<input type="checkbox" name="match_dob" id="match_dob" <?php if ($parameters['match_dob']) {
+    echo "CHECKED";
+} ?>> 
 <label for="match_dob">DOB</label>
-<input type="checkbox" name="match_sex" id="match_sex" <?php echo ($parameters['match_sex']) ? "CHECKED" : ""; ?>>
+<input type="checkbox" name="match_sex" id="match_sex" <?php if ($parameters['match_sex']) {
+    echo "CHECKED";
+} ?>> 
 <label for="match_sex">Gender</label>
-<input type="checkbox" name="match_ssn" id="match_ssn" <?php echo ($parameters['match_ssn']) ? "CHECKED" : ""; ?>>
+<input type="checkbox" name="match_ssn" id="match_ssn" <?php if ($parameters['match_ssn']) {
+    echo "CHECKED";
+} ?>> 
 <label for="match_ssn">SSN</label>
 <br>
 Order results by:
-<input type='radio' name='sortby' value='name' id="name" <?php echo ($parameters['sortby']=='name') ? "CHECKED" : ""; ?>>
+<input type='radio' name='sortby' value='name' id="name" <?php if ($parameters['sortby']=='name') {
+    echo "CHECKED";
+} ?>>
 <label for="name">Name</label>
-<input type='radio' name='sortby' value='dob' id="dob" <?php echo ($parameters['sortby']=='dob') ? "CHECKED" : ""; ?>>
+<input type='radio' name='sortby' value='dob' id="dob" <?php if ($parameters['sortby']=='dob') {
+    echo "CHECKED";
+} ?>>
 <label for="dob">DOB</label>
-<input type='radio' name='sortby' value='sex' id="sex" <?php echo ($parameters['sortby']=='sex') ? "CHECKED" : ""; ?>>
+<input type='radio' name='sortby' value='sex' id="sex" <?php if ($parameters['sortby']=='sex') {
+    echo "CHECKED";
+} ?>>
 <label for="sex">Gender</label>
-<input type='radio' name='sortby' value='ssn' id="ssn" <?php echo ($parameters['sortby']=='ssn') ? "CHECKED" : ""; ?>>
+<input type='radio' name='sortby' value='ssn' id="ssn" <?php if ($parameters['sortby']=='ssn') {
+    echo "CHECKED";
+} ?>>
 <label for="ssn">SSN</label>
 <br>
-Limit search to first <input type='textbox' size='5' name='limit' id="limit" value='<?php echo attr($parameters['limit']); ?>'> records
+Limit search to first <input type='textbox' size='5' name='limit' id="limit" value='<?php echo $parameters['limit']; ?>'> records
 <input type="button" name="do_search" id="do_search" value="Go">
 </form>
 
@@ -145,7 +138,7 @@ if ($parameters['go'] == "Go") {
 
     $sqlstmt .= $orderby;
     if ($parameters['limit']) {
-        $sqlstmt .= " LIMIT 0," . escape_limit($parameters['limit']);
+        $sqlstmt .= " LIMIT 0,".$parameters['limit'];
     }
 
     $qResults = sqlStatement($sqlstmt);
@@ -154,36 +147,31 @@ if ($parameters['go'] == "Go") {
             continue;
         }
 
-        $sqlBindArray = array();
         $sqlstmt = "select id, pid, fname, lname, dob, sex, ss ".
                     " from patient_data where ";
         $sqland = "";
         if ($parameters['match_name']) {
-            $sqlstmt .= $sqland . " fname=?";
+            $sqlstmt .= $sqland . " fname='".$row['fname']."'";
             $sqland = " AND ";
-            $sqlstmt .= $sqland . " lname=?";
-            array_push($sqlBindArray, $row['fname'], $row['lname']);
+            $sqlstmt .= $sqland . " lname='".$row['lname']."'";
         }
 
         if ($parameters['match_sex']) {
-            $sqlstmt .= $sqland . " sex=?";
+            $sqlstmt .= $sqland . " sex='".$row['sex']."'";
             $sqland = " AND ";
-            array_push($sqlBindArray, $row['sex']);
         }
 
         if ($parameters['match_ssn']) {
-            $sqlstmt .= $sqland . " ss=?";
+            $sqlstmt .= $sqland . " ss='".$row['ss']."'";
             $sqland = " AND ";
-            array_push($sqlBindArray, $row['ss']);
         }
 
         if ($parameters['match_dob']) {
-            $sqlstmt .= $sqland . " dob=?";
+            $sqlstmt .= $sqland . " dob='".$row['dob']."'";
             $sqland = " AND ";
-            array_push($sqlBindArray, $row['dob']);
         }
 
-        $mResults = sqlStatement($sqlstmt, $sqlBindArray);
+        $mResults = sqlStatement($sqlstmt);
 
         if (! $mResults) {
             continue;
@@ -194,15 +182,15 @@ if ($parameters['go'] == "Go") {
         }
 
 
-        echo "<div class='match_block' style='padding: 5px 0px 5px 0px;' id='dupediv" . attr($dupecount) . "'>";
+        echo "<div class='match_block' style='padding: 5px 0px 5px 0px;' id='dupediv".$dupecount."'>";
         echo "<table>";
 
-        echo "<tr class='onerow' id='" . attr($row['id']) . "' oemrid='" .attr($row['id']) . "' dupecount='" . attr($dupecount) . "' title='Merge duplicates into this record'>";
-        echo "<td>" . text($row['lname']) . ", " . text($row['fname']) . "</td>";
-        echo "<td>" . text($row['dob']) . "</td>";
-        echo "<td>" . text($row['sex']) . "</td>";
-        echo "<td>" . text($row['ss']) . "</td>";
-        echo "<td><input type='button' value=' ? ' class='moreinfo' oemrid='" . attr($row['pid']) . "' title='More info'></td>";
+        echo "<tr class='onerow' id='".$row['id']."' oemrid='".$row['id']."' dupecount='".$dupecount."' title='Merge duplicates into this record'>";
+        echo "<td>".$row['lname'].", ".$row['fname']."</td>";
+        echo "<td>".$row['dob']."</td>";
+        echo "<td>".$row['sex']."</td>";
+        echo "<td>".$row['ss']."</td>";
+        echo "<td><input type='button' value=' ? ' class='moreinfo' oemrid='".$row['pid']."' title='More info'></td>";
         echo "</tr>";
 
         while ($mrow = sqlFetchArray($mResults)) {
@@ -210,12 +198,12 @@ if ($parameters['go'] == "Go") {
                 continue;
             }
 
-            echo "<tr class='onerow' id='" . attr($mrow['id']) . "' oemrid='" . attr($mrow['id']) . "' dupecount='" . attr($dupecount) . "' title='Merge duplicates into this record'>";
-            echo "<td>" . text($mrow['lname']) . ", " . text($mrow['fname']) . "</td>";
-            echo "<td>" . text($mrow['dob']) . "</td>";
-            echo "<td>" . text($mrow['sex']) . "</td>";
-            echo "<td>" . text($mrow['ss']) . "</td>";
-            echo "<td><input type='button' value=' ? ' class='moreinfo' oemrid='" . attr($mrow['pid']) . "' title='More info'></td>";
+            echo "<tr class='onerow' id='".$mrow['id']."' oemrid='".$mrow['id']."' dupecount='".$dupecount."' title='Merge duplicates into this record'>";
+            echo "<td>".$mrow['lname'].", ".$mrow['fname']."</td>";
+            echo "<td>".$mrow['dob']."</td>";
+            echo "<td>".$mrow['sex']."</td>";
+            echo "<td>".$mrow['ss']."</td>";
+            echo "<td><input type='button' value=' ? ' class='moreinfo' oemrid='".$mrow['pid']."' title='More info'></td>";
             echo "</tr>";
             // to keep the output clean let's not repeat IDs already tagged as dupes
             $dupelist[$row['id']] = 1;
@@ -232,7 +220,7 @@ if ($parameters['go'] == "Go") {
 ?>
 </div> <!-- end the big list -->
 <?php if ($dupecount > 0) : ?>
-<div id="dupecounter" style='display:inline;'><?php echo text($dupecount); ?></div>
+<div id="dupecounter" style='display:inline;'><?php echo $dupecount; ?></div>
 &nbsp;duplicates found
 <?php endif; ?>
 </form>
@@ -241,39 +229,39 @@ if ($parameters['go'] == "Go") {
 
 <script language="javascript">
 
-$(function(){
+$(document).ready(function(){
 
     // capture RETURN keypress
-    $("#limit").on("keypress", function(evt) { if (evt.keyCode == 13) $("#do_search").click(); });
+    $("#limit").keypress(function(evt) { if (evt.keyCode == 13) $("#do_search").click(); });
 
     // perform the database search for duplicates
-    $("#do_search").on("click", function() {
+    $("#do_search").click(function() { 
         $("#thebiglist").html("<p style='margin:10px;'><img src='<?php echo $GLOBALS['webroot']; ?>/interface/pic/ajax-loader.gif'> Searching ...</p>");
-        $("#search_form").trigger("submit");
+        $("#search_form").submit();
         return true;
     });
 
     // pop up an OpenEMR window directly to the patient info
-    var moreinfoWin = null;
-    $(".moreinfo").on("click", function(evt) {
+    var moreinfoWin = null; 
+    $(".moreinfo").click(function(evt) { 
         if (moreinfoWin) { moreinfoWin.close(); }
-        moreinfoWin = window.open("<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/patient_file.php?set_pid=" + encodeURIComponent($(this).attr("oemrid")), "moreinfo");
+        moreinfoWin = window.open("<?php echo $GLOBALS['webroot']; ?>/interface/patient_file/patient_file.php?set_pid="+$(this).attr("oemrid"), "moreinfo");
         evt.stopPropagation();
     });
 
     // highlight the block of matching records
-    $(".match_block").on("mouseover", function() { $(this).toggleClass("highlight_block"); });
-    $(".match_block").on("mouseout", function() { $(this).toggleClass("highlight_block"); });
-    $(".onerow").on("mouseover", function() { $(this).toggleClass("highlight"); });
-    $(".onerow").on("mouseout", function() { $(this).toggleClass("highlight"); });
+    $(".match_block").mouseover(function() { $(this).toggleClass("highlight_block"); });
+    $(".match_block").mouseout(function() { $(this).toggleClass("highlight_block"); });
+    $(".onerow").mouseover(function() { $(this).toggleClass("highlight"); });
+    $(".onerow").mouseout(function() { $(this).toggleClass("highlight"); });
 
     // begin the merge of a block into a single record
-    $(".onerow").on("click", function() {
+    $(".onerow").click(function() {
         var dupecount = $(this).attr("dupecount");
         var masterid = $(this).attr("oemrid");
-        var newurl = "mergerecords.php?dupecount=" + encodeURIComponent(dupecount) + "&masterid=" + encodeURIComponent(masterid) + '&csrf_token_form=' + <?php echo js_url(collectCsrfToken()); ?>;
+        var newurl = "mergerecords.php?dupecount="+dupecount+"&masterid="+masterid;
         $("[dupecount="+dupecount+"]").each(function (i) {
-            if (this.id != masterid) { newurl += "&otherid[]=" + encodeURIComponent(this.id); }
+            if (this.id != masterid) { newurl += "&otherid[]="+this.id; }
         });
         // open a new window and show the merge results
         moreinfoWin = window.open(newurl, "mergewin");
@@ -287,7 +275,7 @@ function removedupe(dupeid) {
     var dcounter = parseInt($("#dupecounter").html());
     $("#dupecounter").html(dcounter-1);
 }
-
+    
 </script>
 
 </html>

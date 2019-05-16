@@ -1,15 +1,9 @@
 <?php
-/**
- * lab_results_messages.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2010 OpenEMR Support LLC
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
+// Copyright (C) 2010 OpenEMR Support LLC   
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 
 require_once("$include_root/globals.php");
 require_once("$srcdir/pnotes.inc");
@@ -19,15 +13,12 @@ require_once("$srcdir/auth.inc");
 function lab_results_messages($set_pid, $rid, $provider_id = "")
 {
     global $userauthorized;
-
-    $sqlBindArray = array();
     if ($provider_id != "") {
-        $where = "AND id = ?";
-        array_push($sqlBindArray, $provider_id);
+        $where = "AND id = '".$provider_id."'";
     }
 
     // Get all active users.
-    $rez = sqlStatement("select id, username from users where username != '' AND active = '1' $where", $sqlBindArray);
+    $rez = sqlStatement("select id, username from users where username != '' AND active = '1' $where");
     for ($iter = 0; $row = sqlFetchArray($rez); $iter++) {
         $result[$iter] = $row;
     }
@@ -35,7 +26,7 @@ function lab_results_messages($set_pid, $rid, $provider_id = "")
     if (!empty($result)) {
         foreach ($result as $user_detail) {
             unset($thisauth); // Make sure it is empty.
-            // Check user authorization. Only send the pending review message to authorised user.
+            // Check user authorization. Only send the panding review message to authorised user.
             // $thisauth = acl_check('patients', 'sign', $user_detail['username']);
 
             // Route message to administrators if there is no provider match.
@@ -48,7 +39,7 @@ function lab_results_messages($set_pid, $rid, $provider_id = "")
             if ($thisauth) {
                 // Send lab result message to the ordering provider when there is a new lab report.
                 $pname = getPatientName($set_pid);
-                $link = "<a href='../../orders/orders_results.php?review=1&set_pid=" . attr_url($set_pid) . "'" .
+                $link = "<a href='../../orders/orders_results.php?review=1&set_pid=$set_pid'" .
                 " onclick='return top.restoreSession()'>here</a>";
                 $note = "Patient $pname's lab results have arrived. Please click $link to review them.<br/>";
                 $note_type = "Lab Results";

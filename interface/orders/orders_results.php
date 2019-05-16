@@ -23,7 +23,7 @@
 require_once("../globals.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/options.inc.php");
-require_once("$srcdir/lab.inc");
+require_once("../orders/lab_exchange_tools.php");
 
 // Indicates if we are entering in batch mode.
 $form_batch = empty($_GET['batch']) ? 0 : 1;
@@ -52,7 +52,7 @@ if ($_GET['set_pid'] && $form_review) {
     $result = getPatientData($pid, "*, DATE_FORMAT(DOB,'%Y-%m-%d') as DOB_YMD");
     ?>
   <script language='JavaScript'>
-    parent.left_nav.setPatient(<?php echo js_escape($result['fname'] . " " . $result['lname']) . "," . js_escape($pid) . "," . js_escape($result['pubpid']) . ",''," . js_escape(" " . xl('DOB') . ": " . oeFormatShortDate($result['DOB_YMD']) . " " . xl('Age') . ": " . getPatientAge($result['DOB_YMD'])); ?>);
+    parent.left_nav.setPatient(<?php echo "'" . addslashes($result['fname']) . " " . addslashes($result['lname']) . "',$pid,'" . addslashes($result['pubpid']) . "','', ' " . xl('DOB') . ": " . oeFormatShortDate($result['DOB_YMD']) . " " . xl('Age') . ": " . getPatientAge($result['DOB_YMD']) . "'"; ?>);
   </script>
     <?php
 }
@@ -64,13 +64,13 @@ if (!$form_batch && !$pid && !$form_review) {
 function oresRawData($name, $index)
 {
     $s = isset($_POST[$name][$index]) ? $_POST[$name][$index] : '';
-    return trim($s);
+    return trim(strip_escape_custom($s));
 }
 
 function oresData($name, $index)
 {
     $s = isset($_POST[$name][$index]) ? $_POST[$name][$index] : '';
-    return add_escape_custom(trim($s));
+    return formDataCore($s, true);
 }
 
 function QuotedOrNull($fld)
@@ -159,9 +159,10 @@ if ($_POST['form_submit'] && !empty($_POST['form_line'])) {
 <html>
 
 <head>
+<?php html_header_show();?>
 
 <link rel="stylesheet" href='<?php  echo $css_header ?>' type='text/css'>
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 
 <title><?php  xl('Procedure Results', 'e'); ?></title>
 
@@ -209,10 +210,10 @@ a, a:visited, a:hover { color:#0000cc; }
 }
 
 </style>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
 <script type="text/javascript" src="../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
 <script type="text/javascript" src="../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 
 <script language="JavaScript">
 
@@ -306,7 +307,7 @@ function validate(f) {
  return true;
 }
 
-$(function () {
+$(document).ready(function() {
   $('.datepicker').datetimepicker({
     <?php $datetimepicker_timepicker = false; ?>
     <?php $datetimepicker_showseconds = false; ?>

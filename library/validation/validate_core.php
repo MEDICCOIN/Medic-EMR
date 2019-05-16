@@ -1,13 +1,22 @@
 <?php
+
 /**
- * validate_core.php
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see
+ * http://www.gnu.org/licenses/licenses.html#GPL .
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Dror Golan <drorgo@matrix.co.il>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @package OpenEMR
+ * @license http://www.gnu.org/licenses/licenses.html#GPL GNU GPL V3+
+ * @author  Dror Golan <drorgo@matrix.co.il>
+ * @link    http://www.open-emr.org
  */
 
 
@@ -64,28 +73,28 @@ function validateUsingPageRules($fileNamePath)
         require_once($GLOBALS['srcdir'] . "/validation/validation_script.js.php");
         echo("\r\n");
         print '<script type="text/javascript">';
-        echo ("$(function(){");
+        echo ("$(document).ready(function(){");
         echo("\r\n");
         foreach ($collectThis as $key => $value) {
             echo("try{");
             echo("\r\n");
-            echo('if(document.getElementsByName(' . js_escape($key) . ').length>0)');
+            echo('if(document.getElementsByName("' . $key . '").length>0)');
             echo("\r\n");
             echo('{');
             echo("\r\n");
-            echo('var form = document.getElementsByName(' . js_escape($key) . ');');
+            echo('var form = document.getElementsByName("'.$key.'");');
             echo("\r\n");
-            echo('form[0].setAttribute("id",' . js_escape($key) . ');');
+            echo('form[0].setAttribute("id","'. $key.'");');
             echo("\r\n");
 
             echo('//Use validation script js Validations-');
             echo("\r\n");
 
-            echo('$(' . js_escape("#".$key) . ').submit(function(event){');
+            echo('$("#'.$key.'").submit(function(event){');
             echo("\r\n");
 
             echo("\r\n");
-            echo ('var submitvalue = submitme(' . js_escape($use_validate_js) . ',event,' . js_escape($key) . ',' . json_sanitize($collectThis[$key]['rules']) . ');');
+            echo ('var submitvalue = submitme(' . $use_validate_js . ',event,"' . $key . '",' . $collectThis[$key]['rules'] . ');');
             echo("\r\n");
             echo(' if(submitvalue){');
             echo("\r\n");

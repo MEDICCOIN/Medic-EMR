@@ -1,16 +1,16 @@
 <?php
 /**
- * Patient Flow Board (Patient Tracker) (Report Based on the appointment report)
+ *  Patient Flow Board (Patient Tracker) (Report Based on the appointment report)
  *
- * This program used to select and print the information captured in the Patient Flow Board program,
- * allowing the user to select and print the desired information.
+ *  This program used to select and print the information captured in the Patient Flow Board program ,
+ *  allowing the user to select and print the desired information.
  *
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Terry Hill <terry@lilysystems.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2015 Terry Hill <terry@lillysystems.com>
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -23,13 +23,7 @@ require_once("$srcdir/patient_tracker.inc.php");
 
 use OpenEMR\Core\Header;
 
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
-
-$patient = $_POST['patient'];
+$patient = $_REQUEST['patient'];
 
 if ($patient && !isset($_POST['form_from_date'])) {
     // If a specific patient, default to 2 years ago.
@@ -61,7 +55,7 @@ if ($_POST['show_completed_drug_screens']) {
 
 $provider  = $_POST['form_provider'];
 $facility  = $_POST['form_facility'];  #(CHEMED) facility filter
-$form_orderby = getComparisonOrder($_POST['form_orderby']) ?  $_POST['form_orderby'] : 'date';
+$form_orderby = getComparisonOrder($_REQUEST['form_orderby']) ?  $_REQUEST['form_orderby'] : 'date';
 if ($_POST["form_patient"]) {
     $form_patient = isset($_POST['form_patient']) ? $_POST['form_patient'] : '';
 }
@@ -80,7 +74,7 @@ if ($form_patient == '') {
     <?php Header::setupHeader(['datetime-picker', 'report-helper']); ?>
 
     <script type="text/javascript">
-        $(function() {
+        $(document).ready(function() {
             var win = top.printLogSetup ? top : opener.top;
             win.printLogSetup(document.getElementById('printbutton'));
 
@@ -155,7 +149,6 @@ if ($form_patient == '') {
 </div>
 
 <form method='post' name='theform' id='theform' action='patient_flow_board_report.php' onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <div id="report_parameters">
 
@@ -238,7 +231,7 @@ if ($form_patient == '') {
             &nbsp;&nbsp;<span class='text'><?php echo xlt('Patient'); ?>: </span>
             </td>
             <td>
-            <input type='text' size='20' name='form_patient' class='form-control' style='cursor:pointer;cursor:hand' value='<?php echo ($form_patient) ? attr($form_patient) : xla('Click To Select'); ?>' onclick='sel_patient()' title='<?php echo xla('Click to select patient'); ?>' />
+            <input type='text' size='20' name='form_patient' class='form-control' style='cursor:pointer;cursor:hand' value='<?php echo attr($form_patient) ? attr($form_patient) : xla('Click To Select'); ?>' onclick='sel_patient()' title='<?php echo xla('Click to select patient'); ?>' />
             <input type='hidden' name='form_pid' value='<?php echo attr($form_pid); ?>' />
             </td>
 
@@ -406,8 +399,8 @@ if ($_POST['form_refresh'] || $_POST['form_orderby']) {
 
     $lastdocname = "";
     #Appointment Status Checking
-    $form_apptstatus = $_POST['form_apptstatus'];
-    $form_apptcat=null;
+        $form_apptstatus = $_POST['form_apptstatus'];
+        $form_apptcat=null;
     if (isset($_POST['form_apptcat'])) {
         if ($form_apptcat!="ALL") {
             $form_apptcat=intval($_POST['form_apptcat']);
@@ -473,7 +466,7 @@ if ($_POST['form_refresh'] || $_POST['form_orderby']) {
         $j=$j+1;
         ?>
 
-    <tr bgcolor='<?php echo attr($bgcolor); ?>'>
+    <tr bgcolor='<?php echo $bgcolor ?>'>
         <?php
         if (!$chk_show_drug_screens && !$chk_show_completed_drug_screens) { # the first part of this block is for the Patient Flow Board report ?>
         <td class="detail">&nbsp;<?php echo ($docname == $lastdocname) ? "" : $docname ?>
@@ -503,7 +496,7 @@ if ($_POST['form_refresh'] || $_POST['form_orderby']) {
                 }
             } else {
                 if ($tracker_status != "") {
-                    echo text(getListItemTitle('apptstat', $tracker_status));
+                    echo getListItemTitle('apptstat', $tracker_status);
                 }
             }
             ?>
@@ -546,7 +539,7 @@ if ($_POST['form_refresh'] || $_POST['form_orderby']) {
             <?php
         }
 
-            echo text(getListItemTitle("apptstat", $track_stat));
+            echo  getListItemTitle("apptstat", $track_stat);
         ?>
             </b></td>
             <?php
@@ -604,7 +597,7 @@ if ($_POST['form_refresh'] || $_POST['form_orderby']) {
         <?php
         } else { # this section is for the drug screen report ?>
 
-        <td class="detail">&nbsp;<?php echo ($docname == $lastdocname) ? "" : text($docname); ?>
+        <td class="detail">&nbsp;<?php echo ($docname == $lastdocname) ? "" : $docname ?>
         </td>
 
         <td class="detail"><?php echo text(oeFormatShortDate($appointment['pc_eventDate'])) ?>

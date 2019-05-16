@@ -1,12 +1,24 @@
 <?php
 /**
- * secure_chat.php
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Jerry Padgett <sjpadgett@gmail.com>
+ * @link http://www.open-emr.org
  */
 
 namespace SMA_Common;
@@ -27,16 +39,11 @@ if (isset($_SESSION['pid']) && isset($_SESSION['patient_portal_onsite_two'])) {
         header('Location: '.$landingpage);
         exit;
     }
-    $admin = sqlQueryNoLog(
-        "SELECT CONCAT(users.fname,' ',users.lname) as user_name FROM users WHERE id = ?",
-        array($_SESSION['authUserID'])
-    );
-    define('ADMIN_USERNAME', $admin['user_name']);
-    define('IS_DASHBOARD', $_SESSION['authUser']);
+
+    define('IS_DASHBOARD', $_SESSION['authUserID']);
     define('IS_PORTAL', false);
     $_SERVER[REMOTE_ADDR] = 'admin::' . $_SERVER[REMOTE_ADDR];
 }
-
 
 define('C_USER', IS_PORTAL ?  IS_PORTAL : IS_DASHBOARD);
 
@@ -264,29 +271,19 @@ class Model extends SMA_Common\Model
 {
     public function getAuthUsers()
     {
-        $resultpd = array();
-        $result = array();
-        if (!IS_PORTAL) {
-            $query = "SELECT patient_data.pid as recip_id, Concat_Ws(' ', patient_data.fname, patient_data.lname) as username FROM patient_data " .
-                "LEFT JOIN patient_access_onsite pao ON pao.pid = patient_data.pid " .
-                "WHERE patient_data.pid = pao.pid AND pao.portal_pwd_status = 1";
-            $response = sqlStatementNoLog($query);
-            while ($row = sqlFetchArray($response)) {
-                $resultpd[] = $row;
-            }
+        $response = sqlStatementNoLog("SELECT patient_data.pid as recip_id, Concat_Ws(' ', patient_data.fname, patient_data.lname) as username FROM patient_data WHERE allow_patient_portal = 'YES'");
+        $resultpd = array ();
+        while ($row = sqlFetchArray($response)) {
+            $resultpd[] = $row;
         }
-        if (IS_PORTAL) {
-            $query = "SELECT users.username as recip_id, users.authorized as dash, CONCAT(users.fname,' ',users.lname) as username  " .
-                "FROM users WHERE active = 1 AND username > ''";
-            $response = sqlStatementNoLog($query);
 
-            while ($row = sqlFetchArray($response)) {
-                $result[] = $row;
-            }
+        $response = sqlStatementNoLog("SELECT users.id as recip_id, users.authorized as dash, CONCAT(users.fname,' ',users.lname) as username  FROM users WHERE authorized = 1");
+        $result = array ();
+        while ($row = sqlFetchArray($response)) {
+            $result[] = $row;
         }
-        $all = array_merge($result, $resultpd);
 
-        return json_encode($all);
+        return json_encode(array_merge($result, $resultpd));
     }
     public function getMessages($limit = CHAT_HISTORY, $reverse = true)
     {
@@ -295,7 +292,7 @@ class Model extends SMA_Common\Model
 
         $result = array();
         while ($row = sqlFetchArray($response)) {
-            if (IS_PORTAL || IS_DASHBOARD) {
+            if (IS_PORTAL) {
                 $u = json_decode($row['recip_id'], true);
                 if (!is_array($u)) {
                     continue;
@@ -495,22 +492,22 @@ $msgApp = new Controller();
     <title><?php echo xlt('Secure Patient Chat'); ?></title>
     <meta name="author" content="Jerry Padgett sjpadgett{{at}} gmail {{dot}} com">
 
-    <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
+    <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-11-3/index.js"></script>
 
-    <link href="<?php echo $GLOBALS['assets_static_relative']; ?>/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="<?php echo $GLOBALS['assets_static_relative']; ?>/bootstrap-3-3-4/dist/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
     <?php if ($_SESSION['language_direction'] == 'rtl') { ?>
-        <link href="<?php echo $GLOBALS['assets_static_relative']; ?>/bootstrap-rtl/dist/css/bootstrap-rtl.min.css" rel="stylesheet" type="text/css" />
+        <link href="<?php echo $GLOBALS['assets_static_relative']; ?>/bootstrap-rtl-3-3-4/dist/css/bootstrap-rtl.min.css" rel="stylesheet" type="text/css" />
     <?php } ?>
 
-    <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/bootstrap-3-3-4/dist/js/bootstrap.min.js"></script>
 
-    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/summernote/dist/summernote.css" />
-    <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/summernote/dist/summernote.js"></script>
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/summernote-0-8-2/dist/summernote.css" />
+    <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/summernote-0-8-2/dist/summernote.js"></script>
 
-    <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/angular/angular.min.js"></script>
-    <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/angular-summernote/dist/angular-summernote.js"></script>
-     <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/angular-sanitize/angular-sanitize.min.js"></script>
-    <script src='<?php echo $GLOBALS['assets_static_relative']; ?>/checklist-model/checklist-model.js'></script>
+    <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/angular-1-5-8/angular.min.js"></script>
+    <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/angular-summernote-0-8-1/dist/angular-summernote.js"></script>
+     <script type='text/javascript' src="<?php echo $GLOBALS['assets_static_relative']; ?>/angular-sanitize-1-5-8/angular-sanitize.min.js"></script>
+    <script src='<?php echo $GLOBALS['assets_static_relative']; ?>/checklist-model-0-10-0/checklist-model.js'></script>
 
 </head>
 <script type="text/javascript">
@@ -574,13 +571,12 @@ $msgApp = new Controller();
         $scope.lastMessageId = null;
         $scope.historyFromId = null;
         $scope.onlines = []; // all online users id and ip's
-        $scope.user = "<?php echo $_SESSION['ptName'] ? $_SESSION['ptName'] : ADMIN_USERNAME;?>";// current user - dashboard user is from session authUserID
-        $scope.userid = "<?php echo IS_PORTAL ? $_SESSION['pid'] : $_SESSION['authUser'];?>";
-        $scope.isPortal = "<?php echo IS_PORTAL;?>";
+        $scope.user = "<?php echo $_SESSION['ptName'] ? $_SESSION['ptName'] : $_SESSION['authUser'];?>" // current user - dashboard user is from session authUserID
+        $scope.userid = "<?php echo IS_PORTAL ? $_SESSION['pid'] : $_SESSION['authUserID'];?>"
+        $scope.isPortal = "<?php echo IS_PORTAL;?>" ;
         $scope.isFullScreen = "<?php echo IS_FULLSCREEN; ?>";
         $scope.pusers = []; // selected recipients for chat
         $scope.chatusers = []; // authorize chat recipients for dashboard user
-        $scope.noRecipError = '<?php echo xla("Please Select a Recipient for Message.") ?>';
         $scope.me = {
             username: $scope.user,
             message: null,
@@ -647,7 +643,7 @@ $msgApp = new Controller();
              var makrup = $('.summernote').summernote('code');
             $scope.me.message = makrup;
             $scope.saveMessage();
-            $('.summernote').summernote('code', ''); //add this options to reset editor or not-default is persistent content
+            $('.summernote').summernote('code', ''); //add this options to reset editor or not-default is persistant content
             //$('.summernote').summernote('destroy');
         };
 
@@ -659,10 +655,6 @@ $msgApp = new Controller();
             }
             if (! ($scope.me.message && $scope.me.message.trim() &&
                    $scope.me.username && $scope.me.username.trim())) {
-                return;
-            }
-            if($scope.me.recip_id == "[]") {
-                alert($scope.noRecipError);
                 return;
             }
             $scope.me.message = '';
@@ -703,7 +695,7 @@ $msgApp = new Controller();
                     var timmer = setInterval(function() {
                         notify && notify.close();
                         typeof timmer !== 'undefined' && window.clearInterval(timmer);
-                    }, 60000);
+                    }, 10000);
                 }
             });
         };
@@ -727,14 +719,14 @@ $msgApp = new Controller();
                     $scope.onNewMessage(wasListingForMySubmission);
                 }
                 $scope.lastMessageId = lastMessageId;
-                if($scope.pusers === ''){ // refresh current in chat list.
-                   angular.forEach($filter('unique')($scope.messages,'sender_id'), function(m,k){
-                   var flg = false;
-                   angular.forEach($scope.pusers, function(id) {
-                           if(id === m.sender_id){ flg = true; }
+                if($scope.pusers == ''){ // overkill but may need later
+                       angular.forEach($filter('unique')($scope.messages,'sender_id'), function(m,k){
+                       var flg = false;
+                       angular.forEach($scope.pusers, function(id) {
+                               if(id == m.sender_id){ flg = true; }
+                           });
+                          if(!flg) $scope.pusers.push(m.sender_id);
                        });
-                      if(!flg) $scope.pusers.push(m.sender_id);
-                   });
                }
                 $scope.getOnlines();
             });
@@ -751,14 +743,12 @@ $msgApp = new Controller();
                 $scope.pageTitleNotificator.off();
             });
         };
-
         $scope.getAuthUsers = function() {
             $scope.chatusers = [];
             return $http.post($scope.urlGetAuthUsers, {}).success(function(data) {
                 $scope.chatusers = data;
             });
         };
-
         $scope.pingServer = function(msgItem) {
             return $http.post($scope.urlListOnlines+'&username='+$scope.user, {}).success(function(data) {
                 $scope.online = data;
@@ -821,7 +811,7 @@ $msgApp = new Controller();
     position:relative;
     padding:5px 10px;
     background:#FBFBFB;
-    border:1px solid #6a6a6a;
+    border:1px solid #C2C6CE;
     margin:5px 0 0 50px;
     color:#444;
 }
@@ -881,8 +871,8 @@ $msgApp = new Controller();
     pointer-events:none;
 }
 .direct-chat-warning .right>.direct-chat-text {
-    background: rgba(251, 255, 178, 0.34);
-    border-color: #f30d1b;
+    background:#fef7ec;
+    border-color:#F39C12;
     color:#000;
 }
 .right .direct-chat-text {
@@ -927,29 +917,23 @@ input,button,.alert,.modal-content {
     margin-left:5px;
 }
 .sidebar{
-    background-color: ghostwhite;
+    background-color: lightgrey;
     height:100%;
     margin-top:5px;
     margin-right:0;
     padding-right:5px;
-    /*max-height: 730px;*/
-    height: calc(100vh - 100px);
+    max-height: 530px;
     overflow: auto;
 }
 .rtsidebar{
-    background-color: ghostwhite;
+    background-color: lightgrey;
     height:100%;
     margin-top:5px;
     margin-right:0;
-    height: calc(100vh - 100px);
-    overflow: auto;
 }
 .fixed-panel{
-   height: 100%;
+    height: 100%;
    padding: 5px 5px 0 5px;
-}
-h5 {
-    font-size:16px !important;
 }
 label {display: block;}
 legend{
@@ -970,11 +954,11 @@ background:#fff;
         <!-- <h2 class="hidden-xs">Secure Chat</h2> -->
         <div class="row">
             <div class="col-md-2 sidebar">
-                <h5><span class="label label-default"><?php echo xlt('Current Recipients'); ?></span></h5>
+                <h4><span class="label label-danger"><?php echo xlt('In Current Chat'); ?></span></h4>
                 <label ng-repeat="user in chatusers | unique : 'username'" ng-if="pusers.indexOf(user.recip_id) !== -1 && user.recip_id != me.sender_id">
                     <input type="checkbox" data-checklist-model="pusers" data-checklist-value="user.recip_id"> {{user.username}}
                 </label>
-                <h5><span class="label label-default"><?php echo xlt('Available Recipients'); ?></span></h5>
+                <h4><span class="label label-warning"><?php echo xlt('Authorized Users'); ?></span></h4>
                 <span>
                     <button id="chkall" class="btn btn-xs btn-success" ng-show="!isPortal" ng-click="checkAll()" type="button"><?php echo xlt('All'); ?></button>
                     <button id="chknone" class="btn btn-xs btn-success" ng-show="!isPortal" ng-click="uncheckAll()" type="button"><?php echo xlt('None'); ?></button>
@@ -984,10 +968,10 @@ background:#fff;
                 </label>
             </div>
             <div class="col-md-8 fixed-panel">
-                <div class="panel direct-chat direct-chat-warning">
+                <div class="panel panel-warning direct-chat direct-chat-warning">
                     <div class="panel-heading">
                         <div class="clearfix">
-                            <a class="btn btn-sm btn-primary ml10" href=""
+                            <a class="btn btn-sm btn-primary pull-right ml10" href=""
                                 data-toggle="modal" data-target="#clear-history"><?php echo xlt('Clear history'); ?></a>
                             <a class="btn btn-sm btn-success pull-left ml10" href="./../patient/provider" ng-show="!isPortal"><?php echo xlt('Home'); ?></a>
                             <a class="btn btn-sm btn-success pull-left ml10" href="./../home.php" ng-show="isFullScreen"><?php echo xlt('Home'); ?></a>
@@ -997,31 +981,26 @@ background:#fff;
                         <div class="direct-chat-messages">
                             <div class="direct-chat-msg" ng-repeat="message in messages" ng-if="historyFromId < message.id" ng-class="{'right':!message.me}">
                                 <div class="direct-chat-info clearfix">
-                                    <span class="direct-chat-name" ng-class="{'pull-left':message.me,'pull-right':!message.me}">{{message.username }}</span>
-                                    <span class="direct-chat-timestamp " ng-class="{'pull-left':!message.me,'pull-right':message.me}">{{message.date }}</span>
+                                    <span class="direct-chat-name"
+                                        ng-class="{'pull-left':message.me, 'pull-right':!message.me}">{{message.username }}</span>
+                                        <span class="direct-chat-timestamp "
+                                        ng-class="{'pull-left':!message.me, 'pull-right':message.me}">{{message.date }}</span>
                                 </div>
-                                <i class="direct-chat-img glyphicon glyphicon-hand-left"
-                                   style="cursor: pointer;font-size:24px" ng-show="!message.me"
-                                   ng-click="makeCurrent(message)"
-                                   title="<?php echo xla('Click to activate and send to this recipient.'); ?>"></i>
-                                <i class="direct-chat-img glyphicon glyphicon-hand-right"
-                                   style="cursor: pointer;font-size:24px" ng-show="message.me"
-                                   ng-click="makeCurrent(message)"
-                                   title="<?php echo xla('Click to activate and send to this recipient.'); ?>"></i>
-
+                                <img class="direct-chat-img" ng-show="!message.me"
+                                    src="./../images/Unknown-person.gif"
+                                    alt="">
+                                <img class="direct-chat-img" ng-show="message.me")
+                                    src="<?php echo $GLOBALS['images_static_relative']; ?>/favicon-32x32.png"
+                                    alt="">
                                 <div class="direct-chat-text right">
-                                    <div style="padding-left: 0px; padding-right: 0px;"
-                                         title="<?php echo xla('Click to activate and send to this recipient.'); ?>"
-                                         ng-click="makeCurrent(message)"
-                                         ng-bind-html=renderMessageBody(message.message)></div>
+                                    <div style="padding-left: 0px; padding-right: 0px;" title="<?php echo xlt('Click to make chat this current recipient only...'); ?>" ng-click="makeCurrent(message)" ng-bind-html=renderMessageBody(message.message)></div>
                                 </div>
                             </div>
                         </div>
                         <div class="panel-footer box-footer-hide">
                             <form id='msgfrm' ng-submit="saveMessage()">
                                 <div class="input-group">
-                                    <input type="text" placeholder="Type message..." id="msgedit" autofocus="autofocus"
-                                           class="form-control" ng-model="me.message" ng-enter="saveMessage()">
+                                    <input type="text" placeholder="Type message..." id="msgedit" autofocus="autofocus" class="form-control" ng-model="me.message" ng-enter="saveMessage()">
                                     <span class="input-group-btn">
                                         <button type="submit" class="btn btn-danger btn-flat"><?php echo xlt('Send'); ?></button>
                                         <button type="button" class="btn btn-success btn-flat" ng-click="openModal(event)"><?php echo xlt('Edit'); ?></button>
@@ -1033,12 +1012,11 @@ background:#fff;
             </div>
         </div>
         <div class="col-md-2 rtsidebar">
-            <h5><span class="label label-default"><?php echo xlt('Whose Online'); ?> : {{ online.total || '0' }}</span>
-            </h5>
-            <label ng-repeat="ol in onlines | unique : 'username'">
-                <input type="checkbox" data-checklist-model="onlines" data-checklist-value="ol"> {{ol.username}}
-            </label>
-        </div>
+                <h4><span class="label label-info"><?php echo xlt('Online'); ?> : {{ online.total || '0' }}</span></h4>
+                <label ng-repeat="ol in onlines | unique : 'username'">
+                    <input type="checkbox" data-checklist-model="onlines" data-checklist-value="ol"> {{ol.username}}
+                </label>
+            </div>
     </div>
 
     <div class="modal modal-wide fade" id="popeditor">

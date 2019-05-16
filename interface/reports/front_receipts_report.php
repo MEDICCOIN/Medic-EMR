@@ -14,15 +14,8 @@
 
 require_once("../globals.php");
 require_once("$srcdir/patient.inc");
-require_once "$srcdir/options.inc.php";
 
 use OpenEMR\Core\Header;
-
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
 
 $from_date = (isset($_POST['form_from_date'])) ? DateToYYYYMMDD($_POST['form_from_date']) : date('Y-m-d');
 $to_date   = (isset($_POST['form_to_date'])) ? DateToYYYYMMDD($_POST['form_to_date']) : date('Y-m-d');
@@ -42,7 +35,7 @@ function bucks($amt)
     <script language="JavaScript">
         <?php require($GLOBALS['srcdir'] . "/restoreSession.php"); ?>
 
-        $(function() {
+        $(document).ready(function() {
             var win = top.printLogSetup ? top : opener.top;
             win.printLogSetup(document.getElementById('printbutton'));
 
@@ -57,8 +50,8 @@ function bucks($amt)
 
         // The OnClick handler for receipt display.
         function show_receipt(pid,timestamp) {
-            dlgopen('../patient_file/front_payment.php?receipt=1&patient=' + encodeURIComponent(pid) +
-                '&time=' + encodeURIComponent(timestamp), '_blank', 550, 400, '', '', {
+            dlgopen('../patient_file/front_payment.php?receipt=1&patient=' + pid +
+                '&time=' + timestamp, '_blank', 550, 400, '', '', {
                 onClosed: 'reload'
             });
          }
@@ -102,7 +95,6 @@ function bucks($amt)
 </div>
 
 <form name='theform' method='post' action='front_receipts_report.php' id='theform' onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <div id="report_parameters">
 
@@ -115,48 +107,6 @@ function bucks($amt)
 
     <table class='text'>
         <tr>
-            <td class='control-label'>
-                <?php echo xlt('Facility'); ?>:
-            </td>
-            <td>
-                <?php
-                $form_facility=$_POST['form_facility'];
-                dropdown_facility($form_facility, 'form_facility', false);
-                ?>
-            </td>
-            <td class='control-label'>
-                <?php echo xlt('Provider') ?>:
-            </td>
-            <td>
-            <?php  # Build a drop-down list of providers.
-                    # Added (TLH)
-
-                    $query = "SELECT id, lname, fname FROM users WHERE ".
-                    "authorized = 1  ORDER BY lname, fname"; #(CHEMED) facility filter
-
-                    $ures = sqlStatement($query);
-
-                    echo "   <select name='form_provider' class='form-control'>\n";
-                    echo "    <option value=''>-- " . xlt('All') . " --\n";
-
-            while ($urow = sqlFetchArray($ures)) {
-                $provid = $urow['id'];
-                echo "    <option value='" . attr($provid) . "'";
-                if ($provid == $_POST['form_provider']) {
-                    echo " selected";
-                }
-
-                echo ">" . text($urow['lname']) . ", " . text($urow['fname']) . "\n";
-                if ($provid == $_POST['form_provider']) {
-                    $provider_name = $urow['lname'] . ", " . $urow['fname'];
-                }
-            }
-
-                    echo "   </select>\n";
-            ?>
-            </td>
-            </tr>
-            <tr>
             <td class='control-label'>
                 <?php echo xlt('From'); ?>:
             </td>
@@ -220,7 +170,6 @@ if (true || $_POST['form_refresh']) {
     $total1 = 0.00;
     $total2 = 0.00;
 
-    $inputArray=array($from_date.' 00:00:00', $to_date.' 23:59:59');
     $query = "SELECT r.pid, r.dtime, " .
     "SUM(r.amount1) AS amount1, " .
     "SUM(r.amount2) AS amount2, " .
@@ -229,24 +178,15 @@ if (true || $_POST['form_refresh']) {
     "MAX(r.user) AS user, " .
     "p.fname, p.mname, p.lname, p.pubpid " .
     "FROM payments AS r " .
-    "JOIN form_encounter AS fe ON fe.encounter=r.encounter " .
     "LEFT OUTER JOIN patient_data AS p ON " .
     "p.pid = r.pid " .
     "WHERE " .
     "r.dtime >= ? AND " .
-    "r.dtime <= ? AND ";
-    if ($_POST['form_facility']!="") {
-        $inputArray[]=$_POST['form_facility'];
-        $query.="fe.facility_id = ? AND ";
-    }
-    if ($_POST['form_provider']!="") {
-        $inputArray[]=$_POST['form_provider'];
-        $query.="fe.provider_id = ? AND ";
-    }
-    $query.="1 GROUP BY r.dtime, r.pid ORDER BY r.dtime, r.pid";
+    "r.dtime <= ? " .
+    "GROUP BY r.dtime, r.pid ORDER BY r.dtime, r.pid";
 
-    // echo " $query \n"; // debugging
-    $res = sqlStatement($query, $inputArray);
+    // echo "<!-- $query -->\n"; // debugging
+    $res = sqlStatement($query, array($from_date.' 00:00:00', $to_date.' 23:59:59'));
 
     while ($row = sqlFetchArray($res)) {
         // Make the timestamp URL-friendly.
@@ -254,7 +194,7 @@ if (true || $_POST['form_refresh']) {
     ?>
    <tr>
     <td nowrap>
-     <a href="javascript:show_receipt(<?php echo attr_js($row['pid']); ?>, <?php echo attr_js($timestamp); ?>)">
+     <a href="javascript:show_receipt(<?php echo $row['pid'] . ",'$timestamp'"; ?>)">
         <?php echo text(oeFormatShortDate(substr($row['dtime'], 0, 10))) . text(substr($row['dtime'], 10, 6)); ?>
    </a>
   </td>

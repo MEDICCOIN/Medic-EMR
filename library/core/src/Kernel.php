@@ -1,6 +1,6 @@
 <?php
 /**
- * OpenEMR <https://open-emr.org>.
+ * OpenEMR <http://open-emr.org>.
  *
  * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
@@ -68,7 +68,7 @@ class Kernel
      */
     private function loadServiceConfig(ContainerBuilder $builder)
     {
-        $loader = new YamlFileLoader($builder, new FileLocator($GLOBALS['fileroot']));
+        $loader = new YamlFileLoader($builder, new FileLocator($GLOBALS['webserver_root']));
         $loader->load('config/services.yml');
     }
 

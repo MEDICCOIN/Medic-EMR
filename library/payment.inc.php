@@ -1,22 +1,46 @@
 <?php
-/**
- *
- * @package OpenEMR
- * @author Eldho Chacko <eldho@zhservices.com>
- * @author Paul Simon K <paul@zhservices.com>
- * @author Stephen Waite <stephen.waite@cmsvt.com>
- * @copyright Copyright (c) 2010 Z&H Consultancy Services Private Limited <sam@zhservices.com>
- * @copyright Copyright (c) 2018 Stephen Waite <stephen.waite@cmsvt.com>
- * @link https://www.open-emr.org
- * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
-use OpenEMR\Billing\SLEOB;
-use OpenEMR\Common\Logging\EventAuditLogger;
+// +-----------------------------------------------------------------------------+
+// Copyright (C) 2010 Z&H Consultancy Services Private Limited <sam@zhservices.com>
+//
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+//
+// A copy of the GNU General Public License is included along with this program:
+// openemr/interface/login/GnuGPL.html
+// For more information write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+//
+// Author:   Eldho Chacko <eldho@zhservices.com>
+//           Paul Simon K <paul@zhservices.com>
+//
+// +------------------------------------------------------------------------------+
 
 // Post a payment to the payments table.
 //
+### Begin Medic Coin Module ###
+if (!function_exists('cformat'))
+{
+    function cformat($float) { // cformat = 'Crypto Format'
+    	return sprintf('%0.8f', $float);
+    }
+}
+/*
+### End Medic Coin Module ###
 function frontPayment($patient_id, $encounter, $method, $source, $amount1, $amount2, $timestamp, $auth = "")
+### Begin Medic Coin Module ###
+*/
+function frontPayment($patient_id, $encounter, $method, $source, $amount1, $amount2, $timestamp, $auth = "", $medic_amount1 = 0, $medic_amount2 = 0, $medic_address = '', $medic_txID = '')
+### End Medic Coin Module ###
 {
 
     if (empty($auth)) {
@@ -31,6 +55,9 @@ function frontPayment($patient_id, $encounter, $method, $source, $amount1, $amou
         //the manipulation is done to insert the amount paid into payments table in correct order to show in front receipts report,
         //if the payment is for today's encounter it will be shown in the report under today field and otherwise shown as previous
     $tmprowArray=explode(' ', $tmprow['date']);
+    ### Begin Medic Coin Module ###
+    /*
+    ### End Medic Coin Module ###
     if (date('Y-m-d')==$tmprowArray[0]) {
         if ($amount1==0) {
               $amount1=$amount2;
@@ -42,15 +69,37 @@ function frontPayment($patient_id, $encounter, $method, $source, $amount1, $amou
               $amount1=0;
         }
     }
-
+    
     $payid = sqlInsert("INSERT INTO payments ( " .
     "pid, encounter, dtime, user, method, source, amount1, amount2 " .
     ") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?)", array($patient_id,$encounter,$timestamp,$auth,$method,$source,$amount1,$amount2));
+    ### Begin Medic Coin Module ###
+    */
+    if (date('Y-m-d')==$tmprowArray[0]) {
+        if ($amount1==0) {
+              $amount1=$amount2;
+              $amount2=0;
+              $medic_amount1 = $medic_amount2;
+              $medic_amount2 = 0;
+        }
+    } else {
+        if ($amount2==0) {
+              $amount2=$amount1;
+              $amount1=0;
+              $medic_amount2 = $medic_amount1;
+              $medic_amount1 = 0;
+        }
+    }
+    
+    $payid = sqlInsert("INSERT INTO payments ( " .
+    "pid, encounter, dtime, user, method, source, amount1, amount2, medic_amount1, medic_amount2, medic_address, medic_txID " .
+    ") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", array($patient_id,$encounter,$timestamp,$auth,$method,$source,$amount1,$amount2,$medic_amount1,$medic_amount2, $medic_address, $medic_txID));
+    ### End Medic Coin Module ###
     return $payid;
 }
 
 //===============================================================================
-//This section handles the common functins of payment screens.
+//This section handles the common functions of payment screens.
 //===============================================================================
 function DistributionInsert($CountRow, $created_time, $user_id)
 {
@@ -58,6 +107,12 @@ function DistributionInsert($CountRow, $created_time, $user_id)
  //It automatically pushes to next insurance for billing.
  //In the screen a drop down of Ins1,Ins2,Ins3,Pat are given.The posting can be done for any level.
     $Affected='no';
+    ### Begin Medic Coin Module ###
+    $medic_usd = isset($_POST['medic_usd']) ? floatval($_POST['medic_usd']) : $GLOBALS['medic_usd'];
+    $medic_payment_amount = formData('medic_payment_amount') ? floatval(formData('medic_payment_amount')) : floatval($_POST['medic_payment_amount']);
+    $fee_medicaddress = formData('fee_medicaddress') ? trim(formData('fee_medicaddress')) : trim($_POST['fee_medicaddress']);
+    $medic_txID = formData('medic_txID') ? trim(formData('medic_txID')) : trim($_POST['medic_txID']);
+    ### End Medic Coin Module ###
     if (isset($_POST["Payment$CountRow"]) && $_POST["Payment$CountRow"]*1>0) {
         if (trim(formData('type_name'))=='insurance') {
             if (trim(formData("HiddenIns$CountRow"))==1) {
@@ -92,6 +147,11 @@ function DistributionInsert($CountRow, $created_time, $user_id)
         "', pay_amount = '" . trim(formData("Payment$CountRow"))  .
         "', adj_amount = '"    . 0 .
         "', account_code = '" . "$AccountCode"  .
+        ### Begin Medic Coin Module ###
+        "', medic_payamount = '" . cformat(floatval(formData("Payment$CountRow"))/$medic_usd)  .
+        "', medic_address = '" . "$fee_medicaddress"  .
+        "', medic_txID = '" . "$medic_txID"  .
+        ### End Medic Coin Module ###
         "'");
           sqlCommitTrans();
           $Affected='yes';
@@ -108,7 +168,7 @@ function DistributionInsert($CountRow, $created_time, $user_id)
 
         sqlBeginTrans();
         $sequence_no = sqlQuery("SELECT IFNULL(MAX(sequence_no),0) + 1 AS increment FROM ar_activity WHERE pid = ? AND encounter = ?", array(trim(formData('hidden_patient_code')), trim(formData("HiddenEncounter$CountRow"))));
-        sqlStatement("insert into ar_activity set "    .
+        sqlInsert("insert into ar_activity set "    .
         "pid = '"       . trim(formData('hidden_patient_code')) .
         "', encounter = '"     . trim(formData("HiddenEncounter$CountRow"))  .
         "', sequence_no = '"     . $sequence_no['increment']  .
@@ -124,6 +184,11 @@ function DistributionInsert($CountRow, $created_time, $user_id)
         "', adj_amount = '"    . trim(formData("AdjAmount$CountRow")) .
         "', memo = '" . "$AdjustString"  .
         "', account_code = '" . "$AccountCode"  .
+        ### Begin Medic Coin Module ###
+        "', medic_adjamount = '" . cformat(floatval(formData("AdjAmount$CountRow"))/$medic_usd)  .
+        "', medic_address = '" . "$fee_medicaddress"  .
+        "', medic_txID = '" . "$medic_txID"  .
+        ### End Medic Coin Module ###
         "'");
            sqlCommitTrans();
           $Affected='yes';
@@ -132,7 +197,7 @@ function DistributionInsert($CountRow, $created_time, $user_id)
     if (isset($_POST["Deductible$CountRow"]) && $_POST["Deductible$CountRow"]*1>0) {
          sqlBeginTrans();
          $sequence_no = sqlQuery("SELECT IFNULL(MAX(sequence_no),0) + 1 AS increment FROM ar_activity WHERE pid = ? AND encounter = ?", array(trim(formData('hidden_patient_code')), trim(formData("HiddenEncounter$CountRow"))));
-        sqlStatement("insert into ar_activity set "    .
+         sqlInsert("insert into ar_activity set "    .
         "pid = '"       . trim(formData('hidden_patient_code')) .
         "', encounter = '"     . trim(formData("HiddenEncounter$CountRow"))  .
         "', sequence_no = '"     . $sequence_no['increment']  .
@@ -156,7 +221,7 @@ function DistributionInsert($CountRow, $created_time, $user_id)
     if (isset($_POST["Takeback$CountRow"]) && $_POST["Takeback$CountRow"]*1>0) {
          sqlBeginTrans();
          $sequence_no = sqlQuery("SELECT IFNULL(MAX(sequence_no),0) + 1 AS increment FROM ar_activity WHERE pid = ? AND encounter = ?", array(trim(formData('hidden_patient_code')), trim(formData("HiddenEncounter$CountRow"))));
-        sqlStatement("insert into ar_activity set "    .
+         sqlInsert("insert into ar_activity set "    .
         "pid = '"       . trim(formData('hidden_patient_code')) .
         "', encounter = '"     . trim(formData("HiddenEncounter$CountRow"))  .
         "', sequence_no = '"     . $sequence_no['increment']  .
@@ -171,6 +236,11 @@ function DistributionInsert($CountRow, $created_time, $user_id)
         "', pay_amount = '" . trim(formData("Takeback$CountRow"))*-1  .
         "', adj_amount = '"    . 0 .
         "', account_code = '" . "Takeback"  .
+        ### Begin Medic Coin Module ###
+        "', medic_payamount = '" . cformat(floatval(formData("Takeback$CountRow"))/$medic_usd)*-1  .
+        "', medic_address = '" . "$fee_medicaddress"  .
+        "', medic_txID = '" . "$medic_txID"  .
+        ### End Medic Coin Module ###
         "'");
            sqlCommitTrans();
           $Affected='yes';
@@ -179,7 +249,7 @@ function DistributionInsert($CountRow, $created_time, $user_id)
     if (isset($_POST["FollowUp$CountRow"]) && $_POST["FollowUp$CountRow"]=='y') {
          sqlBeginTrans();
          $sequence_no = sqlQuery("SELECT IFNULL(MAX(sequence_no),0) + 1 AS increment FROM ar_activity WHERE pid = ? AND encounter = ?", array(trim(formData('hidden_patient_code')), trim(formData("HiddenEncounter$CountRow"))));
-         sqlStatement("insert into ar_activity set "    .
+         sqlInsert("insert into ar_activity set "    .
         "pid = '"       . trim(formData('hidden_patient_code')) .
         "', encounter = '"     . trim(formData("HiddenEncounter$CountRow"))  .
         "', sequence_no = '"     . $sequence_no['increment']  .
@@ -220,9 +290,9 @@ function DistributionInsert($CountRow, $created_time, $user_id)
                     ++$new_payer_type;
                 }
 
-                  $new_payer_id = SLEOB::arGetPayerID(trim(formData('hidden_patient_code')), $date_of_service, $new_payer_type);
+                  $new_payer_id = arGetPayerID(trim(formData('hidden_patient_code')), $date_of_service, $new_payer_type);
                 if ($new_payer_id>0) {
-                        SLEOB::arSetupSecondary(trim(formData('hidden_patient_code')), trim(formData("HiddenEncounter$CountRow")), 0);
+                        arSetupSecondary(trim(formData('hidden_patient_code')), trim(formData("HiddenEncounter$CountRow")), 0);
                 }
 
                     //-----------------------------------
@@ -236,7 +306,7 @@ function DistributionInsert($CountRow, $created_time, $user_id)
   //
 function row_delete($table, $where)
 {
-    $tres = sqlStatement("SELECT * FROM " . escape_table_name($table) . " WHERE $where");
+    $tres = sqlStatement("SELECT * FROM $table WHERE $where");
     $count = 0;
     while ($trow = sqlFetchArray($tres)) {
         $logstring = "";
@@ -252,12 +322,12 @@ function row_delete($table, $where)
             $logstring .= $key . "='" . addslashes($value) . "'";
         }
 
-        EventAuditLogger::instance()->newEvent("delete", $_SESSION['authUser'], $_SESSION['authProvider'], 1, "$table: $logstring");
+        newEvent("delete", $_SESSION['authUser'], $_SESSION['authProvider'], 1, "$table: $logstring");
         ++$count;
     }
 
     if ($count) {
-        $query = "DELETE FROM " . escape_table_name($table) . " WHERE $where";
+        $query = "DELETE FROM $table WHERE $where";
         sqlStatement($query);
     }
 }

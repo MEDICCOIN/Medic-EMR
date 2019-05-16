@@ -1,33 +1,17 @@
 <?php
-/**
- * CAMOS save.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Mark Leeds <drleeds@gmail.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2006-2009 Mark Leeds <drleeds@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
-
-require_once("../../globals.php");
-require_once("../../../library/api.inc");
-require_once("../../../library/forms.inc");
-require_once("./content_parser.php");
+//------------This file inserts your field data into the MySQL database
+include_once("../../globals.php");
+include_once("../../../library/api.inc");
+include_once("../../../library/forms.inc");
+include_once("./content_parser.php");
 
 if ($_GET["mode"] == "delete") {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     foreach ($_POST as $key => $val) {
         if (substr($key, 0, 3) == 'ch_' and $val='on') {
             $id = substr($key, 3);
             if ($_POST['delete']) {
-                sqlStatement("delete from ".mitigateSqlTableUpperCase("form_CAMOS")." where id=?", array($id));
-                sqlStatement("delete from forms where form_name like 'CAMOS%' and form_id=?", array($id));
+                sqlInsert("delete from ".mitigateSqlTableUpperCase("form_CAMOS")." where id=$id");
+                sqlInsert("delete from forms where form_name like 'CAMOS%' and form_id=$id");
             }
 
             if ($_POST['update']) {
@@ -36,9 +20,9 @@ if ($_GET["mode"] == "delete") {
                 //   before being submitted to the database. Will also continue to support placeholder conversion on report
                 //   views to support notes within database that still contain placeholders (ie. notes that were created previous to
                 //   version 4.0).
-                $content = $_POST['textarea_'.${id}];
-                $content = replace($pid, $encounter, $content);
-                sqlStatement("update ".mitigateSqlTableUpperCase("form_CAMOS")." set content=? where id=?", array($content, $id));
+                $content = strip_escape_custom($_POST['textarea_'.${id}]);
+                $content = add_escape_custom(replace($pid, $encounter, $content));
+                sqlInsert("update ".mitigateSqlTableUpperCase("form_CAMOS")." set content='$content' where id=$id");
             }
         }
     }

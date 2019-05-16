@@ -1,18 +1,18 @@
 <?php
 /**
- * restoreSession.php
+ * Generated DocBlock
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    ophthal <magauran@ophthal.org>
- * @author    JP-DEV\sjpad <sjpadgett@gmail.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2007-2015 Rod Roark <rod@sunsetsystems.com>
+ * @package OpenEMR
+ * @link    http://www.open-emr.org
+ * @author  ophthal <magauran@ophthal.org>
+ * @author  sunsetsystems <sunsetsystems>
+ * @author  JP-DEV\sjpad <sjpadgett@gmail.com>
+ * @author  Rod Roark <rod@sunsetsystems.com>
  * @copyright Copyright (c) 2016 ophthal <magauran@ophthal.org>
+ * @copyright Copyright (c) 2007 sunsetsystems <sunsetsystems>
  * @copyright Copyright (c) 2017 JP-DEV\sjpad <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @copyright Copyright (c) 2015 Rod Roark <rod@sunsetsystems.com>
+ * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 ?>
 // login.php makes sure the session ID captured here is different for each
@@ -21,9 +21,9 @@
 // called just prior to invoking any server script that requires correct
 // session data.  onclick="top.restoreSession()" usually does the job.
 //
-var oemr_session_name = <?php echo json_encode(session_name()); ?>;
-var oemr_session_id   = <?php echo json_encode(session_id()); ?>;
-var oemr_dialog_close_msg = <?php echo (function_exists('xlj')) ? xlj("OK to close this other popup window?") : json_encode("OK to close this other popup window?"); ?>;
+var oemr_session_name = '<?php echo session_name(); ?>';
+var oemr_session_id   = '<?php echo session_id(); ?>';
+var oemr_dialog_close_msg = '<?php echo (function_exists('xla')) ? xla("OK to close this other popup window?") : "OK to close this other popup window?"; ?>';
 //
 function restoreSession() {
 <?php if (!empty($GLOBALS['restore_sessions'])) { ?>
@@ -86,10 +86,7 @@ function printLogPrint(elem) {
  comments = win.printlogdata || win.document.body.innerHTML;
  top.restoreSession();
  $.post("<?php echo $GLOBALS['webroot']; ?>/library/ajax/log_print_action_ajax.php",
-  {
-    comments: comments,
-    csrf_token_form: <?php echo json_encode(collectCsrfToken()); ?>
-  }
+  { comments: comments }
  );
 <?php } ?>
  return true;

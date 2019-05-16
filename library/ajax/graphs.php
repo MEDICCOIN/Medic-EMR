@@ -2,21 +2,17 @@
 /**
  * Flexible script for graphing entities in OpenEMR.
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @package OpenEMR
+ * @link    http://www.open-emr.org
+ * @author  Brady Miller <brady.g.miller@gmail.com>
+ * @author  Rod Roark <rod@sunsetsystems.com>
+ * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @copyright Copyright (c) 2010-2017 Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2011 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2010-2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 
 require_once(dirname(__FILE__) . "/../../interface/globals.php");
-
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
-}
 
 // Collect passed variable(s)
 //  $table is the sql table (or form name if LBF)
@@ -87,10 +83,10 @@ function graphsGetValues($name)
         //  (Note am skipping values of zero, this could be made to be
         //   optional in the future when using lab values)
         $values = SqlStatement("SELECT " .
-            escape_sql_column_name($name, array($table)) . ", " .
+        add_escape_custom($name) . ", " .
         "date " .
-        "FROM " . escape_table_name($table) . " " .
-        "WHERE " . escape_sql_column_name($name, array($table)) . " != 0 " .
+        "FROM " . add_escape_custom($table) . " " .
+        "WHERE " . add_escape_custom($name) . " != 0 " .
         "AND pid = ? ORDER BY date", array($pid));
     }
 

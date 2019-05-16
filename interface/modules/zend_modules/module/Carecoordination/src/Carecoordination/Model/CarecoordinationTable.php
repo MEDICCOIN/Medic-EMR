@@ -38,7 +38,6 @@ use Documents\Model\DocumentsTable;
 
 class CarecoordinationTable extends AbstractTableGateway
 {
-    
     protected $ccda_data_array;
     /*
      * Fetch the category ID using category name
@@ -2377,7 +2376,7 @@ class CarecoordinationTable extends AbstractTableGateway
         return $formatted_date;
     }
 
-    public function getOptionId($list_id, $title, $codes = null)
+    public function getOptionId($list_id, $title, $codes)
     {
         $appTable = new ApplicationTable();
         if ($title) {
@@ -2388,7 +2387,7 @@ class CarecoordinationTable extends AbstractTableGateway
             $res_cur = $result->current();
         }
 
-        if ($codes !== null) {
+        if ($codes) {
             $query = "SELECT option_id 
                   FROM list_options 
                   WHERE list_id=? AND codes=?";

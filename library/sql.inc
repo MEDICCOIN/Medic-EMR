@@ -23,6 +23,7 @@
 require_once(dirname(__FILE__) . "/sqlconf.php");
 require_once(dirname(__FILE__) . "/../vendor/adodb/adodb-php/adodb.inc.php");
 require_once(dirname(__FILE__) . "/../vendor/adodb/adodb-php/drivers/adodb-mysqli.inc.php");
+require_once(dirname(__FILE__) . "/log.inc");
 require_once(dirname(__FILE__) . "/ADODB_mysqli_log.php");
 
 if (!defined('ADODB_FETCH_ASSOC')) {
@@ -98,14 +99,14 @@ if (!$GLOBALS['dbh']) {
 */
 function sqlStatement($statement, $binds = false)
 {
-    // Below line is to avoid a nasty bug in windows.
+  // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
 
-    // Use adodb Execute with binding and return a recordset.
-    //   Note that the auditSQLEvent function is embedded
-    //    in the Execute command.
+  // Use adodb Execute with binding and return a recordset.
+  //   Note that the auditSQLEvent function is embedded
+  //    in the Execute command.
     $recordset = $GLOBALS['adodb']['db']->Execute($statement, $binds);
     if ($recordset === false) {
         HelpfulDie("query failed: $statement", getSqlLastError());
@@ -134,12 +135,12 @@ function sqlStatement($statement, $binds = false)
 */
 function sqlStatementNoLog($statement, $binds = false)
 {
-    // Below line is to avoid a nasty bug in windows.
+  // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
 
-    // Use adodb ExecuteNoLog with binding and return a recordset.
+  // Use adodb ExecuteNoLog with binding and return a recordset.
     $recordset = $GLOBALS['adodb']['db']->ExecuteNoLog($statement, $binds);
     if ($recordset === false) {
         HelpfulDie("query failed: $statement", getSqlLastError());
@@ -159,7 +160,7 @@ function sqlStatementNoLog($statement, $binds = false)
 */
 function sqlStatementCdrEngine($statement, $binds = false)
 {
-    // Below line is to avoid a nasty bug in windows.
+  // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -184,7 +185,7 @@ function sqlStatementCdrEngine($statement, $binds = false)
 */
 function sqlFetchArray($r)
 {
-    //treat as an adodb recordset
+  //treat as an adodb recordset
     if ($r === false) {
         return false;
     }
@@ -193,7 +194,7 @@ function sqlFetchArray($r)
         return false;
     }
 
-    //ensure it's an object (ie. is set)
+  //ensure it's an object (ie. is set)
     if (!is_object($r)) {
         return false;
     }
@@ -221,10 +222,6 @@ function sqlGetAssoc($sql, $bindvars = false, $forceArray = false, $first2Cols =
 
 /**
 * Standard sql insert query in OpenEMR.
-*  Only use this function if you need to have the
-*  id returned. If doing an insert query and do
-*  not need the id returned, then use the
-*  sqlStatement function instead.
 *
 * Function that will allow use of the adodb binding
 * feature to prevent sql-injection. This function
@@ -237,22 +234,22 @@ function sqlGetAssoc($sql, $bindvars = false, $forceArray = false, $first2Cols =
 */
 function sqlInsert($statement, $binds = false)
 {
-    // Below line is to avoid a nasty bug in windows.
+  // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
 
-    //Run a adodb execute
-    // Note the auditSQLEvent function is embedded in the
-    //   Execute function.
-    $recordset = $GLOBALS['adodb']['db']->Execute($statement, $binds, true);
+  //Run a adodb execute
+  // Note the auditSQLEvent function is embedded in the
+  //   Execute function.
+    $recordset = $GLOBALS['adodb']['db']->Execute($statement, $binds);
     if ($recordset === false) {
         HelpfulDie("insert failed: $statement", getSqlLastError());
     }
 
-    // Return the correct last id generated using function
-    //   that is safe with the audit engine.
-    return $GLOBALS['lastidado'] > 0 ? $GLOBALS['lastidado'] : $GLOBALS['adodb']['db']->Insert_ID();
+  // Return the correct last id generated using function
+  //   that is safe with the audit engine.
+    return getSqlLastID();
 }
 
 /**
@@ -268,7 +265,7 @@ function sqlInsert($statement, $binds = false)
 */
 function sqlQuery($statement, $binds = false)
 {
-    // Below line is to avoid a nasty bug in windows.
+  // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -307,7 +304,7 @@ function sqlQuery($statement, $binds = false)
 */
 function sqlQueryNoLog($statement, $binds = false)
 {
-    // Below line is to avoid a nasty bug in windows.
+  // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -347,7 +344,7 @@ function sqlQueryNoLog($statement, $binds = false)
 */
 function sqlQueryNoLogIgnoreError($statement, $binds = false)
 {
-    // Below line is to avoid a nasty bug in windows.
+  // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -382,7 +379,7 @@ function sqlQueryNoLogIgnoreError($statement, $binds = false)
 */
 function sqlQueryCdrEngine($statement, $binds = false)
 {
-    // Below line is to avoid a nasty bug in windows.
+  // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -408,6 +405,17 @@ function sqlInsertClean_audit($statement)
     if ($ret === false) {
         HelpfulDie("insert failed: $statement", getSqlLastError());
     }
+}
+
+/**
+* Function that will safely return the last ID inserted,
+* and accounts for the audit engine.
+*
+* @return  integer Last ID that was inserted into sql
+*/
+function getSqlLastID()
+{
+    return $GLOBALS['lastidado'] > 0 ? $GLOBALS['lastidado'] : $GLOBALS['adodb']['db']->Insert_ID();
 }
 
 /**
@@ -535,7 +543,7 @@ function generate_id()
 */
 function sqlQ($statement, $binds = false)
 {
-    // Below line is to avoid a nasty bug in windows.
+  // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -543,6 +551,48 @@ function sqlQ($statement, $binds = false)
     $recordset = $GLOBALS['adodb']['db']->Execute($statement, $binds) or
     HelpfulDie("query failed: $statement", getSqlLastError());
     return $recordset;
+}
+
+/**
+* Simple wrapper for sqlInsert() function (deprecated).
+*
+* Function that will allow use of the adodb binding feature
+* to prevent sql-injection.
+*
+* @deprecated
+* @param  string   $statement  query
+* @param  array    $binds      binded variables array (optional)
+* @return integer  Last id generated from the sql insert command
+*/
+function idSqlStatement($statement, $binds = false)
+{
+  // Below line is to avoid a nasty bug in windows.
+    if (empty($binds)) {
+        $binds = false;
+    }
+
+    return sqlInsert($statement, $binds);
+}
+
+/**
+* Simple wrapper for sqlInsert() function (deprecated).
+*
+* Function that will allow use of the adodb binding feature
+* to prevent sql-injection.
+*
+* @deprecated
+* @param  string   $statement  query
+* @param  array    $binds      binded variables array (optional)
+* @return integer  Last id generated from the sql insert command
+*/
+function sqlInsertClean($statement, $binds = false)
+{
+  // Below line is to avoid a nasty bug in windows.
+    if (empty($binds)) {
+        $binds = false;
+    }
+
+    return sqlInsert($statement, $binds);
 }
 
 

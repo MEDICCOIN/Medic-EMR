@@ -1,14 +1,26 @@
 <?php
 /**
- * import_template.php
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Cassian LUP <cassi.lup@gmail.com>
- * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2011 Cassian LUP <cassi.lup@gmail.com>
- * @copyright Copyright (c) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
+ * Copyright (C) 2011 Cassian LUP <cassi.lup@gmail.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Jerry Padgett <sjpadgett@gmail.com>
+ * @author Cassian LUP <cassi.lup@gmail.com>
+ * @link http://www.open-emr.org
  */
 
     //setting the session & other config options
@@ -25,6 +37,7 @@
 
     use OpenEMR\Core\Header;
 
+    ini_set("error_log", E_ERROR || ~E_NOTICE);
     //exit if portal is turned off
 if (!(isset($GLOBALS['portal_onsite_two_enable'])) || !($GLOBALS['portal_onsite_two_enable'])) {
     echo htmlspecialchars(xl('Patient Portal is turned off'), ENT_NOQUOTES);
@@ -97,9 +110,9 @@ if (!(isset($_SESSION['password_update']) || isset($_GET['requestNew']))) {
         Header::setupHeader(['datetime-picker']);
         //$GLOBALS['css_header'] = $css;
     ?>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/gritter/js/jquery.gritter.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['assets_static_relative']; ?>/gritter/css/jquery.gritter.css" />
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/emodal/dist/eModal.min.js"></script>
+    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery.gritter-1-7-4/js/jquery.gritter.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery.gritter-1-7-4/css/jquery.gritter.css" />
+    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/emodal-1-2-65/dist/eModal.js"></script>
     <link rel="stylesheet" type="text/css" href="assets/css/base.css?v=<?php echo $v_js_includes; ?>" />
     <link rel="stylesheet" type="text/css" href="assets/css/register.css?v=<?php echo $v_js_includes; ?>" />
 <script type="text/javascript">
@@ -190,20 +203,18 @@ if (!(isset($_SESSION['password_update']) || isset($_GET['requestNew']))) {
                         <input name="pass_new_confirm" id="pass_new_confirm" type="password" />
                     </td>
                 </tr>
-                <?php if ($GLOBALS['enforce_signin_email']) { ?>
-                     <tr>
-                        <td class="algnRight"><?php echo xlt('Confirm Email Address');?></td>
-                        <td>
-                            <input name="passaddon" id="passaddon" placeholder="<?php echo xla('Your on file email address'); ?>" type="email" autocomplete="off" value=""  />
-                        </td>
-                    </tr>
-                <?php } ?>
+                 <tr>
+                    <td class="algnRight"><?php echo xlt('Confirm Email Address');?></td>
+                    <td>
+                        <input name="passaddon" id="passaddon" placeholder="<?php echo xla('Your on file email address'); ?>" type="email" autocomplete="off" value=""  />
+                    </td>
+                </tr>
                 <tr>
                     <td colspan=2><br><input class="pull-right" type="submit" value="<?php echo xla('Log In');?>" /></td>
                 </tr>
             </table>
         </form>
-        <div class="copyright"><?php echo xlt('Powered by');?> OpenEMR</div>
+        <div class="copyright"><?php echo xlt('Powered by');?> MedicEMR</div>
       </div>
     <?php } elseif (isset($_GET['requestNew'])) { ?>
     <div id="wrapper" class="centerwrapper" style="text-align:center;" >
@@ -277,14 +288,12 @@ if (!(isset($_SESSION['password_update']) || isset($_GET['requestNew']))) {
                                 </div>
                             </div>
                             <div class="row">
-                                <?php if ($GLOBALS['enforce_signin_email']) { ?>
-                                    <div class="col-sm-12 form-group">
-                                        <label class="control-label" for="passaddon"><?php echo xlt('E-Mail Address')?></label>
-                                        <div class="controls inline-inputs">
-                                            <input class="form-control" style="width: 100%" name="passaddon" id="passaddon" placeholder="<?php echo xla('on file email'); ?>" type="email" autocomplete="on" />
-                                        </div>
+                                <div class="col-sm-12 form-group">
+                                    <label class="control-label" for="passaddon"><?php echo xlt('E-Mail Address')?></label>
+                                    <div class="controls inline-inputs">
+                                        <input class="form-control" style="width: 100%" name="passaddon" id="passaddon" placeholder="<?php echo xla('on file email'); ?>" type="email" autocomplete="on" />
                                     </div>
-                                <?php } ?>
+                                </div>
                             </div>
                         <?php if ($GLOBALS['language_menu_login']) { ?>
                         <?php if (count($result3) != 1) { ?>
@@ -336,11 +345,11 @@ if (!(isset($_SESSION['password_update']) || isset($_GET['requestNew']))) {
 </div><!-- container -->
 
 <script type="text/javascript">
-$(function() {
+$(document).ready(function() {
 
 <?php // if something went wrong
 if (isset($_GET['requestNew'])) {
-    $_SESSION['register'] = true;
+    $_SESSION['patient_portal_onsite_two'] = true;
     $_SESSION['authUser'] = 'portal-user';
     $_SESSION['pid'] = true;
     ?>

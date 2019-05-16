@@ -20,7 +20,7 @@
 *
 * @package   OpenEMR
 * @author    Brady Miller <brady.g.miller@gmail.com>
-* @link      https://www.open-emr.org
+* @link      http://www.open-emr.org
 */
 
 use OpenEMR\Services\VersionService;

@@ -1,11 +1,23 @@
 /**
- * serveccda.js
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016-2018 Jerry Padgett <sjpadgett@gmail.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Jerry Padgett <sjpadgett@gmail.com>
+ * @link http://www.open-emr.org
  */
 
 "use strict";
@@ -98,7 +110,7 @@ function fDate(str) {
     str = String(str); // at least ensure string so cast it...
 
     if (Number(str) === 0) {
-        return (new Date()).toISOString().slice(0,10).replace(/-/g,"");
+        return '';
     }
     if (str.length === 8 || (str.length === 14 && (1 * str.substring(12, 14)) === 0)) {
         return [str.slice(0, 4), str.slice(4, 6), str.slice(6, 8)].join('-')
@@ -129,7 +141,10 @@ function getPrecision(str) {
 }
 
 function templateDate(date, precision) {
-    return [{'date': fDate(date), 'precision': precision}]
+    if (!fDate(date)) {
+        return "";
+    }
+    return [{'date': date, 'precision': precision}]
 }
 
 function cleanCode(code) {
@@ -226,7 +241,7 @@ function populateDemographic(pd, g) {
         "attributed_provider": {
             "identity": [
                 {
-                    "root": "2.16.840.1.113883.4.6",
+                    "root": oidFacility || "2.16.840.1.113883.4.6",
                     "extension": npiFacility || "UNK"
                 }
             ],
@@ -535,8 +550,8 @@ function populateEncounter(pd) {
         }],
         "date_time": {
             "point": {
-                "date": fDate(pd.date),
-                "precision": "second" //getPrecision(fDate(pd.date_formatted))
+                "date": fDate(pd.date_formatted),
+                "precision": getPrecision(fDate(pd.date_formatted))
             }
         },
         "performers": [{
@@ -1116,8 +1131,8 @@ function populateVital(pd) {
 function populateSocialHistory(pd) {
     return {
         "date_time": {
-            "low": templateDate(pd.date, "day")
-            //"high": templateDate(pd.date, "day")
+            "low": templateDate(pd.date_formatted, "day")
+            //"high": templateDate(pd.date_formatted, "day")
         },
         "identifiers": [{
             "identifier": pd.sha_extension,
@@ -1186,7 +1201,7 @@ function populateImmunization(pd) {
             }],
             "organization": [{
                 "identifiers": [{
-                    "identifier": "2.16.840.1.113883.4.6",
+                    "identifier": oidFacility,
                     "extension": npiFacility
                 }],
                 "name": [pd.facility_name]
@@ -1353,7 +1368,7 @@ function populateHeader(pd) {
     var head = {
         "identifiers": [
             {
-                "identifier": oidFacility,
+                "identifier": "2.16.840.1.113883.19.5.99999.1",
                 "extension": "TT988"
             }
         ],
@@ -1402,7 +1417,7 @@ function populateHeader(pd) {
                     "phone": [
                         {
                             "number": pd.author.telecom,
-                            "use": "work place"
+                            "type": "work place"
                         }
                     ],
                     "code": [
@@ -1415,8 +1430,8 @@ function populateHeader(pd) {
                         {
                             "identity": [
                                 {
-                                    "root": "2.16.840.1.113883.4.6",
-                                    "extension": npiFacility || "UNK"
+                                    "root": "2.16.840.1.113883.19.5.9999.1393",
+                                    "extension": pd.encounter_provider.facility_id || "UNK"
                                 }
                             ],
                             "name": [
@@ -1436,7 +1451,7 @@ function populateHeader(pd) {
                             "phone": [
                                 {
                                     "number": pd.encounter_provider.facility_phone,
-                                    "type": "work primary"
+                                    "type": "primary work"
                                 }
                             ]
                         }
@@ -1444,35 +1459,7 @@ function populateHeader(pd) {
                 }
             ]
         },
-        "custodian": {
-            "identity": [
-                {
-                    "root": "2.16.840.1.113883.4.6",
-                    "extension": npiFacility || "UNK"
-                }
-            ],
-            "name": [
-                pd.encounter_provider.facility_name
-            ],
-            "address": [
-                {
-                    "street_lines": [
-                        pd.encounter_provider.facility_street
-                    ],
-                    "city": pd.encounter_provider.facility_city,
-                    "state": pd.encounter_provider.facility_state,
-                    "zip": pd.encounter_provider.facility_postal_code,
-                    "country": pd.encounter_provider.facility_country_code
-                }
-            ],
-            "phone": [
-                {
-                    "number": pd.encounter_provider.facility_phone,
-                    "type": "work primary"
-                }
-            ]
-        },
-        /*"data_enterer": {
+        "data_enterer": {
             "identifiers": [
                 {
                     "identifier": "2.16.840.1.113883.4.6",
@@ -1533,7 +1520,7 @@ function populateHeader(pd) {
                     "type": "work place"
                 }
             ]
-        },*/
+        },
         "service_event": { // @todo maybe move this to attributed or write z-schema template
             "code": {
                 "name": "",
@@ -1644,7 +1631,7 @@ function getMeta(pd) {
             }
         ],
         "confidentiality": "Normal",
-        "set_id": {
+        "setId": {
             "identifier": "2.16.840.1.113883.19.5.99999.19",
             "extension": "sTT988"
         }
@@ -1879,11 +1866,10 @@ function genCcda(pd) {
 function processConnection(connection) {
     conn = connection; // make it global
     var remoteAddress = conn.remoteAddress + ':' + conn.remotePort;
-    //console.log(remoteAddress);
+    console.log(remoteAddress);
     conn.setEncoding('utf8');
 
-    // patched out re: buffer overrun fix. maintain for history.
-    /*function eventData(xml) {
+    function eventData(xml) {
         xml = xml.replace(/(\u000b|\u001c)/gm, "").trim();
         // Sanity check from service manager
         if (xml === 'status' || xml.length < 80) {
@@ -1918,45 +1904,6 @@ function processConnection(connection) {
         conn.write(String.fromCharCode(28) + "\r\r" + '');
         conn.end();
 
-    }*/
-
-    var xml_complete = "";
-
-    function eventData(xml) {
-        xml = xml.replace(/(\u000b|\u001c)/gm, "").trim();
-        // Sanity check from service manager
-        if (xml === 'status' || xml.length < 80) {
-            conn.write("statusok" + String.fromCharCode(28) + "\r\r");
-            conn.end('');
-            return;
-        }
-        xml_complete += xml.toString();
-        if (xml.toString().match(/\<\/CCDA\>$/g)) {
-            // ---------------------start--------------------------------
-            let doc = "";
-            xml_complete = xml_complete.replace(/\t\s+/g, ' ').trim();
-
-            to_json(xml_complete, function (error, data) {
-                // console.log(JSON.stringify(data, null, 4));
-                if (error) { // need try catch
-                    console.log('toJson error: ' + error + 'Len: ' + xml_complete.length);
-                    return;
-                }
-                doc = genCcda(data.CCDA);
-            });
-
-            doc = headReplace(doc);
-            doc = doc.toString().replace(/(\u000b|\u001c|\r)/gm, "").trim();
-            //console.log(doc);
-            let chunk = "";
-            let numChunks = Math.ceil(doc.length / 1024);
-            for (let i = 0, o = 0; i < numChunks; ++i, o += 1024) {
-                chunk = doc.substr(o, 1024);
-                conn.write(chunk);
-            }
-            conn.write(String.fromCharCode(28) + "\r\r" + '');
-            conn.end();
-        }
     }
 
     function eventCloseConn() {

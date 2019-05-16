@@ -106,9 +106,10 @@ my $date_header =<<'START';
 
 <script type="text/javascript" src="../../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
 <script type="text/javascript" src="../../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 
+<script language='JavaScript'> var mypcc = '1'; </script>
 <script language='JavaScript'>
 $(document).ready(function(){
     $('.datepicker').datetimepicker({
@@ -125,19 +126,18 @@ START
 #new.php
 my $new_php =<<'START';
 <?php
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
 formHeader("Form: FORM_NAME");
 ?>
 <html><head>
 <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 </head>
 <body <?php echo $top_bg_line;?> topmargin=0 rightmargin=0 leftmargin=2 bottommargin=0 marginwidth=2 marginheight=0>
 DATE_HEADER
 <a href='<?php echo $GLOBALS['form_exit_url']; ?>' onclick='top.restoreSession()'>[do not save]</a>
 <form method=post action="<?php echo $rootdir;?>/forms/FORM_NAME/save.php?mode=new" name="FORM_NAME" onsubmit="return top.restoreSession()">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 <hr>
 <h1>FORM_NAME</h1>
 <hr>
@@ -152,8 +152,8 @@ START
 #print.php
 my $print_php=<<'START';
 <?php
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
 formHeader("Form: FORM_NAME");
 ?>
 <html><head>
@@ -161,7 +161,6 @@ formHeader("Form: FORM_NAME");
 </head>
 <body <?php echo $top_bg_line;?> topmargin=0 rightmargin=0 leftmargin=2 bottommargin=0 marginwidth=2 marginheight=0>
 <form method=post action="<?php echo $rootdir;?>/forms/FORM_NAME/save.php?mode=new" name="my_form" onsubmit="return top.restoreSession()">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 <h1> FORM_NAME </h1>
 <hr>
 DATABASEFIELDS
@@ -176,8 +175,8 @@ START
 my $report_php=<<'START';
 <?php
 //------------report.php
-require_once("../../globals.php");
-require_once($GLOBALS["srcdir"]."/api.inc");
+include_once("../../globals.php");
+include_once($GLOBALS["srcdir"]."/api.inc");
 function FORM_NAME_report( $pid, $encounter, $cols, $id) {
 $count = 0;
 $data = formFetch("form_FORM_NAME", $id);
@@ -193,7 +192,7 @@ $value = "yes";
 $key=ucwords(str_replace("_"," ",$key));
 $mykey = $key;
 $myval = $value;
-print "<td><span class=bold>".text($mykey).": </span><span class=text>".text($myval)."</span></td>";
+print "<td><span class=bold>".$mykey.": </span><span class=text>".$myval."</span></td>";
 $count++;
 if ($count == $cols) {
 $count = 0;
@@ -210,13 +209,9 @@ START
 my $save_php=<<'START';
 <?php
 //------------This file inserts your field data into the MySQL database
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
-require_once("$srcdir/forms.inc");
-
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
-}
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
+include_once("$srcdir/forms.inc");
 
 //process form variables here
 //create an array of all of the existing field names
@@ -272,7 +267,7 @@ foreach($field_names as $key=>$val)
 //end special processing
 foreach ($field_names as $k => $var) {
   #if (strtolower($k) == strtolower($var)) {unset($field_names[$k]);}
-  $field_names[$k] = $var;
+  $field_names[$k] = formDataCore($var);
 echo "$var\n";
 }
 if ($encounter == "")
@@ -293,7 +288,7 @@ my $noredirect=<<'START';
 $newid = formSubmit("form_FORM_NAME", $field_names, $_GET["id"], $userauthorized);
 addForm($encounter, "FORM_NAME", $newid, "FORM_NAME", $pid, $userauthorized);
 }elseif ($_GET["mode"] == "update") {
-sqlStatement("update form_FORM_NAME set pid = '" . add_escape_custom($_SESSION["pid"]) . "', groupname='" . add_escape_custom($_SESSION["authProvider"]) . "', user='" . add_escape_custom($_SESSION["authUser"]) . "', authorized='" . add_escape_custom($userauthorized) . "', activity=1, date = NOW(), FIELDS where id='" . add_escape_custom($id) . "'");
+sqlInsert("update form_FORM_NAME set pid = {$_SESSION["pid"]},groupname='".$_SESSION["authProvider"]."',user='".$_SESSION["authUser"]."',authorized=$userauthorized,activity=1, date = NOW(), FIELDS where id=$id");
 }
 START
 
@@ -316,16 +311,16 @@ START
 my $view_php =<<'START';
 <!-- view.php -->
 <?php
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
 formHeader("Form: FORM_NAME");
 $obj = formFetch("form_FORM_NAME", $_GET["id"]);  //#Use the formFetch function from api.inc to get values for existing form.
 
 function chkdata_Txt(&$obj, $var) {
-        return attr($obj{"$var"});
+        return htmlspecialchars($obj{"$var"},ENT_QUOTES);
 }
 function chkdata_Date(&$obj, $var) {
-        return attr($obj{"$var"});
+        return htmlspecialchars($obj{"$var"},ENT_QUOTES);
 }
 function chkdata_CB(&$obj, $nam, $var) {
 	if (preg_match("/Negative.*$var/",$obj{$nam})) {return;} else {return "checked";}
@@ -343,8 +338,7 @@ function chkdata_Radio(&$obj, $nam, $var) {
 </head>
 <body <?php echo $top_bg_line;?> topmargin=0 rightmargin=0 leftmargin=2 bottommargin=0 marginwidth=2 marginheight=0>
 DATE_HEADER
-<form method=post action="<?php echo $rootdir?>/forms/FORM_NAME/save.php?mode=update&id=<?php echo attr_url($_GET["id"]); ?>" name="my_form" onsubmit="return top.restoreSession()">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<form method=post action="<?php echo $rootdir?>/forms/FORM_NAME/save.php?mode=update&id=<?php echo $_GET["id"];?>" name="my_form" onsubmit="return top.restoreSession()">
 <h1> FORM_NAME </h1>
 <hr>
 DATABASEFIELDS
@@ -704,9 +698,15 @@ sub make_form #MAKE_FORM
 $date_field_exists = 1;
 $return .= <<"START";
 <tr><td>
-<span class='text'><?php echo xlt('$label (yyyy-mm-dd): ') ?></span>
+<span class='text'><?php xl('$label (yyyy-mm-dd): ','e') ?></span>
 </td><td>
-<input type='text' size='10' name='$field_name' id='$field_name' class='datepicker' title='yyyy-mm-dd last date of this event' />
+<input type='text' size='10' name='$field_name' id='$field_name' onkeyup='datekeyup(this,mypcc)' onblur='dateblur(this,mypcc)' title='yyyy-mm-dd last date of this event' />
+<img src='../../../interface/pic/show_calendar.gif' align='absbottom' width='24' height='22'
+id='img_$field_name' border='0' alt='[?]' style='cursor:pointer'
+title='Click here to choose a date'>
+<script>
+Calendar.setup({inputField:'$field_name', ifFormat:'%Y-%m-%d', button:'img_$field_name'});
+</script>
 </td></tr>
 START
 			}
@@ -788,7 +788,7 @@ sub xl_fix #make compliant with translation feature
 {
 	my $string = shift;
 	return $string if $noxl;
-	$string =~ s/(>{1,2})([^\s][^<>]+?)<\//$1 <\?php echo xlt("$2") \?> <\//gs;
+	$string =~ s/(>{1,2})([^\s][^<>]+?)<\//$1 <\?php xl("$2",'e') \?> <\//gs;
         return $string;
 }
 sub xl_fix2 #make compliant with translation feature for report.php

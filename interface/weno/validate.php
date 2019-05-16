@@ -5,21 +5,13 @@
  * @package OpenEMR
  * @link    http://www.open-emr.org
  * @author  Sherwin Gaddis <sherwingaddis@gmail.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2016-2017 Sherwin Gaddis <sherwingaddis@gmail.com>
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
  * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 
-require_once('../globals.php');
-
+include_once('../globals.php');
 use OpenEMR\Rx\Weno\TransmitData;
-
-if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-    csrfNotVerified();
-}
-
 
 $pid = $GLOBALS['pid'];
 $uid = $_SESSION['authUserID'];
@@ -65,21 +57,10 @@ if (empty($pharmacy['name'])) {
     print xlt("Pharmacy not assigned to the patient"). "<br>";
     exit;
 }
-$ncpdpLength = strlen($pharmacy['ncpdp']);
-if (empty($pharmacy['ncpdp']) || $ncpdpLength < 10) {
-    print xlt("Pharmacy missing NCPDP ID or less than 10 digits"). "<br>";
-    exit;
+if (empty($pharmacy['ncpdp'])) {
+    print xlt("Pharmacy missing NCPDP ID"). "<br>";
 }
-$npiLength = strlen($pharmacy['npi']);
-if (empty($pharmacy['npi'] || $npiLength < 10)) {
-    print xlt("Pharmacy missing NPI  or less than 10 digits"). "<br>";
-    exit;
-}
-//validate NPI exist
-//Test if the NPI is a valid number on file
-$seekvalidation = $validation->validateNPI($pharmacy['npi']);
-if ($seekvalidation == 0) {
-    print xlt("Please use valid NPI");
-    exit;
+if (empty($pharmacy['npi'])) {
+    print xlt("Pharmacy missing NPI"). "<br>";
 }
 header('Location: confirm.php');

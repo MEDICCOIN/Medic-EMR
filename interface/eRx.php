@@ -1,18 +1,27 @@
 <?php
+
 /**
  * interface/eRx.php Redirect to NewCrop pages.
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Eldho Chacko <eldho@zhservices.com>
- * @author    Vinish K <vinish@zhservices.com>
- * @author    Sam Likins <sam.likins@wsi-services.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2011 ZMG LLC <sam@zhservices.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2011 ZMG LLC <sam@zhservices.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by the Free
+ * Software Foundation; either version 3 of the License, or (at your option) any
+ * later version.  This program is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+ * Public License for more details.  You should have received a copy of the GNU
+ * General Public License along with this program.
+ * If not, see <http://opensource.org/licenses/gpl-license.php>.
+ *
+ * @package    OpenEMR
+ * @subpackage NewCrop
+ * @author     Eldho Chacko <eldho@zhservices.com>
+ * @author     Vinish K <vinish@zhservices.com>
+ * @author     Sam Likins <sam.likins@wsi-services.com>
+ * @link       http://www.open-emr.org
  */
-
 
 require_once(__DIR__.'/globals.php');
 require_once($GLOBALS['fileroot'].'/interface/eRxGlobals.php');
@@ -48,9 +57,6 @@ $eRxPage->setAuthUserId(array_key_exists_default('authUserID', $_SESSION))
 
 ?>
 <html>
-    <head>
-        <title><?php echo xlt('New Crop'); ?></title>
-    </head>
     <body>
 <?php
 
@@ -127,7 +133,7 @@ if (count($missingExtensions) > 0) {
         <strong><?php echo xlt('NewCrop call failed'); ?></strong>
         <ul>
             <?php foreach ($errors as $message) {
-                echo '<li>'.text($message).'</li>';
+                echo '<li>'.$message.'</li>';
 } ?>
         <ul>
 <?php
@@ -140,8 +146,9 @@ if (count($missingExtensions) > 0) {
         </script>
         <form name="info" method="post" action="<?php echo $GLOBALS['erx_newcrop_path']; ?>" onsubmit="return top.restoreSession()">
             <input type="submit" style="display:none">
-            <input type="hidden" id="RxInput" name="RxInput" value="<?php echo attr($xml); ?>">
+            <input type="hidden" id="RxInput" name="RxInput" value="<?php echo $xml; ?>">
         </form>
+        <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-1-3-2/index.js"></script>
         <script type="text/javascript">
             window.setTimeout(function() {
                 document.forms[0].submit();

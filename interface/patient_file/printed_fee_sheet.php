@@ -1,21 +1,19 @@
 <?php
-/**
- * 2012 - Refactored extensively to allow for creating multiple feesheets on demand
- * uses a session array of PIDS by Medical Information Integration, LLC - mi-squared.com
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2007-2016 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
 
+// Copyright (C) 2007-2016 Rod Roark <rod@sunsetsystems.com>
+//
+// 2012 - Refactored extensively to allow for creating multiple feesheets on demand
+// uses a session array of PIDS by Medical Information Integration, LLC - mi-squared.com
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 
 require_once("../globals.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/patient.inc");
+require_once("$srcdir/billing.inc");
 
 use OpenEMR\Services\FacilityService;
 
@@ -35,21 +33,21 @@ function genColumn($ix)
         if ($cmd == '*B') { // Borderless and empty
             $html .= " <tr><td colspan='5' class='fscode' style='border-width:0 1px 0 0;padding-top:1px;' nowrap>&nbsp;</td></tr>\n";
         } else if ($cmd == '*G') {
-            $title = text($a[1]);
+            $title = htmlspecialchars($a[1]);
             if (!$title) {
                 $title = '&nbsp;';
             }
 
             $html .= " <tr><td colspan='5' align='center' class='fsgroup' style='vertical-align:middle' nowrap>$title</td></tr>\n";
         } else if ($cmd == '*H') {
-            $title = text($a[1]);
+            $title = htmlspecialchars($a[1]);
             if (!$title) {
                 $title = '&nbsp;';
             }
 
             $html .= " <tr><td colspan='5' class='fshead' style='vertical-align:middle' nowrap>$title</td></tr>\n";
         } else {
-            $title = text($a[1]);
+            $title = htmlspecialchars($a[1]);
             if (!$title) {
                 $title = '&nbsp;';
             }
@@ -58,7 +56,7 @@ function genColumn($ix)
             $html .= " <tr>\n";
             $html .= " <td class='fscode' style='vertical-align:middle;width:14pt' nowrap>&nbsp;</td>\n";
             if (count($b) <= 1) {
-                $code = text($b[0]);
+                $code = $b[0];
                 if (!$code) {
                     $code = '&nbsp;';
                 }
@@ -66,7 +64,7 @@ function genColumn($ix)
                 $html .= " <td class='fscode' style='vertical-align:middle' nowrap>$code</td>\n";
                 $html .= " <td colspan='3' class='fscode' style='vertical-align:middle' nowrap>$title</td>\n";
             } else {
-                $html .= " <td colspan='2' class='fscode' style='vertical-align:middle' nowrap>" . text($b[0]) . '/' . text($b[1]) . "</td>\n";
+                $html .= " <td colspan='2' class='fscode' style='vertical-align:middle' nowrap>" . $b[0] . '/' . $b[1] . "</td>\n";
                 $html .= " <td colspan='2' class='fscode' style='vertical-align:middle' nowrap>$title</td>\n";
             }
 
@@ -155,8 +153,8 @@ if (empty($SBCODES)) {
     while ($prow = sqlFetchArray($pres)) {
         $SBCODES[] = '*G|' . xl_list_label($prow['title']);
         $res = sqlStatement("SELECT code_type, code, code_text FROM codes " .
-                "WHERE superbill = ? AND active = 1 " .
-                "ORDER BY code_text", array($prow['option_id']));
+                "WHERE superbill = '" . $prow['option_id'] . "' AND active = 1 " .
+                "ORDER BY code_text");
         while ($row = sqlFetchArray($res)) {
             $SBCODES[] = $row['code'] . '|' . $row['code_text'];
         }
@@ -240,32 +238,32 @@ border-width: 0 0 0 0;
 border-color: #999999;
 }
 td.fsgroup {
-height: " . attr($lheight) . "pt;
+height: ${lheight}pt;
 font-family: sans-serif;
 font-weight: bold;
-font-size: " . attr($fontsize) . " pt;
+font-size: $fontsize pt;
 background-color: #cccccc;
-padding: " . attr($padding) . "pt 2pt 0pt 2pt;
+padding: ${padding}pt 2pt 0pt 2pt;
 border-style: solid;
 border-width: 1px 1px 0 0;
 border-color: #999999;
 }
 td.fshead {
-height: " . attr($lheight) . "pt;
+height: ${lheight}pt;
 font-family: sans-serif;
 font-weight: bold;
-font-size: " . attr($fontsize) . "pt;
-padding: " . attr($padding) . "pt 2pt 0pt 2pt;
+font-size: ${fontsize}pt;
+padding: ${padding}pt 2pt 0pt 2pt;
 border-style: solid;
 border-width: 1px 1px 0 0;
 border-color: #999999;
 }
 td.fscode {
-height: " . attr($lheight) . "pt;
+height: ${lheight}pt;
 font-family: sans-serif;
 font-weight: normal;
-font-size: " . attr($fontsize) . "pt;
-padding: " . attr($padding) . "pt 2pt 0pt 2pt;
+font-size: ${fontsize}pt;
+padding: ${padding}pt 2pt 0pt 2pt;
 border-style: solid;
 border-width: 1px 1px 0 0;
 border-color: #999999;
@@ -273,7 +271,7 @@ border-color: #999999;
 
 .ftitletable {
 width: 100%;
-height: " . attr($header_height) . "pt;
+height: ${header_height}pt;
 margin: 0 0 8pt 0;
 }
 .ftitlecell1 {
@@ -299,12 +297,12 @@ margin: 0 0 8pt 0;
 
 div.pagebreak {
 page-break-after: always;
-height: " . attr($page_height) . "pt;
+height: ${page_height}pt;
 }
 </style>";
 
-$html .= "<title>" . text($frow['name']) . "</title>
-<script type='text/javascript' src='" . $GLOBALS['assets_static_relative'] . "/jquery/dist/jquery.min.js'></script>
+$html .= "<title>" . htmlspecialchars($frow['name']) . "</title>
+<script type='text/javascript' src='" . $GLOBALS['assets_static_relative'] . "/jquery-min-1-2-2/index.js'></script>
 <script type=\"text/javascript\" src=\"../../library/dialog.js?v=" . $v_js_includes . "\"></script>
 <script language=\"JavaScript\">";
 
@@ -323,7 +321,7 @@ function printlog_before_print() {
 </script>
 </head>
 <body bgcolor='#ffffff'>
-<form name='theform' method='post' action='printed_fee_sheet.php?fill=" . attr_url($form_fill) . "'
+<form name='theform' method='post' action='printed_fee_sheet.php?fill=" . attr($form_fill) . "'
 onsubmit='return opener.top.restoreSession()'>
 <center>";
 
@@ -391,36 +389,36 @@ foreach ($pid_list as $pid) {
         if ($pages == 0) { // if this is the last page
             $html .= "<tr>
 <td colspan='3' valign='top' class='fshead' style='height:" . $lheight * 2 . "pt'>";
-            $html .= xlt('Patient');
+            $html .= xl('Patient', 'r');
             $html .= ":<br />";
 
             if ($form_fill) {
-                $html .= text($patdata['fname'] . ' ' . $patdata['mname'] . ' ' . $patdata['lname']) . "<br />\n";
-                $html .= text($patdata['street']) . "<br />\n";
-                $html .= text($patdata['city'] . ', ' . $patdata['state'] . ' ' . $patdata['postal_code']) . "\n";
+                $html .= $patdata['fname'] . ' ' . $patdata['mname'] . ' ' . $patdata['lname'] . "<br />\n";
+                $html .= $patdata['street'] . "<br />\n";
+                $html .= $patdata['city'] . ', ' . $patdata['state'] . ' ' . $patdata['postal_code'] . "\n";
             }
 
             $html .= "</td>
 <td valign='top' class='fshead'>";
-            $html .= xlt('DOB');
+            $html .= xl('DOB', 'r');
             $html .= ":<br />";
 
             if ($form_fill) {
-                $html .= text($patdata['DOB']);
+                $html .= $patdata['DOB'];
             }
 
-            $html .= xlt('ID');
+            $html .= xl('ID', 'r');
             $html .= ":<br />";
 
             if ($form_fill) {
-                $html .= text($patdata['pubpid']);
+                $html .= $patdata['pubpid'];
             }
 
             $html .= "</td>
 </tr>
 <tr>
 <td colspan='3' valign='top' class='fshead' style='height:${lheight}pt'>";
-            $html .= xlt('Doctor');
+            $html .= xl('Doctor', 'r');
             $html .= ":<br />";
 
             $encdata = false;
@@ -429,9 +427,9 @@ foreach ($pid_list as $pid) {
                         "FROM forms AS f " .
                         "JOIN form_encounter AS fe ON fe.id = f.form_id " .
                         "LEFT JOIN users AS u ON u.username = f.user " .
-                        "WHERE f.pid = ? AND f.encounter = ? AND f.formdir = 'newpatient' AND f.deleted = 0 " .
+                        "WHERE f.pid = '$pid' AND f.encounter = '$encounter' AND f.formdir = 'newpatient' AND f.deleted = 0 " .
                         "ORDER BY f.id LIMIT 1";
-                $encdata = sqlQuery($query, array($pid, $encounter));
+                $encdata = sqlQuery($query);
                 if (!empty($encdata['username'])) {
                     $html .= $encdata['fname'] . ' ' . $encdata['mname'] . ' ' . $encdata['lname'];
                 }
@@ -439,11 +437,11 @@ foreach ($pid_list as $pid) {
 
             $html .= "</td>
 <td valign='top' class='fshead'>";
-            $html .= xlt('Reason');
+            $html .= xl('Reason', 'r');
             $html .= ":<br />";
 
             if (!empty($encdata)) {
-                $html .= text($encdata['reason']);
+                $html .= $encdata['reason'];
             }
 
             $html .= "</td>
@@ -452,13 +450,13 @@ foreach ($pid_list as $pid) {
 <td colspan='4' valign='top' class='fshead' style='height:${lheight}pt'>";
 
             if (empty($GLOBALS['ippf_specific'])) {
-                $html .= xlt('Insurance').":";
+                $html .= xl('Insurance', 'r').":";
                 if ($form_fill) {
                     foreach (array('primary', 'secondary', 'tertiary') as $instype) {
                         $query = "SELECT * FROM insurance_data WHERE " .
-                                "pid = ? AND type = ? " .
+                                "pid = '$pid' AND type = '$instype' " .
                                 "ORDER BY date DESC LIMIT 1";
-                        $row = sqlQuery($query, array($pid, $instype));
+                        $row = sqlQuery($query);
                         if ($row['provider']) {
                             $icobj = new InsuranceCompany($row['provider']);
                             $adobj = $icobj->get_address();
@@ -468,7 +466,7 @@ foreach ($pid_list as $pid) {
                             }
 
                             if ($insco_name) {
-                                $html .= "&nbsp;" . text($insco_name);
+                                $html .= "&nbsp;$insco_name";
                             } else {
                                 $html .= "&nbsp;<font color='red'><b>Missing Name</b></font>";
                             }
@@ -477,10 +475,10 @@ foreach ($pid_list as $pid) {
                 }
             } else {
                 // IPPF wants a visit date box with the current date in it.
-                $html .= xlt('Visit date');
+                $html .= xl('Visit date', 'r');
                 $html .= ":<br />\n";
                 if (!empty($encdata)) {
-                    $html .= text(substr($encdata['date'], 0, 10));
+                    $html .= substr($encdata['date'], 0, 10);
                 } else {
                     $html .= text(oeFormatShortDate(date('Y-m-d'))) . "\n";
                 }
@@ -490,25 +488,25 @@ foreach ($pid_list as $pid) {
 </tr>
 <tr>
 <td colspan='4' valign='top' class='fshead' style='height:${lheight}pt'>";
-            $html .= xlt('Prior Visit');
+            $html .= xl('Prior Visit', 'r');
             $html .= ":<br />
 </td>
 </tr>
 <tr>
 <td colspan='4' valign='top' class='fshead' style='height:${lheight}pt'>";
-            $html .= xlt('Today\'s Charges');
+            $html .= xl('Today\'s Charges', 'r');
             $html .= ":<br />
 </td>
 </tr>
 <tr>
 <td colspan='4' valign='top' class='fshead' style='height:${lheight}pt'>";
-            $html .= xlt('Today\'s Balance');
+            $html .= xl('Today\'s Balance', 'r');
             $html .= ":<br />
 </td>
 </tr>
 <tr>
 <td colspan='4' valign='top' class='fshead' style='height:${lheight}pt'>";
-            $html .= xlt('Notes');
+            $html .= xl('Notes', 'r');
             $html .= ":<br />
 </td>
 </tr>";
@@ -530,7 +528,7 @@ foreach ($pid_list as $pid) {
         if ($pages == 0) { // if this is the last page
             $html .= "<tr>
 <td colspan='4' valign='top' class='fshead' style='height:" . $lheight * 8 . "pt'>";
-            $html .= xlt('Notes');
+            $html .= xl('Notes', 'r');
             $html .= ":<br />
 </td>
 </tr>";
@@ -557,7 +555,7 @@ foreach ($pid_list as $pid) {
 </tr>
 <tr>
 <td valign='top' colspan='4' class='fshead' style='height:" . $lheight * 2 . "pt'>";
-            $html .= xlt('Signature');
+            $html .= xl('Signature', 'r');
             $html .= ":<br />
 </td>
 </tr>";

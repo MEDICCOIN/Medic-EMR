@@ -22,10 +22,6 @@ require_once("$srcdir/gprelations.inc.php");
 use OpenEMR\Core\Header;
 
 if ($_GET['file']) {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $mode = 'fax';
     $filename = $_GET['file'];
 
@@ -34,10 +30,6 @@ if ($_GET['file']) {
 
     $filepath = $GLOBALS['hylafax_basedir'] . '/recvq/' . $filename;
 } else if ($_GET['scan']) {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $mode = 'scan';
     $filename = $_GET['scan'];
 
@@ -61,7 +53,7 @@ $info_msg = "";
 function getKittens($catid, $catstring, &$categories)
 {
     $cres = sqlStatement("SELECT id, name FROM categories " .
-    "WHERE parent = ? ORDER BY name", array($catid));
+    "WHERE parent = $catid ORDER BY name");
     $childcount = 0;
     while ($crow = sqlFetchArray($cres)) {
         ++$childcount;
@@ -86,15 +78,14 @@ function mergeTiffs()
     $tmp2 = 0;
   // form_images are the checkboxes to the right of the images.
     foreach ($_POST['form_images'] as $inbase) {
-        check_file_dir_name($inbase);
         $inames .= ' ' . escapeshellarg("$inbase.tif");
     }
 
     if (!$inames) {
-        die(xlt("Internal error - no pages were selected!"));
+        die(xl("Internal error - no pages were selected!"));
     }
 
-    $tmp0 = exec("cd " . escapeshellarg($faxcache) . "; tiffcp $inames temp.tif", $tmp1, $tmp2);
+    $tmp0 = exec("cd '$faxcache'; tiffcp $inames temp.tif", $tmp1, $tmp2);
     if ($tmp2) {
         $msg .= "tiffcp returned $tmp2: $tmp0 ";
     }
@@ -105,10 +96,6 @@ function mergeTiffs()
 // If we are submitting...
 //
 if ($_POST['form_save']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $action_taken = false;
     $tmp1 = array();
     $tmp2 = 0;
@@ -116,12 +103,12 @@ if ($_POST['form_save']) {
     if ($_POST['form_cb_copy']) {
         $patient_id = (int) $_POST['form_pid'];
         if (!$patient_id) {
-            die(xlt('Internal error - patient ID was not provided!'));
+            die(xl('Internal error - patient ID was not provided!'));
         }
 
         // Compute the name of the target directory and make sure it exists.
-        $docdir = $GLOBALS['OE_SITE_DIR'] . "/documents/" . check_file_dir_name($patient_id);
-        exec("mkdir -p " . escapeshellarg($docdir));
+        $docdir = $GLOBALS['OE_SITE_DIR'] . "/documents/$patient_id";
+        exec("mkdir -p '$docdir'");
 
         // If copying to patient documents...
         //
@@ -155,7 +142,7 @@ if ($_POST['form_save']) {
             $info_msg .= mergeTiffs();
             // The -j option here requires that libtiff is configured with libjpeg.
             // It could be omitted, but the output PDFs would then be quite large.
-            $tmp0 = exec("tiff2pdf -j -p letter -o " . escapeshellarg($target) . " " . escapeshellarg($faxcache.'/temp.tif'), $tmp1, $tmp2);
+            $tmp0 = exec("tiff2pdf -j -p letter -o '$target' '$faxcache/temp.tif'", $tmp1, $tmp2);
 
             if ($tmp2) {
                 $info_msg .= "tiff2pdf returned $tmp2: $tmp0 ";
@@ -167,16 +154,16 @@ if ($_POST['form_save']) {
                 $query = "INSERT INTO documents ( " .
                 "id, type, size, date, url, mimetype, foreign_id, docdate" .
                 " ) VALUES ( " .
-                "?, 'file_url', ?, NOW(), ?, " .
-                "'application/pdf', ?, ? " .
+                "'$newid', 'file_url', '$fsize', NOW(), 'file://$target', " .
+                "'application/pdf', $patient_id, '$docdate' " .
                 ")";
-                sqlStatement($query, array($newid, $fsize, 'file://'.$target, $patient_id, $docdate));
+                sqlStatement($query);
                 $query = "INSERT INTO categories_to_documents ( " .
                 "category_id, document_id" .
                 " ) VALUES ( " .
-                "?, ? " .
+                "'$catid', '$newid' " .
                 ")";
-                sqlStatement($query, array($catid, $newid));
+                sqlStatement($query);
             } // end not error
 
             // If we are posting a note...
@@ -185,17 +172,19 @@ if ($_POST['form_save']) {
                 // See pnotes_full.php which uses this to auto-display the document.
                 $note = "$ffname$ffmod$ffsuff";
                 for ($tmp = $catid; $tmp;) {
-                    $catrow = sqlQuery("SELECT name, parent FROM categories WHERE id = ?", array($tmp));
+                    $catrow = sqlQuery("SELECT name, parent FROM categories WHERE id = '$tmp'");
                     $note = $catrow['name'] . "/$note";
                     $tmp = $catrow['parent'];
                 }
 
                 $note = "New scanned document $newid: $note";
                 $form_note_message = trim($_POST['form_note_message']);
+                $form_note_message = strip_escape_custom($form_note_message);
                 if ($form_note_message) {
                     $note .= "\n" . $form_note_message;
                 }
 
+                // addPnote() will do its own addslashes().
                 $noteid = addPnote(
                     $_POST['form_pid'],
                     $note,
@@ -229,8 +218,12 @@ if ($_POST['form_save']) {
             if (!$info_msg) {
                 // The following is cloned from contrib/forms/scanned_notes/new.php:
                 //
-                $query = "INSERT INTO form_scanned_notes ( notes ) VALUES ( ? )";
-                $formid = sqlInsert($query, array($_POST['form_copy_sn_comments']));
+                $query = "INSERT INTO form_scanned_notes ( " .
+                "notes " .
+                ") VALUES ( " .
+                "'" . $_POST['form_copy_sn_comments'] . "' " .
+                ")";
+                $formid = sqlInsert($query);
                 addForm(
                     $encounter_id,
                     "Scanned Notes",
@@ -240,15 +233,15 @@ if ($_POST['form_save']) {
                     $userauthorized
                 );
                 //
-                $imagedir = $GLOBALS['OE_SITE_DIR'] . "/documents/" . check_file_dir_name($patient_id) . "/encounters";
-                $imagepath = "$imagedir/" . check_file_dir_name($encounter_id) . "_" . check_file_dir_name($formid) . ".jpg";
+                $imagedir = $GLOBALS['OE_SITE_DIR'] . "/documents/$patient_id/encounters";
+                $imagepath = "$imagedir/${encounter_id}_$formid.jpg";
                 if (! is_dir($imagedir)) {
-                        $tmp0 = exec('mkdir -p ' . escapeshellarg($imagedir), $tmp1, $tmp2);
+                        $tmp0 = exec('mkdir -p "' . $imagedir . '"', $tmp1, $tmp2);
                     if ($tmp2) {
-                        die("mkdir returned " . text($tmp2) . ": " . text($tmp0));
+                        die("mkdir returned $tmp2: $tmp0");
                     }
 
-                        exec("touch " . escapeshellarg($imagedir."/index.html"));
+                        exec("touch '$imagedir/index.html'");
                 }
 
                 if (is_file($imagepath)) {
@@ -257,10 +250,10 @@ if ($_POST['form_save']) {
 
                 // TBD: There may be a faster way to create this file, given that
                 // we already have a jpeg for each page in faxcache.
-                $cmd = "convert -resize 800 -density 96 " . escapeshellarg($tmp_name) . " -append " . escapeshellarg($imagepath);
+                $cmd = "convert -resize 800 -density 96 '$tmp_name' -append '$imagepath'";
                 $tmp0 = exec($cmd, $tmp1, $tmp2);
                 if ($tmp2) {
-                    die("\"" . text($cmd) . "\" returned " . text($tmp2) . ": " . text($tmp0));
+                    die("\"$cmd\" returned $tmp2: $tmp0");
                 }
             }
 
@@ -268,10 +261,12 @@ if ($_POST['form_save']) {
             if ($_POST['form_cb_note'] && !$info_msg) {
                 $note = "New scanned encounter note for visit on " . substr($erow['date'], 0, 10);
                 $form_note_message = trim($_POST['form_note_message']);
+                $form_note_message = strip_escape_custom($form_note_message);
                 if ($form_note_message) {
                     $note .= "\n" . $form_note_message;
                 }
 
+                // addPnote() will do its own addslashes().
                 addPnote(
                     $patient_id,
                     $note,
@@ -292,6 +287,10 @@ if ($_POST['form_save']) {
         $form_fax      = trim($_POST['form_fax']);
         $form_message  = trim($_POST['form_message']);
         $form_finemode = $_POST['form_finemode'] ? '-m' : '-l';
+
+        $form_from    = strip_escape_custom($form_from);
+        $form_to      = strip_escape_custom($form_to);
+        $form_message = strip_escape_custom($form_message);
 
         // Generate a cover page using enscript.  This can be a cool thing
         // to do, as enscript is very powerful.
@@ -315,8 +314,8 @@ if ($_POST['form_save']) {
         $cpstring = str_replace('{MESSAGE}', $form_message, $cpstring);
         fwrite($tmph, $cpstring);
         fclose($tmph);
-        $tmp0 = exec("cd " . escapeshellarg($webserver_root.'/custom') . "; " . escapeshellcmd($GLOBALS['hylafax_enscript']) .
-        " -o " . escapeshellarg($tmpfn2) . " " . escapeshellarg($tmpfn1), $tmp1, $tmp2);
+        $tmp0 = exec("cd $webserver_root/custom; " . escapeshellcmd($GLOBALS['hylafax_enscript']) .
+        " -o $tmpfn2 $tmpfn1", $tmp1, $tmp2);
         if ($tmp2) {
               $info_msg .= "enscript returned $tmp2: $tmp0 ";
         }
@@ -326,8 +325,8 @@ if ($_POST['form_save']) {
         // Send the fax as the cover page followed by the selected pages.
         $info_msg .= mergeTiffs();
         $tmp0 = exec(
-            "sendfax -A -n " . escapeshellarg($form_finemode) . " -d " .
-            escapeshellarg($form_fax) . " " . escapeshellarg($tmpfn2) . " " . escapeshellarg($faxcache.'/temp.tif'),
+            "sendfax -A -n $form_finemode -d " .
+            escapeshellarg($form_fax) . " $tmpfn2 '$faxcache/temp.tif'",
             $tmp1,
             $tmp2
         );
@@ -345,8 +344,7 @@ if ($_POST['form_save']) {
   // If deleting selected, do it and then check if any are left.
     if ($form_cb_delete == '1' && !$info_msg) {
         foreach ($_POST['form_images'] as $inbase) {
-            check_file_dir_name($inbase);
-            unlink($faxcache . "/" . $inbase . ".jpg");
+            unlink("$faxcache/$inbase.jpg");
             $action_taken = true;
         }
 
@@ -354,7 +352,7 @@ if ($_POST['form_save']) {
         if ($action_taken) {
             $dh = opendir($faxcache);
             if (! $dh) {
-                die("Cannot read " . text($faxcache));
+                die("Cannot read $faxcache");
             }
 
             $form_cb_delete = '2';
@@ -400,7 +398,7 @@ if ($_POST['form_save']) {
         // Close this window and refresh the fax list.
         echo "<html>\n<body>\n<script language='JavaScript'>\n";
         if ($info_msg) {
-            echo " alert('" . addslashes($info_msg) . "');\n";
+            echo " alert('$info_msg');\n";
         }
 
         echo " if (!opener.closed && opener.refreshme) opener.refreshme();\n";
@@ -422,34 +420,34 @@ $using_scanned_notes = $tmp['count'];
 // This will contain a .tif image as well as a .jpg image for each page.
 //
 if (! is_dir($faxcache)) {
-    $tmp0 = exec('mkdir -p ' . escapeshellarg($faxcache), $tmp1, $tmp2);
+    $tmp0 = exec('mkdir -p "' . $faxcache . '"', $tmp1, $tmp2);
     if ($tmp2) {
-        die("mkdir returned " . text($tmp2) . ": " . text($tmp0));
+        die("mkdir returned $tmp2: $tmp0");
     }
 
     if (strtolower($ext) != '.tif') {
         // convert's default density for PDF-to-TIFF conversion is 72 dpi which is
         // not very good, so we upgrade it to "fine mode" fax quality.  It's really
         // better and faster if the scanner produces TIFFs instead of PDFs.
-        $tmp0 = exec("convert -density 203x196 " . escapeshellarg($filepath) . " " . escapeshellarg($faxcache.'/deleteme.tif'), $tmp1, $tmp2);
+        $tmp0 = exec("convert -density 203x196 '$filepath' '$faxcache/deleteme.tif'", $tmp1, $tmp2);
         if ($tmp2) {
-            die("convert returned " . text($tmp2) . ": " . text($tmp0));
+            die("convert returned $tmp2: $tmp0");
         }
 
-        $tmp0 = exec("cd " . escapeshellarg($faxcache) . "; tiffsplit 'deleteme.tif'; rm -f 'deleteme.tif'", $tmp1, $tmp2);
+        $tmp0 = exec("cd '$faxcache'; tiffsplit 'deleteme.tif'; rm -f 'deleteme.tif'", $tmp1, $tmp2);
         if ($tmp2) {
-            die("tiffsplit/rm returned " . text($tmp2) . ": " . text($tmp0));
+            die("tiffsplit/rm returned $tmp2: $tmp0");
         }
     } else {
-        $tmp0 = exec("cd " . escapeshellarg($faxcache) . "; tiffsplit " . escapeshellarg($filepath), $tmp1, $tmp2);
+        $tmp0 = exec("cd '$faxcache'; tiffsplit '$filepath'", $tmp1, $tmp2);
         if ($tmp2) {
-            die("tiffsplit returned " . text($tmp2) . ": " . text($tmp0));
+            die("tiffsplit returned $tmp2: $tmp0");
         }
     }
 
-    $tmp0 = exec("cd " . escapeshellarg($faxcache) . "; mogrify -resize 750x970 -format jpg *.tif", $tmp1, $tmp2);
+    $tmp0 = exec("cd '$faxcache'; mogrify -resize 750x970 -format jpg *.tif", $tmp1, $tmp2);
     if ($tmp2) {
-        die("mogrify returned " . text($tmp2) . ": " . text($tmp0) . "; ext is '" . text($ext) . "'; filepath is '" . text($filepath) . "'");
+        die("mogrify returned $tmp2: $tmp0; ext is '$ext'; filepath is '$filepath'");
     }
 }
 
@@ -465,8 +463,8 @@ $ures = sqlStatement("SELECT username, fname, lname FROM users " .
 <html>
 <head>
 
-    <?php Header::setupHeader(['opener', 'datetime-picker', 'jquery-ui']);?>
-    <title><?php echo xlt('Dispatch Received Document'); ?></title>
+    <?php Header::setupHeader(['opener', 'datetime-picker', 'jquery-ui',]);?>
+    <title><?php xl('Dispatch Received Document', 'e'); ?></title>
 
 <style>
 
@@ -517,7 +515,7 @@ div.section {
   // This loads the patient's list of recent encounters:
   f.form_copy_sn_visit.options.length = 0;
   f.form_copy_sn_visit.options[0] = new Option('Loading...', '0');
-  $.getScript("fax_dispatch_newpid.php?p=" + encodeURIComponent(pid) + "&csrf_token_form=" + <?php echo js_url(collectCsrfToken()); ?>);
+  $.getScript("fax_dispatch_newpid.php?p=" + pid);
 <?php } ?>
  }
 
@@ -602,7 +600,7 @@ div.section {
   }
  }
 
-    $(function(){
+    $(document).ready(function(){
         $('.datepicker').datetimepicker({
             <?php $datetimepicker_timepicker = false; ?>
             <?php $datetimepicker_showseconds = false; ?>
@@ -617,24 +615,23 @@ div.section {
 
 <body class="body_top" onunload='imclosing()'>
 
-<center><h2><?php echo xlt('Dispatch Received Document'); ?></h2></center>
+<center><h2><?php xl('Dispatch Received Document', 'e'); ?></h2></center>
 
 <form method='post' name='theform'
- action='fax_dispatch.php?<?php echo ($mode == 'fax') ? 'file' : 'scan'; ?>=<?php echo attr_url($filename); ?>&csrf_token_form=<?php echo attr_url(collectCsrfToken()); ?>' onsubmit='return validate()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+ action='fax_dispatch.php?<?php echo ($mode == 'fax') ? 'file' : 'scan'; ?>=<?php echo $filename ?>' onsubmit='return validate()'>
 
 <p><input type='checkbox' name='form_cb_copy' value='1'
  onclick='return divclick(this,"div_copy");' />
-<b><?php echo xlt('Copy Pages to Patient Chart'); ?></b></p>
+<b><?php xl('Copy Pages to Patient Chart', 'e'); ?></b></p>
 
 <div id='div_copy' class='section' style='display:none;'>
  <table>
   <tr>
-   <td class='itemtitle' width='1%' nowrap><?php echo xlt('Patient'); ?></td>
+   <td class='itemtitle' width='1%' nowrap><?php xl('Patient', 'e'); ?></td>
    <td>
     <input type='text' size='10' name='form_patient' style='width:100%'
-     value=' (<?php echo xla('Click to select'); ?>)' onclick='sel_patient()'
-     title='<?php echo xla('Click to select patient'); ?>' readonly />
+     value=' (<?php xl('Click to select'); ?>)' onclick='sel_patient()'
+     title='Click to select patient' readonly />
     <input type='hidden' name='form_pid' value='0' />
    </td>
   </tr>
@@ -642,41 +639,41 @@ div.section {
    <td colspan='2' style='padding-top:0.5em;'>
     <input type='radio' name='form_cb_copy_type' value='1'
      onclick='return divclick(this,"div_copy_doc");' checked />
-    <b><?php echo xlt('Patient Document'); ?></b>&nbsp;
+    <b><?php xl('Patient Document', 'e'); ?></b>&nbsp;
 <?php if ($using_scanned_notes) { ?>
     <input type='radio' name='form_cb_copy_type' value='2'
      onclick='return divclick(this,"div_copy_sn");' />
-    <b><?php echo xlt('Scanned Encounter Note'); ?></b>
+    <b><?php xl('Scanned Encounter Note', 'e'); ?></b>
 <?php } ?>
     <div id='div_copy_doc' class='section' style='margin-top:0.5em;'>
      <table width='100%'>
       <tr>
-       <td class='itemtitle' nowrap><?php echo xlt('Category'); ?></td>
+       <td class='itemtitle' nowrap><?php xl('Category', 'e'); ?></td>
        <td>
         <select name='form_category' style='width:100%'>
 <?php
 foreach ($categories as $catkey => $catname) {
-    echo "         <option value='" . attr($catkey) . "'";
-    echo ">" . text($catname) . "</option>\n";
+    echo "         <option value='$catkey'";
+    echo ">$catname</option>\n";
 }
 ?>
         </select>
        </td>
       </tr>
       <tr>
-       <td class='itemtitle' nowrap><?php echo xlt('Filename'); ?></td>
+       <td class='itemtitle' nowrap><?php xl('Filename', 'e'); ?></td>
        <td>
         <input type='text' size='10' name='form_filename' style='width:100%'
-        value='<?php echo attr($filebase) . ".pdf" ?>'
+        value='<?php  echo "$filebase.pdf" ?>'
         title='Name for this document in the patient chart' />
        </td>
       </tr>
       <tr>
-       <td class='itemtitle' nowrap><?php echo xlt('Document Date'); ?></td>
+       <td class='itemtitle' nowrap><?php xl('Document Date', 'e'); ?></td>
        <td>
         <input type='text' class='datepicker' size='10' name='form_docdate' id='form_docdate'
         value='<?php echo date('Y-m-d'); ?>'
-        title='<?php echo xla('yyyy-mm-dd date associated with this document'); ?>' />
+        title='<?php xl('yyyy-mm-dd date associated with this document', 'e'); ?>' />
        </td>
       </tr>
      </table>
@@ -684,14 +681,14 @@ foreach ($categories as $catkey => $catname) {
     <div id='div_copy_sn' class='section' style='display:none;margin-top:0.5em;'>
      <table width='100%'>
       <tr>
-       <td class='itemtitle' width='1%' nowrap><?php echo xlt('Visit Date'); ?></td>
+       <td class='itemtitle' width='1%' nowrap><?php xl('Visit Date', 'e'); ?></td>
        <td>
         <select name='form_copy_sn_visit' style='width:100%'>
         </select>
        </td>
       </tr>
       <tr>
-       <td class='itemtitle' width='1%' nowrap><?php echo xlt('Comments'); ?></td>
+       <td class='itemtitle' width='1%' nowrap><?php xl('Comments', 'e'); ?></td>
        <td>
         <textarea name='form_copy_sn_comments' rows='3' cols='30' style='width:100%'
          title='Comments associated with this scanned note'
@@ -706,11 +703,11 @@ foreach ($categories as $catkey => $catname) {
    <td colspan='2' style='padding-top:0.5em;'>
     <input type='checkbox' name='form_cb_note' value='1'
      onclick='return divclick(this,"div_note");' />
-    <b><?php echo xlt('Create Patient Note'); ?></b>
+    <b><?php xl('Create Patient Note', 'e'); ?></b>
     <div id='div_note' class='section' style='display:none;margin-top:0.5em;'>
      <table>
       <tr>
-       <td class='itemtitle' width='1%' nowrap><?php echo xlt('Type'); ?></td>
+       <td class='itemtitle' width='1%' nowrap><?php xl('Type', 'e'); ?></td>
        <td>
         <?php
          // Added 6/2009 by BM to incorporate the patient notes into the list_options listings
@@ -724,21 +721,21 @@ foreach ($categories as $catkey => $catname) {
         <select name='form_note_to' style='width:100%'>
 <?php
 while ($urow = sqlFetchArray($ures)) {
-    echo "         <option value='" . attr($urow['username']) . "'";
-    echo ">" . text($urow['lname']);
+    echo "         <option value='" . $urow['username'] . "'";
+    echo ">" . $urow['lname'];
     if ($urow['fname']) {
-        echo ", " . text($urow['fname']);
+        echo ", " . $urow['fname'];
     }
 
     echo "</option>\n";
 }
 ?>
-         <option value=''>** <?php echo xlt('Close'); ?> **</option>
+         <option value=''>** <?php  xl('Close', 'e'); ?> **</option>
         </select>
        </td>
       </tr>
       <tr>
-       <td class='itemtitle' nowrap><?php echo xlt('Message'); ?></td>
+       <td class='itemtitle' nowrap><?php xl('Message', 'e'); ?></td>
        <td>
         <textarea name='form_note_message' rows='3' cols='30' style='width:100%'
          title='Your comments' /></textarea>
@@ -753,49 +750,49 @@ while ($urow = sqlFetchArray($ures)) {
 
 <p><input type='checkbox' name='form_cb_forward' value='1'
  onclick='return divclick(this,"div_forward");' />
-<b><?php echo xlt('Forward Pages via Fax'); ?></b></p>
+<b><?php xl('Forward Pages via Fax', 'e'); ?></b></p>
 
 <div id='div_forward' class='section' style='display:none;'>
  <table>
   <tr>
-   <td class='itemtitle' width='1%' nowrap><?php echo xlt('From'); ?></td>
+   <td class='itemtitle' width='1%' nowrap><?php xl('From', 'e'); ?></td>
    <td>
     <input type='text' size='10' name='form_from' style='width:100%'
      title='Type your name here' />
    </td>
   </tr>
   <tr>
-   <td class='itemtitle' nowrap><?php echo xlt('To'); ?></td>
+   <td class='itemtitle' nowrap><?php xl('To', 'e'); ?></td>
    <td>
     <input type='text' size='10' name='form_to' style='width:100%'
      title='Type the recipient name here' />
    </td>
   </tr>
   <tr>
-   <td class='itemtitle' nowrap><?php echo xlt('Fax'); ?></td>
+   <td class='itemtitle' nowrap><?php xl('Fax', 'e'); ?></td>
    <td>
     <input type='text' size='10' name='form_fax' style='width:100%'
      title='The fax phone number to send this to' />
    </td>
   </tr>
   <tr>
-   <td class='itemtitle' nowrap><?php echo xlt('Message'); ?></td>
+   <td class='itemtitle' nowrap><?php xl('Message', 'e'); ?></td>
    <td>
     <textarea name='form_message' rows='3' cols='30' style='width:100%'
      title='Your comments to include with this message' /></textarea>
    </td>
   </tr>
   <tr>
-   <td class='itemtitle' nowrap><?php echo xlt('Quality'); ?></td>
+   <td class='itemtitle' nowrap><?php xl('Quality', 'e'); ?></td>
    <td>
-    <input type='radio' name='form_finemode' value='' /><?php echo xlt('Normal'); ?> &nbsp;
-    <input type='radio' name='form_finemode' value='1' checked /><?php echo xlt('Fine'); ?> &nbsp;
+    <input type='radio' name='form_finemode' value='' /><?php xl('Normal', 'e'); ?> &nbsp;
+    <input type='radio' name='form_finemode' value='1' checked /><?php xl('Fine', 'e'); ?> &nbsp;
    </td>
   </tr>
  </table>
 </div><!-- end div_forward -->
 
-<p><b><?php echo xlt('Delete Pages'); ?>:</b>&nbsp;
+<p><b><?php xl('Delete Pages', 'e'); ?>:</b>&nbsp;
 <input type='radio' name='form_cb_delete' value='2' />All&nbsp;
 <input type='radio' name='form_cb_delete' value='1' checked />Selected&nbsp;
 <input type='radio' name='form_cb_delete' value='0' />None
@@ -803,22 +800,22 @@ while ($urow = sqlFetchArray($ures)) {
 
 <center>
 <p>
-<input type='submit' name='form_save' value='<?php echo xla('OK'); ?>' />
+<input type='submit' name='form_save' value='<?php xl('OK', 'e'); ?>' />
 &nbsp; &nbsp;
-<input type='button' value='<?php echo xla('Cancel'); ?>' onclick='window.close()' />
+<input type='button' value='<?php xl('Cancel', 'e'); ?>' onclick='window.close()' />
 &nbsp; &nbsp;
-<input type='button' value='<?php echo xla('Select All'); ?>' onclick='allCheckboxes(true)' />
+<input type='button' value='<?php xl('Select All', 'e'); ?>' onclick='allCheckboxes(true)' />
 &nbsp; &nbsp;
-<input type='button' value='<?php echo xla('Clear All'); ?>' onclick='allCheckboxes(false)' />
+<input type='button' value='<?php xl('Clear All', 'e'); ?>' onclick='allCheckboxes(false)' />
 </p>
 
-<p><br /><b><?php echo xlt('Please select the desired pages to copy or forward:'); ?></b></p>
+<p><br /><b><?php xl('Please select the desired pages to copy or forward:', 'e'); ?></b></p>
 <table>
 
 <?php
 $dh = opendir($faxcache);
 if (! $dh) {
-    die("Cannot read " . text($faxcache));
+    die("Cannot read $faxcache");
 }
 
 $jpgarray = array();
@@ -837,11 +834,11 @@ foreach ($jpgarray as $jfnamebase => $jfname) {
     ++$page;
     echo " <tr>\n";
     echo "  <td valign='top'>\n";
-    echo "   <img src='../../sites/" . attr($_SESSION['site_id']) . "/faxcache/" . attr($mode) . "/" . attr($filebase) . "/" . attr($jfname) . "' />\n";
+    echo "   <img src='../../sites/" . $_SESSION['site_id'] . "/faxcache/$mode/$filebase/$jfname' />\n";
     echo "  </td>\n";
     echo "  <td align='center' valign='top'>\n";
-    echo "   <input type='checkbox' name='form_images[]' value='" . attr($jfnamebase) . "' checked />\n";
-    echo "   <br />" . text($page) . "\n";
+    echo "   <input type='checkbox' name='form_images[]' value='$jfnamebase' checked />\n";
+    echo "   <br />$page\n";
     echo "  </td>\n";
     echo " </tr>\n";
 }

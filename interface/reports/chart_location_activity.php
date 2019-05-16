@@ -19,12 +19,6 @@ require_once("$srcdir/options.inc.php");
 use OpenEMR\Core\Header;
 use OpenEMR\Services\PatientService;
 
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
-
 $form_patient_id = trim($_POST['form_patient_id']);
 ?>
 <html>
@@ -59,7 +53,7 @@ $form_patient_id = trim($_POST['form_patient_id']);
     </style>
 
     <script language="JavaScript">
-        $(function() {
+        $(document).ready(function() {
             var win = top.printLogSetup ? top : opener.top;
             win.printLogSetup(document.getElementById('printbutton'));
         });
@@ -102,7 +96,6 @@ if (!empty($ptrow)) {
 </div>
 
 <form name='theform' id='theform' method='post' action='chart_location_activity.php' onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <div id="report_parameters">
 

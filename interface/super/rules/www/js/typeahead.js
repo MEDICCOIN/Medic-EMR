@@ -9,7 +9,7 @@ var type_ahead = function( args ) {
     }
 
     var fn_wire_events = function() {
-        $(function() {
+        $(document).ready(function() {
             $( "#" + inputId ).autocomplete(
                 url,
                 {

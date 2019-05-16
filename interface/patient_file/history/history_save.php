@@ -1,35 +1,23 @@
 <?php
-/**
- * history_save.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
 
 
-require_once("../../globals.php");
-require_once("$srcdir/patient.inc");
-require_once("history.inc.php");
-require_once("$srcdir/acl.inc");
-require_once("$srcdir/options.inc.php");
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
-}
+ include_once("../../globals.php");
+ include_once("$srcdir/patient.inc");
+ include_once("history.inc.php");
+ include_once("$srcdir/acl.inc");
+ include_once("$srcdir/options.inc.php");
 
-// Check authorization.
+ // Check authorization.
 if (acl_check('patients', 'med')) {
     $tmp = getPatientData($pid, "squad");
     if ($tmp['squad'] && ! acl_check('squads', $tmp['squad'])) {
-        die(xlt("Not authorized for this squad."));
+        die(htmlspecialchars(xlt("Not authorized for this squad."), ENT_NOQUOTES));
     }
 }
 
 if (!acl_check('patients', 'med', '', array('write','addonly'))) {
-    die(xlt("Not authorized"));
+    die(htmlspecialchars(xlt("Not authorized"), ENT_NOQUOTES));
 }
 
 foreach ($_POST as $key => $val) {
@@ -54,4 +42,4 @@ while ($frow = sqlFetchArray($fres)) {
 
 updateHistoryData($pid, $newdata);
 
-include_once("history.php");
+ include_once("history.php");

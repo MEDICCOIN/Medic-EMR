@@ -7,7 +7,7 @@
  * @author    Rod Roark <rod@sunsetsystems.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2010 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2016-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2016-2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -17,14 +17,10 @@ require_once("../../custom/code_types.inc.php");
 require_once("$srcdir/acl.inc");
 require_once("$srcdir/globals.inc.php");
 require_once("$srcdir/user.inc");
+require_once("$srcdir/log.inc");
 require_once(dirname(__FILE__)."/../../myportal/soap_service/portal_connectivity.php");
 
-use OpenEMR\Common\Crypto\CryptoGen;
-use OpenEMR\Common\Logging\EventAuditLogger;
 use OpenEMR\Core\Header;
-
-// Set up crypto object
-$cryptoGen = new CryptoGen();
 
 $userMode = (array_key_exists('mode', $_GET) && $_GET['mode'] == 'user');
 
@@ -57,7 +53,7 @@ function checkCreateCDB()
 
         $couch = new CouchDB();
         if (!$couch->check_connection()) {
-            echo "<script type='text/javascript'>alert(" . xlj("CouchDB Connection Failed.") . ");</script>";
+            echo "<script type='text/javascript'>alert('".addslashes(xl("CouchDB Connection Failed."))."');</script>";
             return false;
         }
 
@@ -119,11 +115,6 @@ function checkBackgroundServices()
 // If we are saving user_specific globals.
 //
 if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && $userMode) {
-    //verify csrf
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $i = 0;
     foreach ($GLOBALS_METADATA as $grpname => $grparr) {
         if (in_array($grpname, $USER_SPECIFIC_TABS)) {
@@ -131,15 +122,7 @@ if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && $userMode) {
                 if (in_array($fldid, $USER_SPECIFIC_GLOBALS)) {
                     list($fldname, $fldtype, $flddef, $flddesc) = $fldarr;
                     $label = "global:".$fldid;
-                    if ($fldtype == "encrypted") {
-                        if (empty(trim($_POST["form_$i"]))) {
-                            $fldvalue = '';
-                        } else {
-                            $fldvalue = $cryptoGen->encryptStandard(trim($_POST["form_$i"]));
-                        }
-                    } else {
-                        $fldvalue = trim($_POST["form_$i"]);
-                    }
+                    $fldvalue = trim($_POST["form_$i"]);
                     setUserSetting($label, $fldvalue, $_SESSION['authId'], false);
                     if ($_POST["toggle_$i"] == "YES") {
                         removeUserSetting($label);
@@ -166,11 +149,6 @@ if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && $userMode) {
 }
 
 if (array_key_exists('form_download', $_POST) && $_POST['form_download']) {
-    //verify csrf
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $client = portal_connection();
     try {
         $response = $client->getPortalConnectionFiles($credentials);
@@ -203,7 +181,7 @@ if (array_key_exists('form_download', $_POST) && $_POST['form_download']) {
         ob_end_clean();
         ?>
       <script type="text/javascript">
-        alert(<?php echo xlj('Offsite Portal web Service Failed') ?> + ":\\n" + <?php echo js_escape($response['value']); ?>);
+        alert('<?php echo xls('Offsite Portal web Service Failed').":\\n".text($response['value']);?>');
     </script>
         <?php
     }
@@ -215,9 +193,11 @@ if (array_key_exists('form_download', $_POST) && $_POST['form_download']) {
 // If we are saving main globals.
 //
 if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && !$userMode) {
-    //verify csrf
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    $force_off_enable_auditlog_encryption = true;
+  // Need to force enable_auditlog_encryption off if the php openssl module
+  // is not installed or the AES-256-CBC cipher is not available.
+    if (extension_loaded('openssl') && in_array('AES-256-CBC', openssl_get_cipher_methods())) {
+        $force_off_enable_auditlog_encryption = false;
     }
 
   // Aug 22, 2014: Ensoftek: For Auditable events and tamper-resistance (MU2)
@@ -266,21 +246,24 @@ if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && !$userMode) 
                     $fldvalue = $fldvalue ? SHA1($fldvalue) : $fldvalueold; // TODO: salted passwords?
                 }
 
-                if ($fldtype == 'encrypted') {
-                    if (empty(trim($fldvalue))) {
-                        $fldvalue = '';
-                    } else {
-                        $fldvalue = $cryptoGen->encryptStandard($fldvalue);
-                    }
-                }
-
                 // We rely on the fact that set of keys in globals.inc === set of keys in `globals`  table!
 
                 if (!isset($old_globals[$fldid]) // if the key not found in database - update database
                     ||
                    ( isset($old_globals[$fldid]) && $old_globals[ $fldid ]['gl_value'] !== $fldvalue ) // if the value in database is different
                 ) {
-                    // special treatment for some vars
+                    // Need to force enable_auditlog_encryption off if the php openssl module
+                    // is not installed or the AES-256-CBC cipher is not available.
+                    if ($force_off_enable_auditlog_encryption && ($fldid == "enable_auditlog_encryption")) {
+                        error_log("OPENEMR ERROR: UNABLE to support auditlog encryption since the php openssl module is not installed or the AES-256-CBC cipher is not available", 0);
+                        $fldvalue=0;
+                    }
+                    if (!$force_off_enable_auditlog_encryption && ($fldid == "enable_auditlog_encryption") && ($fldvalue==1)) {
+                        // Run below function to set up the encryption key
+                        aes256PrepKey();
+                    }
+
+                      // special treatment for some vars
                     switch ($fldid) {
                         case 'first_day_week':
                             // update PostCalendar config as well
@@ -308,7 +291,7 @@ if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && !$userMode) 
     $auditLogStatusNew = sqlQuery("SELECT gl_value FROM globals WHERE gl_name = 'enable_auditlog'");
     $auditLogStatusFieldNew = $auditLogStatusNew['gl_value'];
     if ($auditLogStatusFieldOld != $auditLogStatusFieldNew) {
-        EventAuditLogger::instance()->auditSQLAuditTamper($auditLogStatusFieldNew);
+         auditSQLAuditTamper($auditLogStatusFieldNew);
     }
 
     echo "<script type='text/javascript'>";
@@ -340,7 +323,6 @@ if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && !$userMode) 
       type: "POST",
       url: "<?php echo $GLOBALS['webroot']?>/library/ajax/offsite_portal_ajax.php",
       data: {
-        csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>,
         action: 'check_file'
       },
       cache: false,
@@ -373,7 +355,6 @@ if (array_key_exists('form_save', $_POST) && $_POST['form_save'] && !$userMode) 
 <?php } else { ?>
   <form method='post' name='theform' id='theform' class='form-horizontal' action='edit_globals.php' onsubmit='return top.restoreSession()'>
 <?php } ?>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <div class="container">
     <div class="row">
@@ -526,32 +507,6 @@ foreach ($GLOBALS_METADATA as $grpname => $grparr) {
 
                               echo "  <input type='text' class='form-control' name='form_$i' id='form_$i' " .
                                 "maxlength='255' value='" . attr($fldvalue) . "' />\n";
-                } else if ($fldtype == 'encrypted') {
-                    if (empty($fldvalue)) {
-                        // empty value
-                        $fldvalueDecrypted = '';
-                    } else if ($cryptoGen->cryptCheckStandard($fldvalue)) {
-                        // normal behavior when not empty
-                        $fldvalueDecrypted = $cryptoGen->decryptStandard($fldvalue);
-                    } else {
-                        // this is used when value has not yet been encrypted (only happens once when upgrading)
-                        $fldvalueDecrypted = $fldvalue;
-                    }
-                    echo "  <input type='text' class='form-control' name='form_$i' id='form_$i' " .
-                        "maxlength='255' value='" . attr($fldvalueDecrypted) . "' />\n";
-                    if ($userMode) {
-                        if (empty($globalValue)) {
-                            // empty value
-                            $globalTitle = '';
-                        } else if ($cryptoGen->cryptCheckStandard($globalValue)) {
-                            // normal behavior when not empty
-                            $globalTitle = $cryptoGen->decryptStandard($globalValue);
-                        } else {
-                            // this is used when value has not yet been encrypted (only happens once when upgrading)
-                            $globalTitle = $globalValue;
-                        }
-                    }
-                    $fldvalueDecrypted = '';
                 } else if ($fldtype == 'pwd') {
                     if ($userMode) {
                         $globalTitle = $globalValue;
@@ -621,7 +576,7 @@ foreach ($GLOBALS_METADATA as $grpname => $grparr) {
 
                               echo "  <input type='text' class='form-control jscolor {hash:true}' name='form_$i' id='form_$i' " .
                                 "maxlength='15' value='" . attr($fldvalue) . "' />" .
-                                "<input type='button' value='" . xla('Default'). "' onclick=\"document.forms[0].form_$i.jscolor.fromString(" . attr_js($flddef) . ")\">\n";
+                                "<input type='button' value='" . xla('Default'). "' onclick=\"document.forms[0].form_$i.jscolor.fromString('" . attr($flddef) . "')\">\n";
                 } else if ($fldtype == 'default_visit_category') {
                                 $sql = "SELECT pc_catid, pc_catname, pc_cattype 
                 FROM openemr_postcalendar_categories
@@ -653,7 +608,7 @@ foreach ($GLOBALS_METADATA as $grpname => $grparr) {
                     if ($userMode) {
                         $globalTitle = $globalValue;
                     }
-                    $themedir = "$webserver_root/public/themes";
+                    $themedir = "$webserver_root/interface/themes";
                     $dh = opendir($themedir);
                     if ($dh) {
                         // Collect styles
@@ -729,15 +684,11 @@ foreach ($GLOBALS_METADATA as $grpname => $grparr) {
                 }
 
                 if ($userMode) {
-                    echo " </div>\n";
-                    echo "<div class='col-xs-2' style='color:red;'>" . text($globalTitle) . "</div>\n";
-                    echo "<div class='col-xs-1'><input type='checkbox' value='YES' name='toggle_" . $i . "' id='toggle_" . $i . "' " . $settingDefault . "/></div>\n";
-                    if ($fldtype == 'encrypted') {
-                        echo "<input type='hidden' id='globaldefault_" . $i . "' value='" . attr($globalTitle) . "'>\n";
-                    } else {
-                        echo "<input type='hidden' id='globaldefault_" . $i . "' value='" . attr($globalValue) . "'>\n";
-                    }
-                    echo "</div>\n";
+                              echo " </div>\n";
+                              echo "<div class='col-xs-2' style='color:red;'>" . attr($globalTitle) . "</div>\n";
+                              echo "<div class='col-xs-1'><input type='checkbox' value='YES' name='toggle_" . $i . "' id='toggle_" . $i . "' " . attr($settingDefault) . "/></div>\n";
+                              echo "<input type='hidden' id='globaldefault_" . $i . "' value='" . attr($globalValue) . "'>\n";
+                              echo "</div>\n";
                 } else {
                               echo " </div></div>\n";
                 }
@@ -749,7 +700,7 @@ foreach ($GLOBALS_METADATA as $grpname => $grparr) {
                 echo "<div class='row'>";
                 echo "<div class='col-xs-12'>";
                 echo "<input type='hidden' name='form_download' id='form_download'>";
-                echo "<button onclick=\"return validate_file()\" type='button'>" . xlt('Download Offsite Portal Connection Files') . "</button>";
+                echo "<button onclick=\"return validate_file()\" type='button'>" . xla('Download Offsite Portal Connection Files') . "</button>";
                 echo "<div id='file_error_message' class='alert alert-error'></div>";
                 echo "</div>";
                 echo "</div>";
@@ -770,7 +721,7 @@ foreach ($GLOBALS_METADATA as $grpname => $grparr) {
 
 <script language="JavaScript">
 
-$(function(){
+$(document).ready(function(){
   tabbify();
 
     <?php // mdsupport - Highlight search results ?>

@@ -29,20 +29,12 @@ use Application\Listener\Listener;
 
 class AclController extends AbstractActionController
 {
-    /**
-     * @var \Acl\Model\AclTable
-     */
     protected $aclTable;
-
     protected $listenerObject;
-    private $htmlEscaper;
     
-    public function __construct(\Zend\View\Helper\HelperInterface $htmlEscaper, \Acl\Model\AclTable $aclTable)
+    public function __construct()
     {
-        $this->htmlEscaper = $htmlEscaper;
-        // TODO: we should probably inject the Listener object as well so we can mock it in unit tests or at least make the dependency explicit.
         $this->listenerObject = new Listener;
-        $this->aclTable = $aclTable;
     }
         
     public function indexAction()
@@ -282,7 +274,8 @@ class AclController extends AbstractActionController
     private function createTreeView($array, $currentParent, $currLevel = 0, $prevLevel = -1)
     {
       /** Html Escape Function */
-        $escapeHtml         = $this->htmlEscaper;
+        $viewHelperManager  = $this->getServiceLocator()->get('ViewHelperManager');
+        $escapeHtml         = $viewHelperManager->get('escapeHtml');
         
         foreach ($array as $categoryId => $category) {
             if ($category['name']=='') {
@@ -327,7 +320,8 @@ class AclController extends AbstractActionController
     private function createUserGroups($id = "user_group_", $visibility = "", $dragabble = "draggable", $li_class = "")
     {
         /** Html Escape Function */
-        $escapeHtml         = $this->htmlEscaper;
+        $viewHelperManager  = $this->getServiceLocator()->get('ViewHelperManager');
+        $escapeHtml         = $viewHelperManager->get('escapeHtml');
         
         $output_string = "";
         $res_users = $this->getAclTable()->aclUserGroupMapping();
@@ -361,10 +355,15 @@ class AclController extends AbstractActionController
     /**
      * Table Gateway
      *
-     * @return \Acl\Model\AclTable
+     * @return type
      */
     public function getAclTable()
     {
+        if (!$this->aclTable) {
+            $sm = $this->getServiceLocator();
+            $this->aclTable = $sm->get('Acl\Model\AclTable');
+        }
+
         return $this->aclTable;
     }
 }

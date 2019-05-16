@@ -1,26 +1,32 @@
 <?php
-/**
- * blank.php
+/*
+ * Created on Dec 17, 2004
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * To change the template for this generated file go to
+ * Window - Preferences - PHPeclipse - PHP - Code Templates
  */
-
-
-require_once("../../globals.php");
+include_once("../../globals.php");
 
 ?>
 <html>
 <head>
+<?php html_header_show();?>
 
 
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 
 </head>
 <body class="body_bottom">
+
+<!--
+<table border=0 cellspacing=0 cellpadding=0 height=100%>
+<tr>
+<td background="<?php echo $linepic;?>" width=7 height=100%>
+&nbsp;
+</td>
+</tr>
+</table>
+-->
 
 </body>
 </html>

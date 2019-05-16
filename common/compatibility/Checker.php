@@ -1,6 +1,6 @@
 <?php
 
-namespace OpenEMR\Common\Compatibility;
+namespace OpenEMR\Common;
 
 /**
  * Check if the server's PHP version is compatible with OpenEMR.
@@ -16,7 +16,16 @@ namespace OpenEMR\Common\Compatibility;
  */
 class Checker
 {
-    private static $minimumPhpVersion = "7.1.2";
+    private static $minimumPhpVersion = "5.6.0";
+
+    private static function xlDelegate($value)
+    {
+        if (function_exists("xl")) {
+            return xl($value);
+        }
+
+        return $value;
+    }
 
     /**
      * Checks to see if minimum PHP version is met.
@@ -29,7 +38,7 @@ class Checker
         $response = "";
 
         if (!$phpCheck) {
-            $response .= "PHP version needs to be at least" . " " . self::$minimumPhpVersion . ".";
+            $response .= self::xlDelegate("PHP version needs to be at least") . " " . self::$minimumPhpVersion . ".";
         } else {
             $response = true;
         }

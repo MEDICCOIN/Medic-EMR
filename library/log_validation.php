@@ -17,25 +17,20 @@
  *
  * @package OpenEMR
  * @author  Visolve <services@visolve.com>
- * @link    https://www.open-emr.org
+ * @link    http://www.open-emr.org
  */
 
 
+
+
 require_once("../interface/globals.php");
-require_once("$srcdir/acl.inc");
+require_once("$srcdir/log.inc");
 
-if (!acl_check('admin', 'users')) {
-    die(xlt("Not Authorized"));
-}
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
-}
-
-$valid  = true;
-$errors = array();
-catch_logs();
-$sql = sqlStatement("select * from log_validator");
+    $valid  = true;
+    $errors = array();
+    catch_logs();
+    $sql = sqlStatement("select * from log_validator");
 while ($row = sqlFetchArray($sql)) {
     $logEntry = sqlQuery("select * from log where id = ?", array($row['log_id']));
     if (empty($logEntry)) {
@@ -52,15 +47,15 @@ while ($row = sqlFetchArray($sql)) {
 }
 
 if ($valid) {
-    echo xlt("Audit Log Validated Successfully");
+    echo xl("Audit Log Validated Successfully");
 } else {
-    echo xlt("Audit Log Validation Failed") . "(ERROR:: " . text($errors[0]) . ")";
+    echo xl("Audit Log Validation Failed") . "(ERROR:: $errors[0])";
 }
 
 function catch_logs()
 {
-    $sql = sqlStatement("select * from log where id not in(select log_id from log_validator) and checksum is NOT null and checksum != ''");
+    $sql  = sqlStatement("select * from log where id not in(select log_id from log_validator) and checksum is NOT null and checksum != ''");
     while ($row = sqlFetchArray($sql)) {
-        sqlStatement("INSERT into log_validator (log_id,log_checksum) VALUES(?,?)", array($row['id'],$row['checksum']));
+        sqlInsert("INSERT into log_validator (log_id,log_checksum) VALUES(?,?)", array($row['id'],$row['checksum']));
     }
 }

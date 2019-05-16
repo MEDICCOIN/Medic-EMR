@@ -1,14 +1,28 @@
 <?php
+
 /**
  * forms/eye_mag/php/Anything_simple.php
  *
  * Adaptation of AnythingSlider's Anything_simple.php to fit Eye Exam form
  *
- * @package   OpenEMR
- * @link      https://www.open-emr.org
- * @author    Ray Magauran <magauran@MedFetch.com>
- * @copyright Copyright (c) 2016 Raymond Magauran <magauran@MedFetch.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016 Raymond Magauran <magauran@MedFetch.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Ray Magauran <magauran@MedFetch.com>
+ * @link http://www.open-emr.org
  */
 
     include_once("../../../globals.php");
@@ -19,7 +33,7 @@
 
     $form_name = "Eye Form";
     $form_folder = "eye_mag";
-    include_once($GLOBALS['fileroot']."/interface/forms/".$form_folder."/php/".$form_folder."_functions.php");
+    include_once($GLOBALS['webserver_root']."/interface/forms/".$form_folder."/php/".$form_folder."_functions.php");
 
     $pid = $_SESSION['pid'];
     $display = $_REQUEST['display'];
@@ -55,30 +69,30 @@
         <meta charset="utf-8" />
 
         <title><?php echo xlt('Document Library'); ?></title>
-        <link rel="shortcut icon" href="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/demos/images/favicon.ico" type="image/x-icon">
-        <link rel="apple-touch-icon" href="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/demos/images/apple-touch-icon.png">
+        <link rel="shortcut icon" href="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/demos/images/favicon.ico" type="image/x-icon">
+        <link rel="apple-touch-icon" href="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/demos/images/apple-touch-icon.png">
 
-        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-1-10-2/jquery.js"></script>
-        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap/dist/js/bootstrap.min.js"></script>
+        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-min-1-10-2/index.js"></script>
+        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap-3-3-4/dist/js/bootstrap.min.js"></script>
         <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-1-11-4/jquery-ui.min.js"></script>
-        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/css/anythingslider.css">
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/css/anythingslider.css">
         <!-- AnythingSlider optional extensions -->
-        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/js/jquery.anythingslider.fx.js"></script>
-        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/js/jquery.anythingslider.video.js"></script>
+        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/js/jquery.anythingslider.fx.js"></script>
+        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/js/jquery.anythingslider.video.js"></script>
         <!-- Anything Slider optional plugins -->
-         <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/js/jquery.easing.1.2.js"></script>
+         <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/js/jquery.easing.1.2.js"></script>
         <!-- Anything Slider -->
-        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/js/jquery.anythingslider.min.js"></script>
+        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/js/jquery.anythingslider.min.js"></script>
 
-        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/css/theme-metallic.css">
-        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/css/theme-minimalist-round.css">
-        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/css/theme-minimalist-square.css">
-        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/css/theme-construction.css">
-        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/css/theme-cs-portfolio.css">
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/css/theme-metallic.css">
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/css/theme-minimalist-round.css">
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/css/theme-minimalist-square.css">
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/css/theme-construction.css">
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/css/theme-cs-portfolio.css">
 
         <!-- ColorBox -->
-        <link href="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/demos/colorbox/colorbox.css" rel="stylesheet">
-        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/anythingslider/demos/colorbox/jquery.colorbox-min.js"></script>
+        <link href="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/demos/colorbox/colorbox.css" rel="stylesheet">
+        <script src="<?php echo $GLOBALS['assets_static_relative'] ?>/AnythingSlider-1-9-4/demos/colorbox/jquery.colorbox-min.js"></script>
         <script type="text/javascript" src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js"></script>
         <style>
              #slider { width: 700px; height: 390px; }
@@ -215,12 +229,12 @@
         </script>
 
         <!-- Add Font stuff for the look and feel.  -->
-        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/bootstrap-3-3-4/dist/css/bootstrap.min.css">
         <link rel="stylesheet" href="<?php echo $GLOBALS['css_header']; ?>" type="text/css">
-        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-themes-1-11-4/themes/excite-bike/jquery-ui.css">
-        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/pure/0.5.0/pure-min.css">
-
-        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/font-awesome/css/font-awesome.min.css">
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-ui-1-11-4/themes/excite-bike/jquery-ui.css">
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/pure-0-5-0/pure-min.css">
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/qtip2-2-2-1/jquery.qtip.min.css" />
+        <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative'] ?>/font-awesome-4-6-3/css/font-awesome.min.css">
         <link rel="stylesheet" href="<?php echo $GLOBALS['webroot']; ?>/interface/forms/<?php echo $form_folder; ?>/css/style.css" type="text/css">
 
         <meta charset="utf-8">

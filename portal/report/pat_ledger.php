@@ -29,7 +29,9 @@ global $ignoreAuth;
 require_once('../../interface/globals.php');
 require_once($GLOBALS['srcdir'].'/patient.inc');
 require_once($GLOBALS['srcdir'].'/acl.inc');
+require_once($GLOBALS['srcdir'].'/formatting.inc.php');
 require_once($GLOBALS['srcdir'].'/options.inc.php');
+require_once($GLOBALS['srcdir'].'/formdata.inc.php');
 require_once($GLOBALS['srcdir'].'/appointments.inc.php');
 
 $enc_units = $total_units = 0;
@@ -42,6 +44,19 @@ $orow = 0;
 
 $pat_pid = $_GET['patient_id'];
 $type_form = $_GET['form'];
+
+### Begin Medic Coin Module ###
+$medic_enc_chg = $medic_total_chg = 0;
+$medic_enc_pmt = $medic_total_pmt = 0;
+$medic_enc_adj = $medic_total_adj = 0;
+$medic_enc_bal = $medic_total_bal = 0;
+if (!function_exists('cformat'))
+{
+    function cformat($float) { // cformat = 'Crypto Format'
+    	return sprintf('%0.8f', $float);
+    }
+}
+### End Medic Coin Module ###
 
 //if (! acl_check('acct', 'rep')) die(xlt("Unauthorized access."));
 
@@ -99,9 +114,16 @@ function List_Look($thisData, $thisList)
     if ($thisData == '') {
         return '';
     }
-
+    ### Begin Medic Coin Module - modify by /interface/reports/pat_ledger.php
+    /*
+    ### End Medic Coin Module 
     $fres=sqlStatement("SELECT title FROM list_options WHERE list_id=? ".
         "AND option_id=?", array($thisList, $thisData));
+    ### Begin Medic Coin Module - modify by /interface/reports/pat_ledger.php
+    */
+    $fres=sqlStatement("SELECT title FROM list_options WHERE list_id = ? ".
+        "AND option_id = ? AND activity = 1", array($thisList, $thisData));
+    ### End Medic Coin Module 
     if ($fres) {
         $rret=sqlFetchArray($fres);
         $dispValue= xl_list_label($rret{'title'});
@@ -153,6 +175,30 @@ function PrintEncHeader($dt, $rsn, $dr)
 function PrintEncFooter()
 {
     global $enc_units, $enc_chg, $enc_pmt, $enc_adj, $enc_bal;
+    ### Begin Medic Coin Module ###
+    global $medic_enc_chg, $medic_enc_pmt, $medic_enc_adj, $medic_enc_bal;
+    
+    if($medic_enc_chg || $medic_enc_pmt || $medic_enc_adj || $medic_enc_bal)
+    {
+        $print_medic_enc_chg = floatval($medic_enc_chg) ? "&nbsp;|&nbsp;" . $medic_enc_chg : '';
+        $print_medic_enc_pmt = floatval($medic_enc_pmt) ? "&nbsp;|&nbsp;" . $medic_enc_pmt : '';
+        $print_medic_enc_adj = floatval($medic_enc_adj) ? "&nbsp;|&nbsp;" . $medic_enc_adj : '';
+        $print_medic_enc_bal = floatval($medic_enc_bal) ? "&nbsp;|&nbsp;" . $medic_enc_bal : '';
+        echo "<tr bgcolor='#DDFFFF'>";
+        echo "<td colspan='3'>&nbsp;</td>";
+        echo "<td class='detail'>". xlt('Encounter Balance').":</td>";
+        echo "<td class='detail' style='text-align: right;'>".text($enc_units)."</td>";
+        //echo "<td class='detail' style='text-align: right;'>".text(oeFormatMoney($enc_chg)) . $print_medic_enc_chg . "</td>";
+        echo "<td class='detail' style='text-align: right;'>".text(oeFormatMoney($enc_chg))."</td>";
+        echo "<td class='detail' style='text-align: right;'>".text(oeFormatMoney($enc_pmt)) . $print_medic_enc_pmt . "</td>";
+        echo "<td class='detail' style='text-align: right;'>".text(oeFormatMoney($enc_adj)) . $print_medic_enc_adj . "</td>";
+        //echo "<td class='detail' style='text-align: right;'>".text(oeFormatMoney($enc_bal)) . $print_medic_enc_bal . "</td>";
+        echo "<td class='detail' style='text-align: right;'>".text(oeFormatMoney($enc_bal))."</td>";
+        echo "</tr>\n";
+    }
+    else
+    {
+    ### End Medic Coin Module ###
     echo "<tr bgcolor='#DDFFFF'>";
     echo "<td colspan='3'>&nbsp;</td>";
     echo "<td class='detail'>". xlt('Encounter Balance').":</td>";
@@ -162,15 +208,34 @@ function PrintEncFooter()
     echo "<td class='detail' style='text-align: right;'>".text(oeFormatMoney($enc_adj))."</td>";
     echo "<td class='detail' style='text-align: right;'>".text(oeFormatMoney($enc_bal))."</td>";
     echo "</tr>\n";
+    ### Begin Medic Coin Module ###
+    }
+    ### End Medic Coin Module ###
 }
 function PrintCreditDetail($detail, $pat, $unassigned = false)
 {
     global $enc_pmt, $total_pmt, $enc_adj, $total_adj, $enc_bal, $total_bal;
     global $bgcolor, $orow, $enc_units, $enc_chg;
+    ### Begin Medic Coin Module
+    global $medic_enc_pmt, $medic_total_pmt, $medic_enc_adj, $medic_total_adj, $medic_enc_bal, $medic_total_bal, $enc_chg;
+    ### End Medic Coin Module
     foreach ($detail as $pmt) {
+        ### Begin Medic Coin Module - modify by /interface/reports/pat_ledger.php
+        $uap_flag = false;
+        ### End Medic Coin Module 
         if ($unassigned) {
             if (($pmt['pay_total'] - $pmt['applied']) == 0) {
+                ### Begin Medic Coin Module - modify by /interface/reports/pat_ledger.php
+                /*
+                ### End Medic Coin Module
                 continue;
+                ### Begin Medic Coin Module - modify by /interface/reports/pat_ledger.php
+                */
+                if (!$GLOBALS['show_payment_history']) {
+                    continue;
+                }
+                $uap_flag = true;
+                ### End Medic Coin Module
             }
         }
 
@@ -210,7 +275,14 @@ function PrintCreditDetail($detail, $pat, $unassigned = false)
 
             $description .= '['.$memo.']';
         }
-
+        ### Begin Medic Coin Module - modify by /interface/reports/pat_ledger.php
+        if ($uap_flag === true) {
+            if ($description) {
+                $description .= ' ';
+            }
+            $description .= '{Pay History}';
+        }
+        ### End Medic Coin Module 
         $print .= "<td class='detail' colspan='2'>".
                                       text($description)."&nbsp;</td>";
         $payer = ($pmt['name'] == '') ? xl('Patient') : $pmt['name'];
@@ -252,12 +324,54 @@ function PrintCreditDetail($detail, $pat, $unassigned = false)
         if ($adj_amt != 0) {
             $print_adj = oeFormatMoney($adj_amt);
         }
-
+        
+        ### Begin Medic Coin Module
+        if ($pmt['payment_method'] == 'mediccoin')
+        {
+            $medic_usd = floatval($pmt['medic_paytotal']) ? cformat($pmt['pay_total']/$pmt['medic_paytotal']) : 0;
+            
+            if ($unassigned) {
+                $medic_pmt_amt = $medic_usd ? cformat(($pmt['pay_total'] - $pmt['applied'])/$medic_usd) : 0;
+                $medic_uac_bal = $medic_pmt_amt*-1;
+                $medic_uac_appl = $medic_usd ? cformat($pmt['applied']/$medic_usd) : 0;
+                $medic_uac_total = $medic_usd ? cformat($pmt['pay_total']/$medic_usd) : 0;
+                $medic_pmt_amt = $medic_usd ? cformat($pmt['pay_total']/$medic_usd) : 0;
+                $medic_total_pmt = cformat($medic_total_pmt-$medic_uac_bal);
+            } else {
+                $medic_uac_total = '';
+                $medic_uac_bal = '';
+                $medic_uac_appl = '';
+                $medic_pmt_amt = $pmt['medic_payamount'];
+                $medic_adj_amt = $pmt['medic_adjamount'];
+                $medic_enc_pmt = cformat($medic_enc_pmt + $pmt['medic_payamount']);
+                $medic_total_pmt = cformat($medic_total_pmt + $pmt['medic_payamount']);
+                $medic_enc_adj = cformat($medic_enc_adj + $pmt['medic_adjamount']);
+                $medic_total_adj = cformat($medic_total_adj + $pmt['medic_adjamount']);
+            }
+            if ($pmt_amt != 0) {
+                $print_medic_pmt = "&nbsp;|&nbsp;" . $medic_pmt_amt;
+            }
+            if ($adj_amt != 0) {
+                $print_medic_adj = "&nbsp;|&nbsp;" . $medic_adj_amt;
+            }
+            $print_medic_appl = floatval($uac_appl) ? "&nbsp;|&nbsp;" . $medic_uac_appl : "";
+            $print_medic_bal = floatval($uac_bal) ? "&nbsp;|&nbsp;" . $medic_uac_bal : "";
+        }
+        /*
+        ### End Medic Coin Module
         $print .= "<td class='detail' style='text-align: right;'>".text($uac_appl)."&nbsp;</td>";
         $print .= "<td class='detail' style='text-align: right;'>".text($print_pmt)."&nbsp;</td>";
         $print .= "<td class='detail' style='text-align: right;'>".text($print_adj)."&nbsp;</td>";
         $print .= "<td class='detail' style='text-align: right;'>".text($uac_bal)."&nbsp;</td>";
         $print .= "</tr>\n";
+        ### Begin Medic Coin Module
+        */
+        $print .= "<td class='detail' style='text-align: center;'>".text($uac_appl). $print_medic_appl . "&nbsp;</td>";
+        $print .= "<td class='detail' style='text-align: right;'>".text($print_pmt). $print_medic_pmt . "&nbsp;</td>";
+        $print .= "<td class='detail' style='text-align: right;'>".text($print_adj). $print_medic_adj . "&nbsp;</td>";
+        $print .= "<td class='detail' style='text-align: right;'>".text($uac_bal). $print_medic_bal . "&nbsp;</td>";
+        $print .= "</tr>\n";
+        ### End Medic Coin Module
         echo $print;
         if ($pmt['follow_up_note'] != '') {
             $bgcolor = (($bgcolor == "#FFFFDD") ? "#FFDDDD" : "#FFFFDD");
@@ -268,6 +382,7 @@ function PrintCreditDetail($detail, $pat, $unassigned = false)
             $print .= "</td></tr>\n";
             echo $print;
         }
+        
 
         if ($unassigned) {
             $total_bal = $total_bal + $uac_bal;
@@ -275,7 +390,14 @@ function PrintCreditDetail($detail, $pat, $unassigned = false)
             $enc_bal = $enc_bal - $pmt_amt - $adj_amt;
             $total_bal = $total_bal - $pmt_amt - $adj_amt;
         }
-
+        ### Begin Medic Coin Module
+        if ($unassigned) {
+            $medic_total_bal = cformat($medic_total_bal + $medic_uac_bal);
+        } else {
+            $medic_enc_bal = cformat($medic_enc_bal - $medic_pmt_amt - $medic_adj_amt);
+            $medic_total_bal = cformat($medic_total_bal - $medic_pmt_amt - $medic_adj_amt);
+        }
+        ### End Medic Coin Module
         $orow++;
     }
 
@@ -362,11 +484,11 @@ if ($_REQUEST['form_csvexport']) {
 <html>
 <head>
 <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
 <script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/js/common.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 
 <script type="text/javascript">
 var mypcc = '<?php echo $GLOBALS['phone_country_code']; ?>';
@@ -436,7 +558,7 @@ function sel_patient() {
 <title><?php echo xlt('Patient Ledger by Date') ?></title>
 
 <script>
-  $(function() {
+  $(document).ready(function() {
     $('.datepicker').datetimepicker({
         <?php $datetimepicker_timepicker = false; ?>
         <?php $datetimepicker_formatInput = false; ?>
@@ -664,9 +786,27 @@ if ($_REQUEST['form_refresh'] || $_REQUEST['form_csvexport']) {
     <td class='bold' ><?php echo xlt('Billed Date'); ?> / <?php echo xlt('Payor'); ?></td>
     <td class='bold' ><?php echo xlt('Type'); ?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <?php echo xlt('Units'); ?></td>
-    <td class='bold' >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<?php echo xlt('Charge'); ?></td>
-    <td align='right' class='bold' >&nbsp;&nbsp;<?php echo xlt('Payment'); ?></td>
-    <td align='right' class='bold' >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<?php echo xlt('Adjustment'); ?></td>
+    <td class='bold' >
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<?php echo xlt('Charge'); ?>
+        <!-- Begin Medic Coin Module /-->
+        <br/>
+        <?php echo xlt($GLOBALS['medic_currency']); ?>&nbsp;|&nbsp;<?php echo xlt('MEDIC'); ?>
+        <!-- End Medic Coin Module /-->
+    </td>
+    <td align='right' class='bold' >
+        &nbsp;&nbsp;<?php echo xlt('Payment'); ?>
+        <!-- Begin Medic Coin Module /-->
+        <br/>
+        <?php echo xlt($GLOBALS['medic_currency']); ?>&nbsp;|&nbsp;<?php echo xlt('MEDIC'); ?>
+        <!-- End Medic Coin Module /-->
+    </td>
+    <td align='right' class='bold' >
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<?php echo xlt('Adjustment'); ?>
+        <!-- Begin Medic Coin Module /-->
+        <br/>
+        <?php echo xlt($GLOBALS['medic_currency']); ?>&nbsp;|&nbsp;<?php echo xlt('MEDIC'); ?>
+        <!-- End Medic Coin Module /-->
+    </td>
     <td align='right' class='bold' >&nbsp;&nbsp;&nbsp;<?php echo xlt('Balance'); ?></td>
  </tr>
  <tr>
@@ -713,6 +853,9 @@ if ($_REQUEST['form_refresh'] || $_REQUEST['form_csvexport']) {
             }
 
             $enc_units = $enc_chg = $enc_pmt = $enc_adj = $enc_bal = 0;
+            ### Begin Medic Coin Module ###
+            $medic_enc_chg = $medic_enc_pmt = $medic_enc_adj = $medic_enc_bal = 0;
+            ### End Medic Coin Module ###
         }
 
         if ($erow{'id'}) {
@@ -754,7 +897,14 @@ if ($_REQUEST['form_refresh'] || $_REQUEST['form_csvexport']) {
             $enc_chg += $erow['fee'];
             $enc_bal += $erow['fee'];
             $orow++;
-
+            
+            ### Begin Medic Coin Module ###
+            //$medic_total_chg += $erow['fee'];
+            //$medic_total_bal += $erow['fee'];
+            //$medic_enc_chg += $erow['fee'];
+            //$medic_enc_bal += $erow['fee'];
+            ### End Medic Coin Module ###
+            
             if ($_REQUEST['form_csvexport']) {
                 echo $csv;
             } else {
@@ -797,6 +947,28 @@ if ($_REQUEST['form_refresh'] || $_REQUEST['form_csvexport']) {
     }
 
     if (!$_REQUEST['form_csvexport'] && $orow) {
+        ### Begin Medic Coin Module ###
+        if($medic_total_chg || $medic_total_pmt || $medic_total_adj || $medic_total_bal)
+        {
+            $print_medic_total_chg = floatval($medic_total_chg) ? "&nbsp;|&nbsp;" . $medic_total_chg : '';
+            $print_medic_total_pmt = floatval($medic_total_pmt) ? "&nbsp;|&nbsp;" . $medic_total_pmt : '';
+            $print_medic_total_adj = floatval($medic_total_adj) ? "&nbsp;|&nbsp;" . $medic_total_adj : '';
+            $print_medic_total_bal = floatval($medic_total_bal) ? "&nbsp;|&nbsp;" . $medic_total_bal : '';
+            echo "<tr bgcolor='#DDFFFF'>\n";
+            echo " <td colspan='2'>&nbsp;</td>";
+            echo " <td class='bold' colspan='2'>" . xlt("Grand Total") ."</td>\n";
+            echo " <td class='bold' style='text-align: center;'>". text($total_units) ."</td>\n";
+            //echo " <td class='bold' style='text-align: center;'>". text(oeFormatMoney($total_chg)) . $print_medic_total_chg  ."</td>\n";
+            echo " <td class='bold' style='text-align: center;'>". text(oeFormatMoney($total_chg)) ."</td>\n";
+            echo " <td class='bold' style='text-align: right;'>". text(oeFormatMoney($total_pmt)) . $print_medic_total_pmt  ."</td>\n";
+            echo " <td class='bold' style='text-align: right;'>". text(oeFormatMoney($total_adj)) . $print_medic_total_adj  ."</td>\n";
+            //echo " <td class='bold' style='text-align: right;'>". text(oeFormatMoney($total_bal)) . $print_medic_total_bal  . "</td>\n";
+            echo " <td class='bold' style='text-align: right;'>". text(oeFormatMoney($total_bal)) . "</td>\n";
+            echo " </tr>\n";
+        }
+        else
+        {
+        ### End Medic Coin Module ###
         echo "<tr bgcolor='#DDFFFF'>\n";
         echo " <td colspan='2'>&nbsp;</td>";
         echo " <td class='bold' colspan='2'>" . xlt("Grand Total") ."</td>\n";
@@ -806,6 +978,9 @@ if ($_REQUEST['form_refresh'] || $_REQUEST['form_csvexport']) {
         echo " <td class='bold' style='text-align: right;'>". text(oeFormatMoney($total_adj)) ."</td>\n";
         echo " <td class='bold' style='text-align: right;'>". text(oeFormatMoney($total_bal)) . "</td>\n";
         echo " </tr>\n";
+        ### Begin Medic Coin Module ###
+        }
+        ### End Medic Coin Module ###
     ?>
     </table>
   <tr><td>&nbsp;</td></tr><br><br>

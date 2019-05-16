@@ -21,12 +21,12 @@ foreach ($_POST as $k => $var) {
 /////////////////
 // here we check to se if there was an autosave version prior to the real save 
 $vectAutosave = sqlQuery("SELECT id, autosave_flag, autosave_datetime FROM form_brief_aan_verwijzer
-                            WHERE pid = ?
-                            AND groupname= ?
-                            AND user= ? AND
-                            authorized= ? AND activity=1
+                            WHERE pid = ".$_SESSION["pid"].
+                            " AND groupname='".$_SESSION["authProvider"].
+                            "' AND user='".$_SESSION["authUser"]."' AND
+                            authorized=$userauthorized AND activity=1
                             AND autosave_flag=1 
-                            ORDER by id DESC limit 1", array($_SESSION["pid"], $_SESSION["authProvider"], $_SESSION["authUser"], $userauthorized));
+                            ORDER by id DESC limit 1");
 
 // if yes then update this else insert
 if ($vectAutosave['autosave_flag'] == 1 || $_POST["mode"] == "update") {
@@ -37,20 +37,19 @@ if ($vectAutosave['autosave_flag'] == 1 || $_POST["mode"] == "update") {
     }
   
     $strSql = "UPDATE form_brief_aan_verwijzer
-                SET pid = ?, groupname=?, user=?, 
-                authorized=?, activity=1, date = NOW(), 
-                introductie=?,
-                reden_van_aanmelding=?, 
-                anamnese=?,
-                psychiatrisch_onderzoek=?,
-                beschrijvend_conclusie=?,
-                advies_beleid=?,
+                SET pid = ".$_SESSION["pid"].", groupname='".$_SESSION["authProvider"]."', user='".$_SESSION["authUser"]."', 
+                authorized=$userauthorized, activity=1, date = NOW(), 
+                introductie='".$_POST["introductie"]."',
+                reden_van_aanmelding='".$_POST["reden_van_aanmelding"]."', 
+                anamnese='".$_POST["anamnese"]."',
+                psychiatrisch_onderzoek='".$_POST["psychiatrisch_onderzoek"]."',
+                beschrijvend_conclusie='".$_POST["beschrijvend_conclusie"]."',
+                advies_beleid='".$_POST["advies_beleid"]."',
                 autosave_flag=1, 
                 autosave_datetime=NOW() 
-                  WHERE id = ?;";
+                  WHERE id = ".$newid.";";
 
-    sqlQuery($strSql, array($_SESSION["pid"], $_SESSION["authProvider"], $_SESSION["authUser"], $userauthorized, $_POST["introductie"], $_POST["reden_van_aanmelding"],
-    $_POST["anamnese"], $_POST["psychiatrisch_onderzoek"], $_POST["beschrijvend_conclusie"], $_POST["advies_beleid"], $newid));
+    sqlQuery($strSql);
 
 //echo "DEBUG :: id=$newid, sql=$strSql<br>";
 } else {
@@ -63,13 +62,12 @@ if ($vectAutosave['autosave_flag'] == 1 || $_POST["mode"] == "update") {
 
 //get timestamp
 $result = sqlQuery("SELECT autosave_datetime FROM form_brief_aan_verwijzer
-                            WHERE pid = ?
-                            AND groupname= ?
-                            AND user= ? AND
-                            authorized= ? AND activity=1 AND id=?
+                            WHERE pid = ".$_SESSION["pid"].
+                            " AND groupname='".$_SESSION["authProvider"].
+                            "' AND user='".$_SESSION["authUser"]."' AND
+                            authorized=$userauthorized AND activity=1 AND id=$newid
                             AND autosave_flag=1 
-                            ORDER by id DESC limit 1", array($_SESSION["pid"], $_SESSION["authProvider"], $_SESSION["authUser"], $userauthorized, $id));
-                            
+                            ORDER by id DESC limit 1");
 //$timestamp = mysql_result($result, 0);
 
 //output timestamp

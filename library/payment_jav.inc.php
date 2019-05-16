@@ -1,5 +1,5 @@
 <?php
-// +-----------------------------------------------------------------------------+
+// +-----------------------------------------------------------------------------+ 
 // Copyright (C) 2010 Z&H Consultancy Services Private Limited <sam@zhservices.com>
 //
 //
@@ -19,9 +19,9 @@
 // openemr/interface/login/GnuGPL.html
 // For more information write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-//
+// 
 // Author:   Eldho Chacko <eldho@zhservices.com>
-//           Paul Simon K <paul@zhservices.com>
+//           Paul Simon K <paul@zhservices.com> 
 //
 // +------------------------------------------------------------------------------+
 //===============================================================================
@@ -108,7 +108,7 @@ function FilterSelection(listSelected) {
      }
 
     var newValueSelected = (listSelected.options[listSelected.selectedIndex].value);
-
+    
     var list=document.getElementById('type_name');
     var newValue = (list.options[list.selectedIndex].value);
     if (newValue=='patient') {
@@ -162,7 +162,7 @@ function ValidateDateGreaterThanNow(DateValue,DateFormat)
   if(PassedDate > Now)
    return false;
   else
-   return true;
+   return true; 
  }
 function DateCheckGreater(DateValue1,DateValue2,DateFormat)
  {//Checks which date is greater.The 3 formats of date is taken care of.
@@ -318,7 +318,7 @@ function FillAmount()
         <?php
     }
     ?>
-
+  
   TempTotal=0;
   for(RowCount=1;;RowCount++)
    {
@@ -482,6 +482,12 @@ function FormValidations()
     document.getElementById('deposit_date').focus();
     return false;
    }
+    /* Begin Medic Coin Module */
+    if (!medic_validate_txid())
+    {
+        return false;
+    }
+    /* End Medic Coin Module */
   return true;
 }
 //========================================================================================
@@ -500,4 +506,19 @@ function UpdateTotalValues(start,count,Payment,PaymentTotal)
          document.getElementById(PaymentTotal).innerHTML=Math.round((paymenttot)*100)/100;
     }
 }
+/* Begin Medic Coin Module */
+function medic_validate_txid()
+{
+    if(document.getElementById('payment_method').options[document.getElementById('payment_method').selectedIndex].value == 'mediccoin')
+    {    
+        if(document.getElementById('medic_txID').value=='')
+        {
+            alert("<?php echo htmlspecialchars(xl('Please Fill the Medic TxID'), ENT_QUOTES) ?>");
+            document.getElementById('medic_txID').focus();
+            return false;
+        }
+    }
+    return true;
+}
+/* End Medic Coin Module */
 </script>

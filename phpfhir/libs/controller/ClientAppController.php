@@ -5,27 +5,20 @@
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @copyright Copyright (c) 2018 Jerry Padgett <sjpadgett@gmail.com>
+ * @license   https://www.gnu.org/licenses/agpl-3.0.en.html GNU Affero General Public License 3
  */
 
 require_once("oeDispatcher.php");
 
-use OpenEMR\Common\Http\oeHttp;
-use OpenEMR\Services\EncounterService;
-use OpenEMR\Services\FhirResourcesService;
+use oeFHIR\FetchLiveData;
+use oeFHIR\oeFHIRHttpClient;
+use oeFHIR\oeFHIRResource;
 
 class clientController extends oeDispatchController
 {
-    private $fhirBase;
-    private $apiBase;
-
     public function __construct()
     {
-        $fhir_base = trim($GLOBALS['fhir_base_url']);
-        $this->fhirBase = substr($fhir_base, -1) == '/' ? $fhir_base : $fhir_base . '/';
-        $this->apiBase = $_SERVER['HTTP_HOST'] . $GLOBALS['web_root'] . '/apis/fhir/';
-
         parent::__construct();
     }
 
@@ -43,101 +36,70 @@ class clientController extends oeDispatchController
 
     public function createEncounterAllAction()
     {
-        $pid = $this->getRequest('pid');
-        $oeid = $this->getRequest('oeid');
-        $type = $this->getRequest('type');
-
-        $this->encounterService = new EncounterService();
-        $this->fhirService = new FhirResourcesService();
-        $oept = $this->encounterService->getEncountersForPatient($pid);
-
+        $pid = $this->getRequest(pid);
+        $oeid = $this->getRequest(oeid);
+        $type = $this->getRequest(type);
+        $fs = new FetchLiveData();
+        $oept = $fs->getEncounterIdList($pid);
         $notify = '';
         foreach ($oept as $e) {
-            $resource = $this->fhirService->createEncounterResource($e['id'], $e, true);
-            $fhir_uri = 'Encounter/encounter-' . $e['id'];
-            $response = oeHttp::bodyFormat('body')->usingBaseUri($this->fhirBase)->put($fhir_uri, $resource);
-            $notify .= "<strong>Sent: $fhir_uri</strong></br>" . $this->checkErrors($response) . $response->body() . '</br>';
+            $client = new oeFHIRHttpClient();
+            $id = 'encounter-' . $e['encounter'];
+            $rs = new oeFHIRResource();
+            $r = $rs->createEncounterResource($pid, $id, $e['encounter']);
+            $pt = $client->sendResource($type, $id, $r);
+            $notify .= '<strong>Sent:</strong></br>' . $r . '</br>' . $pt;
         }
-
         return $notify;
     }
 
     public function createAction()
     {
-        $oeid = $this->getRequest('oeid');
-        $type = $this->getRequest('type');
+        $pid = $this->getRequest(pid);
+        $oeid = $this->getRequest(oeid);
+        $type = $this->getRequest(type);
+        $client = new oeFHIRHttpClient();
+        $id = strtolower($type) . '-' . $oeid;
+        $method = 'create' . $type . 'Resource';
+        $rs = new oeFHIRResource();
+        $r = $rs->$method($pid, $id);
+        $pt = $client->sendResource($type, $id, $r);
 
-        $fhir_uri = $type . '/' . strtolower($type) . '-' . $oeid;
-        $api_uri = $type . '/' . $oeid;
-        // get resource from api
-        $response = oeHttp::setLocalApiContext(true)->usingBaseUri($this->apiBase)->get($api_uri);
-        $resource = $response->body(); // json encoded
-
-        // create resource on Fhir server.
-        $returned = oeHttp::bodyFormat('body')->usingBaseUri($this->fhirBase)->put($fhir_uri, $resource);
-        $reply = $returned->body();
-
-        $head = '<strong>Transaction Status: ' . $returned->getStatusCode() . ' ' . $returned->getReasonPhrase() . '</strong><br/>';
-        foreach ($returned->getHeaders() as $name => $values) {
-            $head .= $name . ': ' . implode(', ', $values) . "<br/>";
-        }
-
-        return $head . '<strong>Replied Resource:</strong></br>' . $reply . '</br>';
+        return '<strong>Sent:</strong></br>' . $r . '</br>' . $pt;
     }
 
     public function historyAction()
     {
-        $oeid = $this->getRequest('oeid');
-        $type = $this->getRequest('type');
-
+        $pid = $this->getRequest(pid);
+        $oeid = $this->getRequest(oeid);
+        $type = $this->getRequest(type);
+        $client = new oeFHIRHttpClient();
         $id = strtolower($type) . '-' . $oeid;
-        $uri = $type . '/' . $id . '/_history';
-        $response = oeHttp::usingBaseUri($this->fhirBase)->get($uri);
-        return $this->checkErrors($response) . $response->body();
+        $pt = $client->requestResource($type, $id, 'history');
+        return $pt;
     }
 
     public function readAction()
     {
-        $oeid = $this->getRequest('oeid');
-        $type = $this->getRequest('type');
-
-        $uri = $type . '/' . strtolower($type) . '-' . $oeid;
-        $response = oeHttp::usingBaseUri($this->fhirBase)->get($uri);
-
-        return $this->checkErrors($response) . $response->body();
+        $pid = $this->getRequest(pid);
+        $oeid = $this->getRequest(oeid);
+        $type = $this->getRequest(type);
+        $client = new oeFHIRHttpClient();
+        $id = strtolower($type) . '-' . $oeid;
+        $pt = $client->requestResource($type, $id, ''); // gets latest version.
+        return $pt;
     }
 
     public function searchAction()
     {
-        $pid = $this->getRequest('pid');
-        $type = $this->getRequest('type');
+        $pid = $this->getRequest(pid);
+        $type = $this->getRequest(type);
         if ($type === 'Patient') {
-            return xlt('Patient Search Not Available');
+            return xlt('Search Not Available');
         }
-
+        $client = new oeFHIRHttpClient();
         $id = 'patient-' . $pid;
-        $query = [
-            'patient' => $id,
-            '_format' => 'json',
-            '_pretty' => 'true'
-        ];
-        $response = oeHttp::usingBaseUri($this->fhirBase)->get($type, $query);
-
-        return $this->checkErrors($response) . $response->body();
-    }
-
-    private function checkErrors($response)
-    {
-        $check = '';
-        if ($response->status() !== 200) {
-            $check = "</br><strong>Error:" . $response->status() . " : " . $response->getReasonPhrase() . "</strong></br>";
-        }
-
-        return $check;
-    }
-
-    private function parseId($id)
-    {
-        return preg_replace('/[^0-9]/', '', $id);
+        $pt = $client->searchResource($type, $id, 'search');
+        return $pt;
     }
 }

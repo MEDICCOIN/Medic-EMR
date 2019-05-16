@@ -6,11 +6,11 @@
  * @link      http://www.open-emr.org
  * @author    Rod Roark <rod@sunsetsystems.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @author    Teny <teny@zhservices.com>
  * @copyright Copyright (c) 2007-2017 Rod Roark <rod@sunsetsystems.com>
  * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-
 
 require_once("../globals.php");
 require_once("$srcdir/acl.inc");
@@ -20,12 +20,6 @@ require_once("../../custom/code_types.inc.php");
 require_once("$srcdir/options.inc.php");
 
 use OpenEMR\Core\Header;
-
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
 
 // Below allows the list to default to the first item on the list
 //   when list_id is blank.
@@ -40,13 +34,8 @@ if (empty($_REQUEST['list_id'])) {
 // Check authorization.
 $thisauth = acl_check('admin', 'super');
 if (!$thisauth) {
-    die(xlt('Not authorized'));
+    die(xl('Not authorized'));
 }
-
-//Limit variables for filter
-$records_per_page = 40;
-$list_from = ( isset($_REQUEST["list_from"]) ? intval($_REQUEST["list_from"]) : 1 );
-$list_to   = ( isset($_REQUEST["list_to"])   ? intval($_REQUEST["list_to"]) : 0);
 
 // If we are saving, then save.
 //
@@ -57,13 +46,17 @@ if ($_POST['formaction'] == 'save' && $list_id) {
         sqlStatement("DELETE FROM fee_sheet_options");
         for ($lino = 1; isset($opt["$lino"]['category']); ++$lino) {
             $iter = $opt["$lino"];
-            $category = trim($iter['category']);
-            $option = trim($iter['option']);
-            $codes = trim($iter['codes']);
+            $category = formTrim($iter['category']);
+            $option = formTrim($iter['option']);
+            $codes = formTrim($iter['codes']);
             if (strlen($category) > 0 && strlen($option) > 0) {
-                sqlStatement("INSERT INTO fee_sheet_options ( " .
+                sqlInsert("INSERT INTO fee_sheet_options ( " .
                     "fs_category, fs_option, fs_codes " .
-                    ") VALUES ( ?,?,? )", array($category, $option, $codes));
+                    ") VALUES ( " .
+                    "'$category', " .
+                    "'$option', " .
+                    "'$codes' " .
+                    ")");
             }
         }
     } elseif ($list_id == 'code_types') {
@@ -71,50 +64,47 @@ if ($_POST['formaction'] == 'save' && $list_id) {
         sqlStatement("DELETE FROM code_types");
         for ($lino = 1; isset($opt["$lino"]['ct_key']); ++$lino) {
             $iter = $opt["$lino"];
-            $ct_key = trim($iter['ct_key']);
-            $ct_id = trim($iter['ct_id']) + 0;
-            $ct_seq = trim($iter['ct_seq']) + 0;
-            $ct_mod = trim($iter['ct_mod']) + 0;
-            $ct_just = trim($iter['ct_just']);
-            $ct_mask = trim($iter['ct_mask']);
+            $ct_key = formTrim($iter['ct_key']);
+            $ct_id = formTrim($iter['ct_id']) + 0;
+            $ct_seq = formTrim($iter['ct_seq']) + 0;
+            $ct_mod = formTrim($iter['ct_mod']) + 0;
+            $ct_just = formTrim($iter['ct_just']);
+            $ct_mask = formTrim($iter['ct_mask']);
             $ct_fee = empty($iter['ct_fee']) ? 0 : 1;
             $ct_rel = empty($iter['ct_rel']) ? 0 : 1;
             $ct_nofs = empty($iter['ct_nofs']) ? 0 : 1;
             $ct_diag = empty($iter['ct_diag']) ? 0 : 1;
             $ct_active = empty($iter['ct_active']) ? 0 : 1;
-            $ct_label = trim($iter['ct_label']);
-            $ct_external = trim($iter['ct_external']) + 0;
+            $ct_label = formTrim($iter['ct_label']);
+            $ct_external = formTrim($iter['ct_external']) + 0;
             $ct_claim = empty($iter['ct_claim']) ? 0 : 1;
             $ct_proc = empty($iter['ct_proc']) ? 0 : 1;
             $ct_term = empty($iter['ct_term']) ? 0 : 1;
             $ct_problem = empty($iter['ct_problem']) ? 0 : 1;
             $ct_drug = empty($iter['ct_drug']) ? 0 : 1;
             if (strlen($ct_key) > 0 && $ct_id > 0) {
-                sqlStatement(
-                    "INSERT INTO code_types ( " .
+                sqlInsert("INSERT INTO code_types ( " .
                     "ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_mask, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem, ct_drug " .
-                    ") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    array(
-                        $ct_key,
-                        $ct_id,
-                        $ct_seq,
-                        $ct_mod,
-                        $ct_just,
-                        $ct_mask,
-                        $ct_fee,
-                        $ct_rel,
-                        $ct_nofs,
-                        $ct_diag,
-                        $ct_active,
-                        $ct_label,
-                        $ct_external,
-                        $ct_claim,
-                        $ct_proc,
-                        $ct_term,
-                        $ct_problem,
-                        $ct_drug
-                    )
-                );
+                    ") VALUES ( " .
+                    "'$ct_key' , " .
+                    "'$ct_id'  , " .
+                    "'$ct_seq' , " .
+                    "'$ct_mod' , " .
+                    "'$ct_just', " .
+                    "'$ct_mask', " .
+                    "'$ct_fee' , " .
+                    "'$ct_rel' , " .
+                    "'$ct_nofs', " .
+                    "'$ct_diag', " .
+                    "'$ct_active', " .
+                    "'$ct_label', " .
+                    "'$ct_external', " .
+                    "'$ct_claim', " .
+                    "'$ct_proc', " .
+                    "'$ct_term', " .
+                    "'$ct_problem', " .
+                    "'$ct_drug' " .
+                    ")");
             }
         }
     } elseif ($list_id == 'issue_types') {
@@ -122,22 +112,22 @@ if ($_POST['formaction'] == 'save' && $list_id) {
         sqlStatement("DELETE FROM issue_types");
         for ($lino = 1; isset($opt["$lino"]['category']); ++$lino) {
             $iter = $opt["$lino"];
-            $it_category = trim($iter['category']);
-            $it_type = trim($iter['type']);
+            $it_category = formTrim($iter['category']);
+            $it_type = formTrim($iter['type']);
             if ((strlen($it_category) > 0) && (strlen($it_type) > 0)) {
-                sqlStatement("INSERT INTO issue_types (" .
+                sqlInsert("INSERT INTO issue_types (" .
                     "`active`,`category`,`ordering`, `type`, `plural`, `singular`, `abbreviation`, `style`, " .
                     "`force_show`, `aco_spec`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", array(
-                    trim($iter['active']),
+                    formTrim($iter['active']),
                     $it_category,
-                    trim($iter['ordering']),
+                    formTrim($iter['ordering']),
                     $it_type,
-                    trim($iter['plural']),
-                    trim($iter['singular']),
-                    trim($iter['abbreviation']),
-                    trim($iter['style']),
-                    trim($iter['force_show']),
-                    trim($iter['aco_spec']),
+                    formTrim($iter['plural']),
+                    formTrim($iter['singular']),
+                    formTrim($iter['abbreviation']),
+                    formTrim($iter['style']),
+                    formTrim($iter['force_show']),
+                    formTrim($iter['aco_spec']),
                 ));
             }
         }
@@ -148,14 +138,13 @@ if ($_POST['formaction'] == 'save' && $list_id) {
         if ($list_id == 'immunizations') {
             $ok_map_cvx_codes = isset($_POST['ok_map_cvx_codes']) ? $_POST['ok_map_cvx_codes'] : 0;
         }
-
+        // erase lists options and recreate them from the submitted form data
+        sqlStatement("DELETE FROM list_options WHERE list_id = '$list_id'");
         for ($lino = 1; isset($opt["$lino"]['id']); ++$lino) {
             $iter = $opt["$lino"];
-            $value = empty($iter['value']) ? 0 : (trim($iter['value']) + 0);
-            $id = trim($iter['id']);
-            $real_id = trim($iter['real_id']);
-
-            if (strlen($real_id) > 0 || strlen($id) > 0) {
+            $value = empty($iter['value']) ? 0 : (formTrim($iter['value']) + 0);
+            $id = formTrim($iter['id']);
+            if (strlen($id) > 0) {
                 // Special processing for the immunizations list
                 // Map the entered cvx codes into the immunizations table cvx_code
                 // Ensure the following conditions are met to do this:
@@ -175,54 +164,43 @@ if ($_POST['formaction'] == 'save' && $list_id) {
                     $ok_map_cvx_codes == 1
                 ) {
                     sqlStatement("UPDATE `immunizations` " .
-                        "SET `cvx_code`= ? " .
-                        "WHERE `immunization_id`= ? ", array($value, $id));
+                        "SET `cvx_code`='" . $value . "' " .
+                        "WHERE `immunization_id`='" . $id . "'");
                 }
 
                 // Force List Based Form names to start with LBF.
                 if ($list_id == 'lbfnames' && substr($id, 0, 3) != 'LBF') {
                     $id = "LBF$id";
-                    $real_id = "LBF$real_id";
                 }
 
                 // Force Transaction Form names to start with LBT.
                 if ($list_id == 'transactions' && substr($id, 0, 3) != 'LBT') {
                     $id = "LBT$id";
-                    $real_id = "LBT$real_id";
                 }
 
                 if ($list_id == 'apptstat' || $list_id == 'groupstat') {
-                    $notes = trim($iter['apptstat_color']) . '|' . trim($iter['apptstat_timealert']);
+                    $notes = formTrim($iter['apptstat_color']) . '|' . formTrim($iter['apptstat_timealert']);
                 } else {
-                    $notes = trim($iter['notes']);
-                }
-
-                // Delete the list item
-                sqlStatement("DELETE FROM list_options WHERE list_id = ? AND option_id = ?", array($list_id, $real_id));
-                if (strlen($id) <= 0 && strlen(trim($iter['title'])) <=0 && empty($id) && empty($iter['title'])) {
-                    continue;
+                    $notes = formTrim($iter['notes']);
                 }
                 // Insert the list item
-                sqlStatement(
-                    "INSERT INTO list_options ( " .
+                sqlInsert("INSERT INTO list_options ( " .
                     "list_id, option_id, title, seq, is_default, option_value, mapping, notes, codes, toggle_setting_1, toggle_setting_2, activity, subtype " .
-                    ") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    array(
-                        $list_id,
-                        $id,
-                        trim($iter['title']),
-                        trim($iter['seq']),
-                        trim($iter['default']),
-                        $value,
-                        trim($iter['mapping']),
-                        $notes,
-                        trim($iter['codes']),
-                        trim($iter['toggle_setting_1']),
-                        trim($iter['toggle_setting_2']),
-                        trim($iter['activity']),
-                        trim($iter['subtype'])
-                    )
-                );
+                    ") VALUES ( " .
+                    "'$list_id', " .
+                    "'" . $id . "', " .
+                    "'" . formTrim($iter['title']) . "', " .
+                    "'" . formTrim($iter['seq']) . "', " .
+                    "'" . formTrim($iter['default']) . "', " .
+                    "'" . $value . "', " .
+                    "'" . formTrim($iter['mapping']) . "', " .
+                    "'" . $notes . "', " .
+                    "'" . formTrim($iter['codes']) . "', " .
+                    "'" . formTrim($iter['toggle_setting_1']) . "', " .
+                    "'" . formTrim($iter['toggle_setting_2']) . "', " .
+                    "'" . formTrim($iter['activity']) . "', " .
+                    "'" . formTrim($iter['subtype']) . "'  " .
+                    ")");
             }
         }
     }
@@ -235,15 +213,15 @@ if ($_POST['formaction'] == 'save' && $list_id) {
     $row = sqlQuery("SELECT max(seq) AS maxseq FROM list_options WHERE list_id= 'lists'");
 
     // add the new list to the list-of-lists
-    sqlStatement("INSERT INTO list_options ( " .
+    sqlInsert("INSERT INTO list_options ( " .
         "list_id, option_id, title, seq, is_default, option_value " .
         ") VALUES ( 'lists', ?, ?, ?, '1', '0')", array($newlistID, $_POST['newlistname'], ($row['maxseq'] + 1)));
     $list_id = $newlistID;
 } elseif ($_POST['formaction'] == 'deletelist') {
     // delete the lists options
-    sqlStatement("DELETE FROM list_options WHERE list_id = ?", array($_POST['list_id']));
+    sqlStatement("DELETE FROM list_options WHERE list_id = '" . $_POST['list_id'] . "'");
     // delete the list from the master list-of-lists
-    sqlStatement("DELETE FROM list_options WHERE list_id = 'lists' AND option_id=?", array($_POST['list_id']));
+    sqlStatement("DELETE FROM list_options WHERE list_id = 'lists' AND option_id='" . $_POST['list_id'] . "'");
 }
 
 $opt_line_no = 0;
@@ -266,12 +244,12 @@ function getCodeDescriptions($codes)
         $selector = $arrcode[2];
         $desc = '';
         if ($code_type == 'PROD') {
-            $row = sqlQuery("SELECT name FROM drugs WHERE drug_id = ?", array($code));
+            $row = sqlQuery("SELECT name FROM drugs WHERE drug_id = '$code' ");
             $desc = "$code:$selector " . $row['name'];
         } else {
             $row = sqlQuery("SELECT code_text FROM codes WHERE " .
-                "code_type = ? AND " .
-                "code = ? ORDER BY modifier LIMIT 1", array($code_types[$code_type]['id'], $code ));
+                "code_type = '" . $code_types[$code_type]['id'] . "' AND " .
+                "code = '$code' ORDER BY modifier LIMIT 1");
             $desc = "$code_type:$code " . ucfirst(strtolower($row['code_text']));
         }
         $desc = str_replace('~', ' ', $desc);
@@ -311,57 +289,54 @@ function writeOptionLine(
     echo " <tr>\n";
 
     echo "  <td>";
-    //New line for hidden input, for update items
-    echo "<input type='hidden' name='opt[" . attr($opt_line_no) . "][real_id]' value='" .
-        attr($option_id) . "' size='12' maxlength='63' class='optin' />";
-    echo "<input type='text' name='opt[" . attr($opt_line_no) . "][id]' value='" .
-        attr($option_id) . "' size='12' maxlength='63' class='optin' />";
+    echo "<input type='text' name='opt[$opt_line_no][id]' value='" .
+        htmlspecialchars($option_id, ENT_QUOTES) . "' size='12' maxlength='63' class='optin' />";
     echo "</td>\n";
     echo "  <td>";
-    echo "<input type='text' name='opt[" . attr($opt_line_no) . "][title]' value='" .
-        attr($title) . "' size='20' maxlength='63' class='optin' />";
+    echo "<input type='text' name='opt[$opt_line_no][title]' value='" .
+        htmlspecialchars($title, ENT_QUOTES) . "' size='20' maxlength='63' class='optin' />";
     echo "</td>\n";
 
     // if not english and translating lists then show the translation
     if ($GLOBALS['translate_lists'] && $_SESSION['language_choice'] > 1) {
-        echo "  <td align='center' class='translation'>" . xlt($title) . "</td>\n";
+        echo "  <td align='center' class='translation'>" . (htmlspecialchars(xl($title), ENT_QUOTES)) . "</td>\n";
     }
     echo "  <td>";
-    echo "<input type='text' name='opt[" . attr($opt_line_no) . "][seq]' value='" .
-        attr($seq) . "' size='4' maxlength='10' class='optin' />";
+    echo "<input type='text' name='opt[$opt_line_no][seq]' value='" .
+        htmlspecialchars($seq, ENT_QUOTES) . "' size='4' maxlength='10' class='optin' />";
     echo "</td>\n";
 
     echo "  <td>";
-    echo "<input type='checkbox' name='opt[" . attr($opt_line_no) . "][default]' value='1' " .
-        "onclick='defClicked(" . attr($opt_line_no) . ")' class='optin'$checked />";
+    echo "<input type='checkbox' name='opt[$opt_line_no][default]' value='1' " .
+        "onclick='defClicked($opt_line_no)' class='optin'$checked />";
     echo "</td>\n";
 
     if (preg_match('/Eye_QP_/', $list_id)) {
         echo "  <td>";
-        echo "<select name='opt[" . attr($opt_line_no) . "][activity]' class='optin'>";
+        echo "<select name='opt[$opt_line_no][activity]' class='optin'>";
         foreach (array(
                      1 => xl('Replace'),
                      2 => xl('Append')
                  ) as $key => $desc) {
-            echo "<option value='" . attr($key) . "'";
+            echo "<option value='$key'";
             if ($key == $active) {
                 echo " selected";
             }
-            echo ">" . text($desc) . "</option>";
+            echo ">" . htmlspecialchars($desc) . "</option>";
         }
         echo "</select>";
         echo "</td>";
     } else {
         echo "  <td>";
-        echo "<input type='checkbox' name='opt[" . attr($opt_line_no) . "][activity]' value='1' " . " class='optin'$checked_active />";
+        echo "<input type='checkbox' name='opt[$opt_line_no][activity]' value='1' " . " class='optin'$checked_active />";
         echo "</td>\n";
     }
     // Tax rates, contraceptive methods and LBF names have an additional attribute.
     //
     if ($list_id == 'taxrate' || $list_id == 'contrameth' || $list_id == 'lbfnames' || $list_id == 'transactions') {
         echo "  <td>";
-        echo "<input type='text' name='opt[" . attr($opt_line_no) . "][value]' value='" .
-            attr($value) . "' size='8' maxlength='15' class='optin' />";
+        echo "<input type='text' name='opt[$opt_line_no][value]' value='" .
+            htmlspecialchars($value, ENT_QUOTES) . "' size='8' maxlength='15' class='optin' />";
         echo "</td>\n";
     } // Adjustment reasons use option_value as a reason category.  This is
     // needed to distinguish between adjustments that change the invoice
@@ -370,7 +345,7 @@ function writeOptionLine(
     //
     elseif ($list_id == 'adjreason') {
         echo "  <td>";
-        echo "<select name='opt[" . attr($opt_line_no) . "][value]' class='optin'>";
+        echo "<select name='opt[$opt_line_no][value]' class='optin'>";
         foreach (array(
                      1 => xl('Charge adjustment'),
                      2 => xl('Coinsurance'),
@@ -378,11 +353,11 @@ function writeOptionLine(
                      4 => xl('Other pt resp'),
                      5 => xl('Comment'),
                  ) as $key => $desc) {
-            echo "<option value='" . attr($key) . "'";
+            echo "<option value='$key'";
             if ($key == $value) {
                 echo " selected";
             }
-            echo ">" . text($desc) . "</option>";
+            echo ">" . htmlspecialchars($desc) . "</option>";
         }
         echo "</select>";
         echo "</td>\n";
@@ -391,17 +366,17 @@ function writeOptionLine(
     //
     elseif ($list_id == 'abook_type') {
         echo "  <td>";
-        echo "<select name='opt[" . attr($opt_line_no) . "][value]' class='optin'>";
+        echo "<select name='opt[$opt_line_no][value]' class='optin'>";
         foreach (array(
                      1 => xl('Unassigned'),
                      2 => xl('Person'),
                      3 => xl('Company'),
                  ) as $key => $desc) {
-            echo "<option value='" . attr($key) . "'";
+            echo "<option value='$key'";
             if ($key == $value) {
                 echo " selected";
             }
-            echo ">" . text($desc) . "</option>";
+            echo ">" . htmlspecialchars($desc) . "</option>";
         }
         echo "</select>";
         echo "</td>\n";
@@ -410,9 +385,9 @@ function writeOptionLine(
     //
     elseif ($list_id == 'immunizations') {
         echo "  <td>";
-        echo "<input type='text' size='10' name='opt[" . attr($opt_line_no) . "][value]' " .
-            "value='" . attr($value) . "' onclick='sel_cvxcode(this)' " .
-            "title='" . xla('Click to select or change CVX code') . "'/>";
+        echo "<input type='text' size='10' name='opt[$opt_line_no][value]' " .
+            "value='" . htmlspecialchars($value, ENT_QUOTES) . "' onclick='sel_cvxcode(this)' " .
+            "title='" . htmlspecialchars(xl('Click to select or change CVX code'), ENT_QUOTES) . "'/>";
         echo "</td>\n";
     }
 
@@ -421,40 +396,40 @@ function writeOptionLine(
     //
     if ($GLOBALS['ippf_specific'] || $list_id == 'fitness') {
         echo "  <td>";
-        echo "<input type='text' name='opt[" . attr($opt_line_no) . "][mapping]' value='" .
-            attr($mapping) . "' size='12' maxlength='15' class='optin' />";
+        echo "<input type='text' name='opt[$opt_line_no][mapping]' value='" .
+            htmlspecialchars($mapping, ENT_QUOTES) . "' size='12' maxlength='15' class='optin' />";
         echo "</td>\n";
     } elseif ($list_id == 'apptstat' || $list_id == 'groupstat') {
         list($apptstat_color, $apptstat_timealert) = explode("|", $notes);
         echo "  <td>";
-        echo "<input type='text' class='jscolor' name='opt[" . attr($opt_line_no) . "][apptstat_color]' value='" .
-            attr($apptstat_color) . "' size='6' maxlength='6' class='optin' />";
+        echo "<input type='text' class='jscolor' name='opt[$opt_line_no][apptstat_color]' value='" .
+            htmlspecialchars($apptstat_color, ENT_QUOTES) . "' size='6' maxlength='6' class='optin' />";
         echo "</td>\n";
         echo "  <td>";
-        echo "<input type='text' name='opt[" . attr($opt_line_no) . "][apptstat_timealert]' value='" .
-            attr($apptstat_timealert) . "' size='2' maxlength='2' class='optin' />";
+        echo "<input type='text' name='opt[$opt_line_no][apptstat_timealert]' value='" .
+            htmlspecialchars($apptstat_timealert, ENT_QUOTES) . "' size='2' maxlength='2' class='optin' />";
         echo "</td>\n";
     } else {
         echo "  <td>";
-        echo "<input type='text' name='opt[" . attr($opt_line_no) . "][notes]' value='" .
+        echo "<input type='text' name='opt[$opt_line_no][notes]' value='" .
             attr($notes) . "' size='25' maxlength='255' class='optin' ";
         echo "/>";
         echo "</td>\n";
     }
     if ($list_id == 'apptstat' || $list_id == 'groupstat') {
         echo "  <td>";
-        echo "<input type='checkbox' name='opt[" . attr($opt_line_no) ."][toggle_setting_1]' value='1' " .
-            "onclick='defClicked(" . attr($opt_line_no) . ")' class='optin'$checked_tog1 />";
+        echo "<input type='checkbox' name='opt[$opt_line_no][toggle_setting_1]' value='1' " .
+            "onclick='defClicked($opt_line_no)' class='optin'$checked_tog1 />";
         echo "</td>\n";
         echo "  <td>";
-        echo "<input type='checkbox' name='opt[" . attr($opt_line_no) ."][toggle_setting_2]' value='1' " .
-            "onclick='defClicked(" . attr($opt_line_no) . ")' class='optin'$checked_tog2 />";
+        echo "<input type='checkbox' name='opt[$opt_line_no][toggle_setting_2]' value='1' " .
+            "onclick='defClicked($opt_line_no)' class='optin'$checked_tog2 />";
         echo "</td>\n";
     }
     echo "  <td>";
-    echo "<input type='text' name='opt[" . attr($opt_line_no) . "][codes]' title='" .
+    echo "<input type='text' name='opt[$opt_line_no][codes]' title='" .
         xla('Clinical Term Code(s)') . "' value='" .
-        attr($codes) . "' onclick='select_clin_term_code(this)' size='25' maxlength='255' class='optin' />";
+        htmlspecialchars($codes, ENT_QUOTES) . "' onclick='select_clin_term_code(this)' size='25' maxlength='255' class='optin' />";
     echo "</td>\n";
 
     if (preg_match('/_issue_list$/', $list_id)) {
@@ -463,8 +438,8 @@ function writeOptionLine(
         echo "</td>\n";
     }
     if (preg_match('/Eye_QP_/', $list_id)) {
-        echo "<input type='hidden' name='opt[" . attr($opt_line_no) . "][subtype]' value='" . attr($subtype) . "' />";
-        echo "<input type='hidden' name='opt[" . attr($opt_line_no) . "][mapping]' value='" . attr($mapping) . "' />";
+        echo "<input type='hidden' name='opt[$opt_line_no][subtype]' value='" . htmlspecialchars($subtype, ENT_QUOTES) . "' />";
+        echo "<input type='hidden' name='opt[$opt_line_no][mapping]' value='" . htmlspecialchars($mapping, ENT_QUOTES) . "' />";
     }
     echo " </tr>\n";
 }
@@ -483,34 +458,34 @@ function writeFSLine($category, $option, $codes)
     echo " <tr>\n";
 
     echo "  <td>";
-    echo "<input type='text' name='opt[" . attr($opt_line_no) . "][category]' value='" .
-        attr($category) . "' size='20' maxlength='63' class='optin' />";
+    echo "<input type='text' name='opt[$opt_line_no][category]' value='" .
+        htmlspecialchars($category, ENT_QUOTES) . "' size='20' maxlength='63' class='optin' />";
     echo "</td>\n";
 
     echo "  <td>";
-    echo "<input type='text' name='opt[" . attr($opt_line_no) . "][option]' value='" .
-        attr($option) . "' size='20' maxlength='63' class='optin' />";
+    echo "<input type='text' name='opt[$opt_line_no][option]' value='" .
+        htmlspecialchars($option, ENT_QUOTES) . "' size='20' maxlength='63' class='optin' />";
     echo "</td>\n";
 
     echo "  <td align='left' class='optcell'>";
-    echo "   <div id='codelist_" . attr($opt_line_no) . "'>";
+    echo "   <div id='codelist_$opt_line_no'>";
     if (strlen($descs)) {
         $arrdescs = explode('~', $descs);
         $i = 0;
         foreach ($arrdescs as $desc) {
-            echo "<a href='' onclick='return delete_code(" . attr($opt_line_no) . ",$i)' title='" . xla('Delete') . "'>";
-            echo "[x]&nbsp;</a>" . text($desc) . "<br />";
+            echo "<a href='' onclick='return delete_code($opt_line_no,$i)' title='" . xl('Delete') . "'>";
+            echo "[x]&nbsp;</a>$desc<br />";
             ++$i;
         }
     }
     echo "</div>";
-    echo "<a href='' onclick='return select_code(" . attr($opt_line_no) . ")'>";
-    echo "[" . xlt('Add') . "]</a>";
+    echo "<a href='' onclick='return select_code($opt_line_no)'>";
+    echo "[" . xl('Add') . "]</a>";
 
-    echo "<input type='hidden' name='opt[" . attr($opt_line_no) . "][codes]' value='" .
-        attr($codes) . "' />";
-    echo "<input type='hidden' name='opt[" . attr($opt_line_no) . "][descs]' value='" .
-        attr($descs) . "' />";
+    echo "<input type='hidden' name='opt[$opt_line_no][codes]' value='" .
+        htmlspecialchars($codes, ENT_QUOTES) . "' />";
+    echo "<input type='hidden' name='opt[$opt_line_no][descs]' value='" .
+        htmlspecialchars($descs, ENT_QUOTES) . "' />";
     echo "</td>\n";
 
     echo " </tr>\n";
@@ -528,9 +503,9 @@ function ctGenCell($opt_line_no, $data_array, $name, $size, $maxlength, $title =
         $s .= " title='" . attr($title) . "'";
     }
     $s .= ">";
-    $s .= "<input type='text' name='opt[" . attr($opt_line_no) . "][" . attr($name) . "]' value='";
+    $s .= "<input type='text' name='opt[$opt_line_no][$name]' value='";
     $s .= attr($value);
-    $s .= "' size='" . attr($size) . "' maxlength='" . attr($maxlength) . "' class='optin' />";
+    $s .= "' size='$size' maxlength='$maxlength' class='optin' />";
     $s .= "</td>\n";
     return $s;
 }
@@ -543,7 +518,7 @@ function ctGenCbox($opt_line_no, $data_array, $name, $title = '')
         $s .= " title='" . attr($title) . "'";
     }
     $s .= ">";
-    $s .= "<input type='checkbox' name='opt[" . attr($opt_line_no) . "][" . attr($name) . "]' value='1' ";
+    $s .= "<input type='checkbox' name='opt[$opt_line_no][$name]' value='1' ";
     $s .= "$checked/>";
     $s .= "</td>\n";
     return $s;
@@ -553,7 +528,7 @@ function ctSelector($opt_line_no, $data_array, $name, $option_array, $title = ''
 {
     $value = isset($data_array[$name]) ? $data_array[$name] : '';
     $s = "  <td title='" . attr($title) . "'>";
-    $s .= "<select name='opt[" . attr($opt_line_no) . "][" . attr($name) . "]' class='optin'>";
+    $s .= "<select name='opt[$opt_line_no][$name]' class='optin'>";
     foreach ($option_array as $key => $desc) {
         $s .= "<option value='" . attr($key) . "'";
         if ($key == $value) {
@@ -739,7 +714,7 @@ function writeITLine($it_array)
     echo ctGenCBox($opt_line_no, $it_array, 'force_show', xl('Show this category on the patient summary screen even if no issues have been entered for this category.'));
 
     echo "<td>";
-    echo "<select name='opt[" . attr($opt_line_no) . "][aco_spec]' class='optin'>";
+    echo "<select name='opt[$opt_line_no][aco_spec]' class='optin'>";
     echo "<option value=''></option>";
     echo gen_aco_html_options($it_array['aco_spec']);
     echo "</select>";
@@ -753,7 +728,7 @@ function writeITLine($it_array)
 
 <head>
     <?php echo Header::setupHeader(['select2', 'jscolor']); ?>
-    <title><?php echo xlt('List Editor'); ?></title>
+    <title><?php xl('List Editor', 'e'); ?></title>
     <style>
         .optcell {
         }
@@ -771,10 +746,9 @@ function writeITLine($it_array)
         }
     </style>
     <script type="text/javascript">
-        $(function () {
+        $(document).ready(function () {
             $(".select-dropdown").select2({
-                theme: "bootstrap",
-                <?php require($GLOBALS['srcdir'] . '/js/xl/select2.js.php'); ?>
+                theme: "bootstrap"
             });
         });
 
@@ -806,7 +780,7 @@ function writeITLine($it_array)
             if (descs.length) {
                 var arrdescs = descs.split('~');
                 for (var i = 0; i < arrdescs.length; ++i) {
-                    s += "<a href='' onclick='return delete_code(" + lino + "," + i + ")' title='<?php echo xla('Delete'); ?>'>";
+                    s += "<a href='' onclick='return delete_code(" + lino + "," + i + ")' title='<?php xl('Delete', 'e'); ?>'>";
                     s += "[x]&nbsp;</a>" + arrdescs[i] + "<br />";
                 }
             }
@@ -866,7 +840,7 @@ function writeITLine($it_array)
         function select_clin_term_code(e) {
             current_sel_name = '';
             current_sel_clin_term = e.name;
-            dlgopen('../patient_file/encounter/find_code_dynamic.php?codetype=' + <?php echo js_url(collect_codetypes("clinical_term", "csv")); ?>, '_blank', 900, 600);
+            dlgopen('../patient_file/encounter/find_code_dynamic.php?codetype=<?php echo attr(collect_codetypes("clinical_term", "csv")); ?>', '_blank', 900, 600);
         }
 
         // This is for callback by the find-code popup.
@@ -951,7 +925,7 @@ function writeITLine($it_array)
             if (current_sel_clin_term) {
                 return f[current_sel_clin_term].value.split(';');
             }
-            return [];
+            return new Array();
         }
 
         // Called when a "default" checkbox is clicked.  Clears all the others.
@@ -972,11 +946,11 @@ function writeITLine($it_array)
                     for (var j = i + 1; f['opt[' + j + '][ct_key]'].value; ++j) {
                         var jkey = 'opt[' + j + ']';
                         if (f[ikey + '[ct_key]'].value == f[jkey + '[ct_key]'].value) {
-                            alert(<?php echo xlj('Error: duplicated name on line') ?> + ' ' + j);
+                            alert('<?php echo xl('Error: duplicated name on line') ?>' + ' ' + j);
                             return;
                         }
                         if (parseInt(f[ikey + '[ct_id]'].value) == parseInt(f[jkey + '[ct_id]'].value)) {
-                            alert(<?php echo xlj('Error: duplicated ID on line') ?> + ' ' + j);
+                            alert('<?php echo xl('Error: duplicated ID on line') ?>' + ' ' + j);
                             return;
                         }
                     }
@@ -990,7 +964,7 @@ function writeITLine($it_array)
                     for (var j = i+1; f['opt[' + j + '][id]']; ++j) {
                         var jkey = 'opt[' + j + '][id]';
                         if (f[ikey].value.toUpperCase() == f[jkey].value.toUpperCase()) {
-                            alert(<?php echo xlj('Error: duplicated ID') ?> + ': ' + f[jkey].value);
+                            alert('<?php echo xls('Error: duplicated ID') ?>' + ': ' + f[jkey].value);
                             f[jkey].scrollIntoView();
                             f[jkey].focus();
                             f[jkey].select();
@@ -1008,48 +982,37 @@ function writeITLine($it_array)
 
 <body class="body_top">
 <form method='post' name='theform' id='theform' action='edit_list.php'>
-    <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
-    <input type="hidden" id="list_from" name="list_from" value="<?php echo attr($list_from);?>"/>
-    <input type="hidden" id="list_to" name="list_to" value="<?php echo attr($list_to);?>"/>
-    <nav class="navbar navbar-default navbar-fixed-top">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed"
-                        data-toggle="collapse" data-target="#navbar-list"
-                        aria-expanded="false">
-                    <span class="sr-only"><?php echo xlt('Toggle navigation'); ?></span>
-                    <i class="fa fa-bars"></i>
-                </button>
-                <a class="navbar-brand"
-                   href="#"><?php echo xlt('Manage Lists'); ?></a>
-            </div>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed"
+                    data-toggle="collapse" data-target="#navbar-list"
+                    aria-expanded="false">
+                <span class="sr-only"><?php xl('Toggle navigation', 'e'); ?></span>
+                <i class="fa fa-bars"></i>
+            </button>
+            <a class="navbar-brand"
+               href="#"><?php xl('Manage Lists', 'e'); ?></a>
+        </div>
 
-            <!-- Collect the nav links, forms, and other content for toggling -->
-            <div class="collapse navbar-collapse" id="navbar-list">
-                <ul class="nav navbar-nav">
-                    <li><a href="#" data-toggle="modal"
-                           data-target="#modal-new-list"><i class="fa fa-plus"></i>&nbsp;<?php echo xlt('New List'); ?>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="deletelist" id="<?php echo attr($list_id); ?>">
-                            <i class="fa fa-trash"></i>&nbsp;<?php echo xlt('Delete List'); ?>
-                        </a>
-                    </li>
-                </ul>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="navbar-list">
+            <ul class="nav navbar-nav">
+                <li><a href="#" data-toggle="modal"
+                       data-target="#modal-new-list"><i class="fa fa-plus"></i>&nbsp;<?php xl('New List', 'e'); ?>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="deletelist" id="<?php echo $list_id; ?>">
+                        <i class="fa fa-trash"></i>&nbsp;<?php xl('Delete List', 'e'); ?>
+                    </a>
+                </li>
+            </ul>
                 <input type="hidden" name="formaction" id="formaction">
                 <div class="form-group navbar-left">
                     <select name='list_id' class="form-control select-dropdown"
                             id="list_id">
                         <?php
-                        /*
-                         * Keep proper list name (otherwise list name changes according to
-                         * the options shown on the screen).
-                         */
-                        $list_id_container = $_GET["list_id_container"];
-                        if (isset($_GET["list_id_container"]) && strlen($list_id_container) > 0) {
-                            $list_id = $list_id_container;
-                        }
 
                         // List order depends on language translation options.
                         $lang_id = empty($_SESSION['language_choice']) ? '1' : $_SESSION['language_choice'];
@@ -1066,9 +1029,9 @@ function writeITLine($it_array)
                                 "FROM list_options AS lo " .
                                 "LEFT JOIN lang_constants AS lc ON lc.constant_name = lo.title " .
                                 "LEFT JOIN lang_definitions AS ld ON ld.cons_id = lc.cons_id AND " .
-                                "ld.lang_id = ? " .
+                                "ld.lang_id = '$lang_id' " .
                                 "WHERE lo.list_id = 'lists' AND lo.edit_options = 1 " .
-                                "ORDER BY IF(LENGTH(ld.definition),ld.definition,lo.title), lo.seq", array($lang_id));
+                                "ORDER BY IF(LENGTH(ld.definition),ld.definition,lo.title), lo.seq");
                         }
 
                         while ($row = sqlFetchArray($res)) {
@@ -1080,57 +1043,17 @@ function writeITLine($it_array)
                             }
 
                             $key = $row['option_id'];
-                            echo "<option value='" . attr($key) . "'";
+                            echo "<option value='$key'";
                             if ($key == $list_id) {
                                 echo " selected";
                             }
-                            echo ">" . text($row['title']) . "</option>\n";
+                            echo ">" . $row['title'] . "</option>\n";
                         }
 
                         ?>
                     </select>
                 </div>
 
-                <!--Added filter-->
-                <script type="text/javascript">
-                    function lister() {
-                        var urlFull   = new URL($(location).attr('href'));
-                        var list_from = parseInt($("#list-from").val());
-                        var list_to   = parseInt($("#list-to").val());
-                        var list_id_container = $("#list_id").val();
-
-                        if( list_from > list_to ){
-                            alert(<?php echo xlj("Please enter a enter valid range"); ?>);
-                            return false;
-                        }
-                        if( list_from >= 0 ){
-                            urlFull.searchParams.delete("list_from");
-                            urlFull.searchParams.set("list_from",list_from);
-                        }
-
-                        if( list_to >= 0 ){
-                            urlFull.searchParams.delete("list_to");
-                            urlFull.searchParams.set("list_to",list_to);
-                        }
-                        if( list_id_container.length > 0 ){
-                            urlFull.searchParams.delete("list_id_container");
-                            urlFull.searchParams.set("list_id_container", list_id_container );
-                        }
-                        window.location.replace(urlFull);
-                    }
-                </script>
-                <?php
-                $urlFrom   = ($list_from > 0 ? $list_from : 1);
-                $urlTo     = ($list_to > 0 ? $list_to : $records_per_page);
-                ?>
-                <div class="blck-filter" style="display: none; float: left; margin-top: 5px; margin-left: 10px; border:0px solid red; width: auto; ">
-                    <div id="input-type-from" style="float: left; "><?php echo xlt("From"); ?>&nbsp;<input autocomplete="off" id="list-from" value="<?php echo attr($urlFrom);?>" style = "margin-right: 10px; width: 40px;">
-                        <?php echo xlt("To"); ?>&nbsp;<input autocomplete="off" id="list-to" value="<?php echo attr($urlTo); ?>" style=" margin-right: 10px; width: 40px;">
-                    </div>
-                    <div style="float:left" ><input type="button" value="<?php echo xla('Show records'); ?>" onclick="lister()"></div>
-                </div>
-                <!--Happy end-->
-                <div class="" id="total-record" style="float:left; margin-top: 8px; margin-left: 10px; margin-right: 10px;"></div>
         </div><!-- /.navbar-collapse -->
     </div>
 </nav>
@@ -1139,44 +1062,44 @@ function writeITLine($it_array)
     <thead>
     <tr>
         <?php if ($list_id == 'feesheet') : ?>
-            <td><b><?php echo xlt('Group'); ?></b></td>
-            <td><b><?php echo xlt('Option'); ?></b></td>
-            <td><b><?php echo xlt('Generates'); ?></b></td>
+            <td><b><?php xl('Group', 'e'); ?></b></td>
+            <td><b><?php xl('Option', 'e'); ?></b></td>
+            <td><b><?php xl('Generates', 'e'); ?></b></td>
         <?php elseif ($list_id == 'code_types') : ?>
-            <th><b><?php echo xlt('Active'); ?></b></th>
-            <th><b><?php echo xlt('Key'); ?></b></th>
-            <th><b><?php echo xlt('ID'); ?></b></th>
-            <th><b><?php echo xlt('Label'); ?></b></th>
+            <th><b><?php xl('Active', 'e'); ?></b></th>
+            <th><b><?php xl('Key', 'e'); ?></b></th>
+            <th><b><?php xl('ID', 'e'); ?></b></th>
+            <th><b><?php xl('Label', 'e'); ?></b></th>
             <?php //show translation column if not english and the translation lists flag is set
             if ($GLOBALS['translate_lists'] && $_SESSION['language_choice'] > 1) {
-                echo "<th><b>" . xlt('Translation') . "</b><span class='help' title='" . xla('The translated Title that will appear in current language') . "'> (?)</span></th>";
+                echo "<th><b>" . xl('Translation') . "</b><span class='help' title='" . xl('The translated Title that will appear in current language') . "'> (?)</span></th>";
             } ?>
-            <th><b><?php echo xlt('Seq'); ?></b></th>
-            <th><b><?php echo xlt('ModLength'); ?></b></th>
-            <th><b><?php echo xlt('Justify'); ?></b></th>
-            <th><b><?php echo xlt('Mask'); ?></b></th>
-            <th><b><?php echo xlt('Claims'); ?></b></th>
-            <th><b><?php echo xlt('Fees'); ?></b></th>
-            <th><b><?php echo xlt('Relations'); ?></b></th>
-            <th><b><?php echo xlt('Hide'); ?></b></th>
-            <th><b><?php echo xlt('Procedure'); ?></b></th>
-            <th><b><?php echo xlt('Diagnosis'); ?></b></th>
-            <th><b><?php echo xlt('Clinical Term'); ?></b></th>
-            <th><b><?php echo xlt('Medical Problem'); ?></b></th>
-            <th><b><?php echo xlt('Drug'); ?></b></th>
-            <th><b><?php echo xlt('External'); ?></b></th>
+            <th><b><?php xl('Seq', 'e'); ?></b></th>
+            <th><b><?php xl('ModLength', 'e'); ?></b></th>
+            <th><b><?php xl('Justify', 'e'); ?></b></th>
+            <th><b><?php xl('Mask', 'e'); ?></b></th>
+            <th><b><?php xl('Claims', 'e'); ?></b></th>
+            <th><b><?php xl('Fees', 'e'); ?></b></th>
+            <th><b><?php xl('Relations', 'e'); ?></b></th>
+            <th><b><?php xl('Hide', 'e'); ?></b></th>
+            <th><b><?php xl('Procedure', 'e'); ?></b></th>
+            <th><b><?php xl('Diagnosis', 'e'); ?></b></th>
+            <th><b><?php xl('Clinical Term', 'e'); ?></b></th>
+            <th><b><?php xl('Medical Problem', 'e'); ?></b></th>
+            <th><b><?php xl('Drug', 'e'); ?></b></th>
+            <th><b><?php xl('External', 'e'); ?></b></th>
         <?php elseif ($list_id == 'apptstat' || $list_id == 'groupstat') : ?>
-            <th><b><?php echo xlt('ID'); ?></b></th>
-            <th><b><?php echo xlt('Title'); ?></b></th>
-            <th><b><?php echo xlt('Order'); ?></b></th>
-            <th><b><?php echo xlt('Default'); ?></b></th>
-            <th><b><?php echo xlt('Active'); ?></b></th>
-            <th><b><?php echo xlt('Color'); ?></b></th>
-            <th><b><?php echo xlt('Alert Time'); ?></b></th>
-            <th><b><?php echo xlt('Check In'); ?>&nbsp;&nbsp;&nbsp;&nbsp;</b>
+            <th><b><?php xl('ID', 'e'); ?></b></th>
+            <th><b><?php xl('Title', 'e'); ?></b></th>
+            <th><b><?php xl('Order', 'e'); ?></b></th>
+            <th><b><?php xl('Default', 'e'); ?></b></th>
+            <th><b><?php xl('Active', 'e'); ?></b></th>
+            <th><b><?php xl('Color', 'e'); ?></b></th>
+            <th><b><?php xl('Alert Time', 'e'); ?></b></th>
+            <th><b><?php xl('Check In', 'e'); ?>&nbsp;&nbsp;&nbsp;&nbsp;</b>
             </th>
-            <th><b><?php echo xlt('Check Out'); ?></b></th>
-            <th><b><?php echo xlt('Code(s)'); ?></b></th>
+            <th><b><?php xl('Check Out', 'e'); ?></b></th>
+            <th><b><?php xl('Code(s)', 'e'); ?></b></th>
         <?php elseif ($list_id == 'issue_types') : ?>
             <th><b><?php echo xlt('OpenEMR Application Category'); ?></b></th>
             <th><b><?php echo xlt('Active'); ?></b></th>
@@ -1185,50 +1108,50 @@ function writeITLine($it_array)
             <th><b><?php echo xlt('Plural'); ?></b></th>
             <?php //show translation column if not english and the translation lists flag is set
             if ($GLOBALS['translate_lists'] && $_SESSION['language_choice'] > 1) {
-                echo "<th><b>" . xlt('Translation') . "</b><span class='help' title='" . xla('The translated Title that will appear in current language') . "'> (?)</span></th>";
+                echo "<th><b>" . xl('Translation') . "</b><span class='help' title='" . xl('The translated Title that will appear in current language') . "'> (?)</span></th>";
             } ?>
             <th><b><?php echo xlt('Singular'); ?></b></th>
             <?php //show translation column if not english and the translation lists flag is set
             if ($GLOBALS['translate_lists'] && $_SESSION['language_choice'] > 1) {
-                echo "<th><b>" . xlt('Translation') . "</b><span class='help' title='" . xla('The translated Title that will appear in current language') . "'> (?)</span></th>";
+                echo "<th><b>" . xl('Translation') . "</b><span class='help' title='" . xl('The translated Title that will appear in current language') . "'> (?)</span></th>";
             } ?>
             <th><b><?php echo xlt('Mini'); ?></b></th>
             <?php //show translation column if not english and the translation lists flag is set
             if ($GLOBALS['translate_lists'] && $_SESSION['language_choice'] > 1) {
-                echo "<th><b>" . xlt('Translation') . "</b><span class='help' title='" . xla('The translated Title that will appear in current language') . "'> (?)</span></th>";
+                echo "<th><b>" . xl('Translation') . "</b><span class='help' title='" . xl('The translated Title that will appear in current language') . "'> (?)</span></th>";
             } ?>
             <th><b><?php echo xlt('Style'); ?></b></th>
             <th><b><?php echo xlt('Force Show'); ?></b></th>
             <th><b><?php echo xlt('Access Control'); ?></b></th>
         <?php else : ?>
-            <th title='<?php echo xla('Click to edit'); ?>'>
-                <b><?php echo xlt('ID'); ?></b></th>
-            <th><b><?php echo xlt('Title'); ?></b></th>
+            <th title=<?php xl('Click to edit', 'e', '\'', '\''); ?>>
+                <b><?php xl('ID', 'e'); ?></b></th>
+            <th><b><?php xl('Title', 'e'); ?></b></th>
             <?php //show translation column if not english and the translation lists flag is set
             if ($GLOBALS['translate_lists'] && $_SESSION['language_choice'] > 1) {
-                echo "<th><b>" . xlt('Translation') . "</b><span class='help' title='" . xla('The translated Title that will appear in current language') . "'> (?)</span></th>";
+                echo "<th><b>" . xl('Translation') . "</b><span class='help' title='" . xl('The translated Title that will appear in current language') . "'> (?)</span></th>";
             } ?>
-            <th><b><?php echo xlt('Order'); ?></b></th>
-            <th><b><?php echo xlt('Default'); ?></b></th>
-            <th><b><?php echo xlt('Active'); ?></b></th>
+            <th><b><?php xl('Order', 'e'); ?></b></th>
+            <th><b><?php xl('Default', 'e'); ?></b></th>
+            <th><b><?php xl('Active', 'e'); ?></b></th>
             <?php if ($list_id == 'taxrate') { ?>
-                <th><b><?php echo xlt('Rate'); ?></b></th>
+                <th><b><?php xl('Rate', 'e'); ?></b></th>
             <?php } elseif ($list_id == 'contrameth') { ?>
-                <th><b><?php echo xlt('Effectiveness'); ?></b></th>
+                <th><b><?php xl('Effectiveness', 'e'); ?></b></th>
             <?php } elseif ($list_id == 'lbfnames' || $list_id == 'transactions') { ?>
-                <th title='<?php echo xla('Number of past history columns'); ?>'>
-                    <b><?php echo xlt('Repeats'); ?></b></th>
+                <th title='<?php xl('Number of past history columns', 'e'); ?>'>
+                    <b><?php xl('Repeats', 'e'); ?></b></th>
             <?php } elseif ($list_id == 'fitness') { ?>
-                <th><b><?php echo xlt('Color:Abbr'); ?></b></th>
+                <th><b><?php xl('Color:Abbr', 'e'); ?></b></th>
             <?php } elseif ($list_id == 'adjreason' || $list_id == 'abook_type') { ?>
-                <th><b><?php echo xlt('Type'); ?></b></th>
+                <th><b><?php xl('Type', 'e'); ?></b></th>
             <?php } elseif ($list_id == 'immunizations') { ?>
                 <th>
-                    <b>&nbsp;&nbsp;&nbsp;&nbsp;<?php echo xlt('CVX Code Mapping'); ?></b>
+                    <b>&nbsp;&nbsp;&nbsp;&nbsp;<?php xl('CVX Code Mapping', 'e'); ?></b>
                 </th>
             <?php }
 if ($GLOBALS['ippf_specific']) { ?>
-    <th><b><?php echo xlt('Global ID'); ?></b></th>
+                            <th><b><?php xl('Global ID', 'e'); ?></b></th>
 <?php } ?>
             <th><b><?php
             if ($list_id == 'language') {
@@ -1263,7 +1186,7 @@ if ($GLOBALS['ippf_specific']) { ?>
                 echo xlt('Notes');
             } ?></b></th>
 
-            <th><b><?php echo xlt('Code(s)'); ?></b></th>
+            <th><b><?php xl('Code(s)', 'e'); ?></b></th>
             <?php
             if (preg_match('/_issue_list$/', $list_id)) { ?>
                 <th><b><?php echo xlt('Subtype'); ?></b></th>
@@ -1276,21 +1199,9 @@ if ($GLOBALS['ippf_specific']) { ?>
     <?php
     // Get the selected list's elements.
     if ($list_id) {
-        $sql_limits = 'ASC LIMIT 0, '.escape_limit($records_per_page);
-        $total_rows = 0;
-        if ($list_from > 0) {
-            $list_from--;
-        }
-        if ($list_to > 0) {
-            $sql_limits = " ASC LIMIT " . escape_limit($list_from) . (intval($list_to) > 0 ? ", " . escape_limit($list_to - $list_from) : "");
-        }
-
         if ($list_id == 'feesheet') {
-            $res = sqlStatement("SELECT count(*) as total_rows FROM fee_sheet_options ORDER BY fs_category, fs_option");
-            $total_rows = sqlFetchArray($res)["total_rows"];
-
             $res = sqlStatement("SELECT * FROM fee_sheet_options " .
-                "ORDER BY fs_category, fs_option ".$sql_limits);
+                "ORDER BY fs_category, fs_option");
             while ($row = sqlFetchArray($res)) {
                 writeFSLine($row['fs_category'], $row['fs_option'], $row['fs_codes']);
             }
@@ -1298,11 +1209,8 @@ if ($GLOBALS['ippf_specific']) { ?>
                 writeFSLine('', '', '');
             }
         } elseif ($list_id == 'code_types') {
-            $res = sqlStatement("SELECT count(*) as total_rows FROM code_types ORDER BY ct_seq, ct_key");
-            $total_rows = sqlFetchArray($res)["total_rows"];
-
             $res = sqlStatement("SELECT * FROM code_types " .
-                "ORDER BY ct_seq, ct_key ".$sql_limits);
+                "ORDER BY ct_seq, ct_key");
             while ($row = sqlFetchArray($res)) {
                 writeCTLine($row);
             }
@@ -1310,11 +1218,8 @@ if ($GLOBALS['ippf_specific']) { ?>
                 writeCTLine(array());
             }
         } elseif ($list_id == 'issue_types') {
-            $res = sqlStatement("SELECT count(*) as total_rows FROM issue_types ORDER BY category, ordering");
-            $total_rows = sqlFetchArray($res)["total_rows"];
-
             $res = sqlStatement("SELECT * FROM issue_types " .
-                "ORDER BY category, ordering ".$sql_limits);
+                "ORDER BY category, ordering ASC");
             while ($row = sqlFetchArray($res)) {
                 writeITLine($row);
             }
@@ -1322,19 +1227,18 @@ if ($GLOBALS['ippf_specific']) { ?>
                 writeITLine(array());
             }
         } else {
-            $res = sqlStatement("SELECT count(*) as total_rows
-                         FROM list_options AS lo
-                         RIGHT JOIN list_options as lo2 on lo2.option_id = lo.list_id AND lo2.list_id = 'lists' AND lo2.edit_options = 1
-                         WHERE lo.list_id = ? AND lo.edit_options = 1", array($list_id));
-            $total_rows = sqlFetchArray($res)["total_rows"];
-
-
+            /*
+             *  Add edit options to show or hide in list management
+             *   If the edit_options setting of the main list entry is set to 0,
+             *    then none of the list items will show.
+             *   If the edit_options setting of the main list entry is set to 1,
+             *    then the list items with edit_options set to 1 will show.
+             */
             $res = sqlStatement("SELECT lo.*
-                         FROM list_options AS lo
-                         RIGHT JOIN list_options as lo2 on lo2.option_id = lo.list_id AND lo2.list_id = 'lists' AND lo2.edit_options = 1
-                         WHERE lo.list_id = ? AND lo.edit_options = 1
-                         ORDER BY seq,title ".$sql_limits, array($list_id));
-
+                         FROM list_options as lo
+                         right join list_options as lo2 on lo2.option_id = lo.list_id AND lo2.edit_options = 1
+                         WHERE lo.list_id = '{$list_id}' AND lo.edit_options = 1
+                         ORDER BY seq,title");
             while ($row = sqlFetchArray($res)) {
                 writeOptionLine(
                     $row['option_id'],
@@ -1369,7 +1273,7 @@ if ($GLOBALS['ippf_specific']) { ?>
 
 <p>
     <button type="submit" name='form_save' id='form_save'
-            class="btn btn-default btn-save"><?php echo xlt('Save'); ?></button>
+            class="btn btn-default btn-save"><?php xl('Save', 'e'); ?></button>
 </p>
 
 </form>
@@ -1378,18 +1282,17 @@ if ($GLOBALS['ippf_specific']) { ?>
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <form action="edit_list.php" method="post" class="form">
-                <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal"
-                            aria-label="<?php echo xla('Close'); ?>"><i
+                            aria-label="<?php echo xl('Close'); ?>"><i
                                 class="fa fa-times"
                                 aria-hidden="true"></i>
                     </button>
-                    <h4 class="modal-title"><?php echo xlt('New List'); ?></h4>
+                    <h4 class="modal-title"><?php xl('New List', 'e'); ?></h4>
                 </div>
                 <div class="modal-body">
                     <label for="newlistname"
-                           class="control-label"><?php echo xlt('List Name'); ?></label>
+                           class="control-label"><?php xl('List Name', 'e'); ?></label>
                     <input type="text" size="20" class="form-control"
                            maxlength="100" name="newlistname" id="newlistname">
                     <input type="hidden" name="formaction" value="addlist">
@@ -1397,9 +1300,9 @@ if ($GLOBALS['ippf_specific']) { ?>
                 </div>
                 <div class="modal-footer text-right">
                     <button type="submit"
-                            class="btn btn-default btn-save"><?php echo xlt('Save'); ?></button>
+                            class="btn btn-default btn-save"><?php xl('Save', 'e'); ?></button>
                     <button type="button" class="btn btn-link btn-cancel"
-                            data-dismiss="modal"><?php echo xlt('Cancel'); ?></button>
+                            data-dismiss="modal"><?php xl('Cancel', 'e'); ?></button>
                 </div>
             </form>
         </div><!-- /.modal-content -->
@@ -1410,14 +1313,11 @@ if ($GLOBALS['ippf_specific']) { ?>
 <script type="text/javascript">
     // jQuery stuff to make the page a little easier to use
 
-    $(function () {
+    $(document).ready(function () {
         $("#form_save").click(function () {
             SaveChanges();
         });
         $("#list_id").change(function () {
-            $("#list_from").val(1);
-            $("#list_to").val('');
-
             $('#theform').submit();
         });
 
@@ -1429,29 +1329,6 @@ if ($GLOBALS['ippf_specific']) { ?>
         });
         $(".deletelist").click(function () {
             DeleteList(this);
-        });
-
-        var totalRecords = '<?php echo attr($res->_numOfRows);?>';
-        var totalRecordDiv = $('#total-record');
-        if( totalRecordDiv ){
-            totalRecordDiv.text("<?php echo xlt("Showing items"); ?>: <?php echo ( $list_to > 0 ? attr($list_from+1). " - ".attr($list_to) : attr($res->_numOfRows) );?> of <?php echo attr($total_rows);?>");
-        }
-
-        var urlFull    = new URL($(location).attr('href'));
-        var listIdCont = urlFull.searchParams.get('list_id_container');
-
-        if( totalRecords >= <?php echo attr($records_per_page);?> || listIdCont != null || $("#list_to").val() > 0) {
-            $(".blck-filter").show();
-        }
-
-        //prevent Enter button press on filter
-        $('.blck-filter').on('keyup keypress', function(e)
-        {
-            var keyCode = e.keyCode || e.which;
-            if(keyCode == 13)
-            {
-                return false;
-            }
         });
 
         var SaveChanges = function () {
@@ -1473,12 +1350,12 @@ if ($GLOBALS['ippf_specific']) { ?>
             // the list name can only have letters, numbers, spaces and underscores
             // AND it cannot start with a number
             if ($("#newlistname").val().match(/^\d+/)) {
-                alert(<?php echo xlj('List names cannot start with numbers.'); ?>);
+                alert("<?php xl('List names cannot start with numbers.', 'e'); ?>");
                 return false;
             }
             var validname = $("#newlistname").val().replace(/[^A-za-z0-9 -]/g, "_"); // match any non-word characters and replace them
             if (validname != $("#newlistname").val()) {
-                if (!confirm(<?php echo xlj('Your list name has been changed to meet naming requirements.'); ?> + '\n' + <?php echo xlj('Please compare the new name'); ?> + ', \'' + validname + '\' ' + <?php echo xlj('with the old name'); ?> + ', \'' + $("#newlistname").val() + '\'.\n' + <?php echo xlj('Do you wish to continue with the new name?'); ?>)) {
+                if (!confirm("<?php xl('Your list name has been changed to meet naming requirements.', 'e', '', '\n') . xl('Please compare the new name', 'e', '', ', \''); ?>" + validname + "<?php xl('with the old name', 'e', '\' ', ', \''); ?>" + $("#newlistname").val() + "<?php xl('Do you wish to continue with the new name?', 'e', '\'.\n', ''); ?>")) {
                     return false;
                 }
             }
@@ -1491,7 +1368,7 @@ if ($GLOBALS['ippf_specific']) { ?>
         // actually delete an entire list from the database
         var DeleteList = function (btnObj) {
             var listid = $(btnObj).attr("id");
-            if (confirm(<?php echo xlj('WARNING'); ?> + ' - ' + <?php echo xlj('This action cannot be undone.'); ?> + '\n' + <?php echo xlj('Are you sure you wish to delete the entire list'); ?> + '(' + listid + ")?")) {
+            if (confirm("<?php xl('WARNING', 'e', '', ' - ') . xl('This action cannot be undone.', 'e', '', '\n') . xl('Are you sure you wish to delete the entire list', 'e', ' ', '('); ?>" + listid + ")?")) {
                 // submit the form to add a new field to a specific group
                 $("#formaction").val("deletelist");
                 $("#deletelistname").val(listid);

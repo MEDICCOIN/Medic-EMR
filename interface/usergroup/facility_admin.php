@@ -1,15 +1,4 @@
 <?php
-/**
- * facility_admin.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
-
 require_once("../globals.php");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/erx_javascript.inc.php");
@@ -21,6 +10,21 @@ $facilityService = new FacilityService();
 
 if (isset($_GET["fid"])) {
     $my_fid = $_GET["fid"];
+}
+
+if (isset($_POST["fid"])) {
+    $my_fid = $_POST["fid"];
+}
+
+if (isset($_POST["mode"]) && $_POST["mode"] == "facility") {
+    echo '
+<script type="text/javascript">
+<!--
+dlgclose();
+//-->
+</script>
+
+	';
 }
 ?>
 <html>
@@ -42,7 +46,7 @@ if (isset($_GET["fid"])) {
     if (empty($collectthis)) {
         $collectthis = "undefined";
     } else {
-        $collectthis = json_sanitize($collectthis["facility-form"]["rules"]);
+        $collectthis = $collectthis["facility-form"]["rules"];
     }
     ?>
 
@@ -52,7 +56,7 @@ if (isset($_GET["fid"])) {
          * validation on the form with new client side validation (using validate.js).
          * this enable to add new rules for this form in the pageValidation list.
          * */
-        var collectvalidation = <?php echo $collectthis; ?>;
+        var collectvalidation = <?php echo($collectthis); ?>;
 
         function submitform() {
 
@@ -103,7 +107,7 @@ if (isset($_GET["fid"])) {
             return false;
         }
 
-        $(function(){
+        $(document).ready(function(){
             $("#cancel").click(function() {
                 dlgclose();
             });
@@ -131,9 +135,9 @@ if (isset($_GET["fid"])) {
         function displayAlert()
         {
             if(document.getElementById('primary_business_entity').checked==false)
-                alert(<?php echo xlj('Primary Business Entity tax id is used as the account id for NewCrop ePrescription.'); ?>);
+                alert("<?php echo addslashes(xl('Primary Business Entity tax id is used as the account id for NewCrop ePrescription.'));?>");
             else if(document.getElementById('primary_business_entity').checked==true)
-                alert(<?php echo xlj('Once the Primary Business Facility is set, changing the facility id will affect NewCrop ePrescription.'); ?>);
+                alert("<?php echo addslashes(xl('Once the Primary Business Facility is set, changing the facility id will affect NewCrop ePrescription.'));?>");
         }
     </script>
 
@@ -143,41 +147,40 @@ if (isset($_GET["fid"])) {
 <table>
     <tr>
         <td>
-            <span class="title"><?php echo xlt('Edit Facility'); ?></span>&nbsp;&nbsp;&nbsp;</td><td>
+            <span class="title"><?php xl('Edit Facility', 'e'); ?></span>&nbsp;&nbsp;&nbsp;</td><td>
             <a class="css_button large_button" name='form_save' id='form_save' onclick='submitform()' href='#' >
-                <span class='css_button_span large_button_span'><?php echo xlt('Save');?></span>
+                <span class='css_button_span large_button_span'><?php xl('Save', 'e');?></span>
             </a>
             <a class="css_button large_button" id='cancel' href='#'>
-                <span class='css_button_span large_button_span'><?php echo xlt('Cancel');?></span>
+                <span class='css_button_span large_button_span'><?php xl('Cancel', 'e');?></span>
             </a>
         </td>
     </tr>
 </table>
 
 <form name='facility-form' id="facility-form" method='post' action="facilities.php">
-    <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
     <input type=hidden name=mode value="facility">
     <input type=hidden name=newmode value="admin_facility"> <!--    Diffrentiate Admin and add post backs -->
-    <input type=hidden name=fid value="<?php echo attr($my_fid); ?>">
+    <input type=hidden name=fid value="<?php echo $my_fid;?>">
     <?php $facility = $facilityService->getById($my_fid); ?>
 
     <table border=0 cellpadding=0 cellspacing=1 style="width:630px;">
         <tr>
-            <td width='150px'><span class='text'><?php echo xlt('Name'); ?>: </span></td>
-            <td width='220px'><input type='entry' name='facility' size='20' value='<?php echo attr($facility['name']); ?>'></td>
-            <td width='200px'><span class='text'><?php echo xlt('Phone'); ?> <?php echo xlt('as'); ?> (000) 000-0000:</span></td>
-            <td width='220px'><input type='entry' name='phone' size='20' value='<?php echo attr($facility['phone']); ?>'></td>
+            <td width='150px'><span class='text'><?php xl('Name', 'e'); ?>: </span></td>
+            <td width='220px'><input type='entry' name='facility' size='20' value='<?php echo htmlspecialchars($facility['name'], ENT_QUOTES) ?>'></td>
+            <td width='200px'><span class='text'><?php xl('Phone', 'e'); ?> <?php xl('as', 'e'); ?> (000) 000-0000:</span></td>
+            <td width='220px'><input type='entry' name='phone' size='20' value='<?php echo htmlspecialchars($facility['phone'], ENT_QUOTES) ?>'></td>
         </tr>
         <tr>
-            <td><span class=text><?php echo xlt('Address'); ?>: </span></td><td><input type=entry size=20 name="street" value="<?php echo attr($facility["street"]); ?>"></td>
-            <td><span class='text'><?php echo xlt('Fax'); ?> <?php echo xlt('as'); ?> (000) 000-0000:</span></td>
-            <td><input type='entry' name="fax" size='20' value='<?php echo attr($facility['fax']); ?>'></td>
+            <td><span class=text><?php xl('Address', 'e'); ?>: </span></td><td><input type=entry size=20 name=street value="<?php echo htmlspecialchars($facility["street"], ENT_QUOTES) ?>"></td>
+            <td><span class='text'><?php xl('Fax', 'e'); ?> <?php xl('as', 'e'); ?> (000) 000-0000:</span></td>
+            <td><input type='entry' name='fax' size='20' value='<?php echo htmlspecialchars($facility['fax'], ENT_QUOTES) ?>'></td>
         </tr>
         <tr>
 
-            <td><span class=text><?php echo xlt('City'); ?>: </span></td>
-            <td><input type=entry size=20 name=city value="<?php echo attr($facility["city"]); ?>"></td>
-            <td><span class=text><?php echo xlt('Zip Code'); ?>: </span></td><td><input type=entry size=20 name=postal_code value="<?php echo attr($facility["postal_code"]); ?>"></td>
+            <td><span class=text><?php xl('City', 'e'); ?>: </span></td>
+            <td><input type=entry size=20 name=city value="<?php echo htmlspecialchars($facility["city"], ENT_QUOTES) ?>"></td>
+            <td><span class=text><?php xl('Zip Code', 'e'); ?>: </span></td><td><input type=entry size=20 name=postal_code value="<?php echo htmlspecialchars($facility["postal_code"], ENT_QUOTES) ?>"></td>
         </tr>
         <?php
         $ssn='';
@@ -189,34 +192,40 @@ if (isset($_GET["fid"])) {
         }
         ?>
         <tr>
-            <td><span class=text><?php echo xlt('State'); ?>: </span></td><td><input type=entry size=20 name=state value="<?php echo attr($facility["state"]); ?>"></td>
-            <td><span class=text><?php echo xlt('Tax ID'); ?>: </span></td><td><select name=tax_id_type><option value="EI" <?php echo $ein;?>><?php echo xlt('EIN'); ?></option><option value="SY" <?php echo $ssn;?>><?php echo xlt('SSN'); ?></option></select><input type=entry size=11 name=federal_ein value="<?php echo attr($facility["federal_ein"]); ?>"></td>
+            <td><span class=text><?php xl('State', 'e'); ?>: </span></td><td><input type=entry size=20 name=state value="<?php echo htmlspecialchars($facility["state"], ENT_QUOTES) ?>"></td>
+            <td><span class=text><?php xl('Tax ID', 'e'); ?>: </span></td><td><select name=tax_id_type><option value="EI" <?php echo $ein;?>><?php xl('EIN', 'e'); ?></option><option value="SY" <?php echo $ssn;?>><?php xl('SSN', 'e'); ?></option></select><input type=entry size=11 name=federal_ein value="<?php echo htmlspecialchars($facility["federal_ein"], ENT_QUOTES) ?>"></td>
         </tr>
         <tr>
-            <td><span class=text><?php echo xlt('Country'); ?>: </span></td><td><input type=entry size=20 name=country_code value="<?php echo attr($facility["country_code"]); ?>"></td>
-            <td width="21"><span class=text><?php echo ($GLOBALS['simplified_demographics'] ? xlt('Facility Code') : xlt('Facility NPI')); ?>:
-          </span></td><td><input type=entry size=20 name=facility_npi value="<?php echo attr($facility["facility_npi"]); ?>"></td>
+            <td><span class=text><?php xl('Country', 'e'); ?>: </span></td><td><input type=entry size=20 name=country_code value="<?php echo htmlspecialchars($facility["country_code"], ENT_QUOTES) ?>"></td>
+            <td width="21"><span class=text><?php ($GLOBALS['simplified_demographics'] ? xl('Facility Code', 'e') : xl('Facility NPI', 'e')); ?>:
+          </span></td><td><input type=entry size=20 name=facility_npi value="<?php echo htmlspecialchars($facility["facility_npi"], ENT_QUOTES) ?>"></td>
         </tr>
         <tr>
-            <td>&nbsp;</td><td>&nbsp;</td><td><span class=text><?php echo xlt('Facility Taxonomy'); ?>:</span></td>
-            <td><input type=entry size=20 name=facility_taxonomy value="<?php echo attr($facility["facility_taxonomy"]); ?>"></td>
-        </tr>
-
-
-        <tr>
-        <td><span class=text><?php echo xlt('Website'); ?>: </span></td><td><input type=entry size=20 name=website value="<?php echo attr($facility["website"]); ?>"></td>
-            <td><span class=text><?php echo xlt('Email'); ?>: </span></td><td><input type=entry size=20 name=email value="<?php echo attr($facility["email"]); ?>"></td>
+            <td>&nbsp;</td><td>&nbsp;</td><td><span class=text><?php (xl('Facility Taxonomy', 'e')); ?>:</span></td>
+            <td><input type=entry size=20 name=facility_taxonomy value="<?php echo htmlspecialchars($facility["facility_taxonomy"], ENT_QUOTES) ?>"></td>
         </tr>
 
+
         <tr>
-            <td><span class='text'><?php echo xlt('Billing Location'); ?>: </span></td>
-            <td><input type='checkbox' name='billing_location' value='1' <?php echo ($facility['billing_location'] != 0) ? 'checked' : ''; ?>></td>
-            <td rowspan='2'><span class='text'><?php echo xlt('Accepts Assignment'); ?><br>(<?php echo xlt('only if billing location'); ?>): </span></td>
-            <td><input type='checkbox' name='accepts_assignment' value='1' <?php echo ($facility['accepts_assignment'] == 1) ? 'checked' : ''; ?>></td>
+        <td><span class=text><?php xl('Website', 'e'); ?>: </span></td><td><input type=entry size=20 name=website value="<?php echo htmlspecialchars($facility["website"], ENT_QUOTES) ?>"></td>
+            <td><span class=text><?php xl('Email', 'e'); ?>: </span></td><td><input type=entry size=20 name=email value="<?php echo htmlspecialchars($facility["email"], ENT_QUOTES) ?>"></td>
+        </tr>
+
+        <tr>
+            <td><span class='text'><?php xl('Billing Location', 'e'); ?>: </span></td>
+            <td><input type='checkbox' name='billing_location' value='1' <?php if ($facility['billing_location'] != 0) {
+                echo 'checked';
+} ?>></td>
+            <td rowspan='2'><span class='text'><?php xl('Accepts Assignment', 'e'); ?><br>(<?php xl('only if billing location', 'e'); ?>): </span></td>
+            <td><input type='checkbox' name='accepts_assignment' value='1' <?php if ($facility['accepts_assignment'] == 1) {
+                echo 'checked';
+} ?>></td>
         </tr>
         <tr>
-            <td><span class='text'><?php echo xlt('Service Location'); ?>: </span></td>
-            <td><input type='checkbox' name='service_location' value='1' <?php echo ($facility['service_location'] == 1) ? 'checked' : ''; ?>></td>
+            <td><span class='text'><?php xl('Service Location', 'e'); ?>: </span></td>
+            <td><input type='checkbox' name='service_location' value='1' <?php if ($facility['service_location'] == 1) {
+                echo 'checked';
+} ?>></td>
             <td>&nbsp;</td>
         </tr>
         <?php
@@ -227,31 +236,32 @@ if (isset($_GET["fid"])) {
         }
         ?>
         <tr>
-            <td><span class='text'><?php echo xlt('Primary Business Entity'); ?>: </span></td>
-            <td><input type='checkbox' name='primary_business_entity' id='primary_business_entity' value='1' <?php echo ($facility['primary_business_entity'] == 1) ? 'checked' : ''; ?>
-                <?php if ($GLOBALS['erx_enable']) { ?>
-                    onchange='return displayAlert()'
-                <?php } ?> <?php echo $disabled;?>></td>
+            <td><span class='text'><?php xl('Primary Business Entity', 'e'); ?>: </span></td>
+            <td><input type='checkbox' name='primary_business_entity' id='primary_business_entity' value='1' <?php if ($facility['primary_business_entity'] == 1) {
+                echo 'checked';
+} ?> <?php if ($GLOBALS['erx_enable']) {
+                ?> onchange='return displayAlert()' <?php
+} ?> <?php echo $disabled;?>></td>
             <td>&nbsp;</td>
         </tr>
         <tr>
-            <td><span class='text'><?php echo xlt('Color'); ?>: </span></td> <td><input type=entry name=ncolor id=ncolor size=20 value="<?php echo attr($facility["color"]); ?>"></td>
-            <td>[<a href="javascript:void(0);" onClick="pick('pick','newcolor');return false;" NAME="pick" ID="pick"><?php echo xlt('Pick'); ?></a>]</td><td>&nbsp;</td>
+            <td><span class='text'><?php echo htmlspecialchars(xl('Color'), ENT_QUOTES); ?>: </span></td> <td><input type=entry name=ncolor id=ncolor size=20 value="<?php echo htmlspecialchars($facility["color"], ENT_QUOTES) ?>"></td>
+            <td>[<a href="javascript:void(0);" onClick="pick('pick','newcolor');return false;" NAME="pick" ID="pick"><?php  echo htmlspecialchars(xl('Pick'), ENT_QUOTES); ?></a>]</td><td>&nbsp;</td>
 
         <tr>
-            <td><span class=text><?php echo xlt('POS Code'); ?>: </span></td>
+            <td><span class=text><?php xl('POS Code', 'e'); ?>: </span></td>
             <td colspan="6">
                 <select name="pos_code">
                     <?php
                     $pc = new POSRef();
 
                     foreach ($pc->get_pos_ref() as $pos) {
-                        echo "<option value=\"" . attr($pos["code"]) . "\" ";
+                        echo "<option value=\"" . $pos["code"] . "\" ";
                         if ($facility['pos_code'] == $pos['code']) {
                             echo "selected";
                         }
 
-                        echo ">" . text($pos['code'])  . ": ". text($pos['title']);
+                        echo ">" . $pos['code']  . ": ". text($pos['title']);
                         echo "</option>\n";
                     }
 
@@ -260,75 +270,21 @@ if (isset($_GET["fid"])) {
             </td>
         </tr>
         <tr>
-            <td><span class="text"><?php echo xlt('Billing Attn'); ?>:</span></td>
-            <td colspan="4"><input type="entry" name="attn" size="45" value="<?php echo attr($facility['attn']); ?>"></td>
+            <td><span class="text"><?php xl('Billing Attn', 'e'); ?>:</span></td>
+            <td colspan="4"><input type="text" name="attn" size="45" value="<?php echo htmlspecialchars($facility['attn'], ENT_QUOTES) ?>"></td>
         </tr>
         <tr>
-            <td><span class="text"><?php echo xlt('CLIA Number'); ?>:</span></td>
-            <td colspan="4"><input type="entry" name="domain_identifier" size="45" value="<?php echo attr($facility['domain_identifier']); ?>"></td>
+            <td><span class="text"><?php xl('CLIA Number', 'e'); ?>:</span></td>
+            <td colspan="4"><input type="text" name="domain_identifier" size="45" value="<?php echo htmlspecialchars($facility['domain_identifier'], ENT_QUOTES) ?>"></td>
         </tr>
         <tr>
-            <td><span class="text"><?php echo xlt('Facility ID'); ?>:</span></td>
-            <td colspan="4"><input type="entry" name="facility_id" size="45" value="<?php echo attr($facility['facility_code']); ?>"></td>
-        </tr>
-        <tr>
-            <td>
-                <span class="text"><?php echo xlt('OID'); ?>: </span>
-            </td>
-            <td>
-                <input type="entry" size="20" name="oid" value="<?php echo attr($facility["oid"]) ?>">
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <hr>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <label><?php echo xlt('Mailing Address'); ?>: </label>
-            </td>
-            <td>
-                <input type="entry" size="20" name="mail_street" value="<?php echo attr($facility["mail_street"]) ?>">
-            </td>
-        </tr>
-
-        <tr>
-            <td>
-                <label><?php echo xlt('Suite'); ?>: </label>
-            </td>
-            <td>
-                <input type="entry" size="20" name="mail_street2" value="<?php echo attr($facility["mail_street2"]) ?>">
-            </td>
-        </tr>
-
-        <tr>
-            <td>
-                <label><?php echo xlt('City'); ?>: </label>
-            </td>
-            <td>
-                <input type="entry" size="20" name="mail_city" value="<?php echo attr($facility["mail_city"]) ?>">
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <label><?php echo xlt('State'); ?>: </label>
-            </td>
-            <td>
-                <input type="entry" size="20" name="mail_state" value="<?php echo attr($facility["mail_state"]) ?>">
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <label><?php echo xlt('Zip'); ?>: </label>
-            </td>
-            <td>
-                <input type="entry" size="20" name="mail_zip" value="<?php echo attr($facility["mail_zip"]) ?>">
-            </td>
+            <td><span class="text"><?php xl('Facility ID', 'e'); ?>:</span></td>
+            <td colspan="4"><input type="text" name="facility_id" size="45" value="<?php echo htmlspecialchars($facility['facility_code'], ENT_QUOTES) ?>"></td>
         </tr>
         <tr height="20" valign="bottom">
-            <td colspan=2><span class="text"><font class="mandatory">*</font> <?php echo xlt('Required'); ?></span></td>
+            <td colspan=2><span class="text"><font class="mandatory">*</font> <?php echo xl('Required', 'e');?></span></td>
         </tr>
+
     </table>
 </form>
 

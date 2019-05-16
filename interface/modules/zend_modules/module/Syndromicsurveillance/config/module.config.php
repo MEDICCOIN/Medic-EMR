@@ -1,23 +1,9 @@
 <?php
-namespace Syndromicsurveillance;
-
-use Interop\Container\ContainerInterface;
-use Zend\ServiceManager\Factory\InvokableFactory;
-use Zend\Router\Http\Segment;
-use Zend\Db\ResultSet\ResultSet;
-use Zend\Db\TableGateway\TableGateway;
-use Syndromicsurveillance\Controller\SyndromicsurveillanceController;
-use Syndromicsurveillance\Model\Syndromicsurveillance;
-use Syndromicsurveillance\Model\SyndromicsurveillanceTable;
-
 return array(
     'controllers' => array(
-        'factories' => [
-            SyndromicsurveillanceController::class => function (ContainerInterface $container, $requestedName) {
-                return new SyndromicsurveillanceController($container->get(SyndromicsurveillanceTable::class));
-            },
-            PdfTemplatesController::class => InvokableFactory::class,
-        ]
+        'invokables' => array(
+            'Syndromicsurveillance'    => 'Syndromicsurveillance\Controller\SyndromicsurveillanceController',
+        ),
     ),
 
     'router' => array(
@@ -31,7 +17,7 @@ return array(
                         'id'     => '[0-9]+',
                     ),
                     'defaults' => array(
-                        'controller' => SyndromicsurveillanceController::class,
+                        'controller' => 'Syndromicsurveillance',
                         'action'     => 'index',
                     ),
                 ),
@@ -51,16 +37,4 @@ return array(
             'ViewFeedStrategy',
         ),
     ),
-    'service_manager' => [
-        'factories' => array(
-            SyndromicsurveillanceTable::class =>  function (ContainerInterface $container, $requestedName) {
-                $dbAdapter = $container->get(\Zend\Db\Adapter\Adapter::class);
-                $resultSetPrototype = new ResultSet();
-                $resultSetPrototype->setArrayObjectPrototype(new Syndromicsurveillance());
-                $tableGateway = new TableGateway('module_menu', $dbAdapter, null, $resultSetPrototype);
-                $table = new SyndromicsurveillanceTable($tableGateway);
-                return $table;
-            }
-        ),
-    ]
 );

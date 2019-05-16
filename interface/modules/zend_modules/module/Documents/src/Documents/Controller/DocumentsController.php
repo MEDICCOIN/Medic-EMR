@@ -23,12 +23,10 @@
 
 namespace Documents\Controller;
 
-use OpenEMR\Common\Crypto\CryptoGen;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 use Zend\View\Model\JsonModel;
 use Application\Listener\Listener;
-use Documents\Model\DocumentsTable;
 use Document;
 
 class DocumentsController extends AbstractActionController
@@ -36,14 +34,18 @@ class DocumentsController extends AbstractActionController
     protected $documentsTable;
     protected $listenerObject;
 
-    public function __construct(DocumentsTable $table)
+    public function __construct()
     {
         $this->listenerObject = new Listener;
-        $this->documentsTable = $table;
     }
 
     public function getDocumentsTable()
     {
+        if (!$this->documentsTable) {
+            $sm = $this->getServiceLocator();
+            $this ->documentsTable = $sm->get('Documents\Model\DocumentsTable');
+        }
+
         return $this->documentsTable;
     }
 
@@ -87,22 +89,17 @@ class DocumentsController extends AbstractActionController
                 $tmpfile    = fopen($file['tmp_name'], "r");
                 $filetext   = fread($tmpfile, $file['size']);
 
-                // Decrypt Encrypted File
+                // Decrypt Encryped Files
                 if ($encrypted_file == '1') {
-                    $cryptoGen = new CryptoGen();
-                    $plaintext  = $cryptoGen->decryptStandard($filetext, $encryption_key);
-                    if ($plaintext === false) {
-                        error_log("OpenEMR Error: Unable to decrypt a document since decryption failed.");
-                        $plaintext = "";
-                    }
-                    fclose($tmpfile);
-                    unlink($file['tmp_name']);
+                        $plaintext  = \Documents\Plugin\Documents::decrypt($filetext, $encryption_key);
+                        fclose($tmpfile);
+                        unlink($file['tmp_name']);
 
-                    // Write new file contents
-                    $tmpfile = fopen($file['tmp_name'], "w+");
-                    fwrite($tmpfile, $plaintext);
-                    fclose($tmpfile);
-                    $file['size'] = filesize($file['tmp_name']);
+                        // Write new file contents
+                        $tmpfile = fopen($file['tmp_name'], "w+");
+                        fwrite($tmpfile, $plaintext);
+                        fclose($tmpfile);
+                        $file['size'] = filesize($file['tmp_name']);
                 }
 
                 $ob     = new \Document();
@@ -138,8 +135,7 @@ class DocumentsController extends AbstractActionController
         $skip_headers   = false;
         $contentType    = $result['mimetype'];
 
-        // @see Documents/Plugin/Documents
-        $document       = $this->Documents()->getDocument($documentId, $doEncryption, $encryptionKey);
+        $document       = \Documents\Plugin\Documents::getDocument($documentId, $doEncryption, $encryptionKey);
         $categoryIds    = $this->getDocumentsTable()->getCategoryIDs(array('CCD','CCR','CCDA'));
         if (in_array($result['category_id'], $categoryIds) && $contentType == 'text/xml'  && !$doEncryption) {
             $xml          = simplexml_load_string($document);

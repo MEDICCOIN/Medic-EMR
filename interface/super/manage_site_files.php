@@ -1,60 +1,51 @@
 <?php
-/**
- * This module provides for editing site-specific text files and
- * for uploading site-specific image files.
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2010-2016 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+// Copyright (C) 2010-2016 Rod Roark <rod@sunsetsystems.com>
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 
+// This module provides for editing site-specific text files and
+// for uploading site-specific image files.
 
 require_once('../globals.php');
 require_once($GLOBALS['srcdir'].'/acl.inc');
 /* for formData() */
 
 if (!acl_check('admin', 'super')) {
-    die(xlt('Not authorized'));
+    die(htmlspecialchars(xl('Not authorized')));
 }
+
+// Prepare array of names of editable files, relative to the site directory.
+$my_files = array(
+  'config.php',
+  'faxcover.txt',
+  'faxtitle.eps',
+  'referral_template.html',
+  'statement.inc.php',
+  'letter_templates/custom_pdf.php',
+);
+// Append LBF plugin filenames to the array.
+$lres = sqlStatement('SELECT grp_form_id FROM layout_group_properties ' .
+    "WHERE grp_form_id LIKE 'LBF%' AND grp_group_id = '' AND grp_activity = 1 ORDER BY grp_seq, grp_title");
+while ($lrow = sqlFetchArray($lres)) {
+    $option_id = $lrow['grp_form_id']; // should start with LBF
+    $my_files[] = "LBF/$option_id.plugin.php";
+}
+
+$form_filename = strip_escape_custom($_REQUEST['form_filename']);
+// Sanity check to prevent evildoing.
+if (!in_array($form_filename, $my_files)) {
+    $form_filename = '';
+}
+
+$filepath = "$OE_SITE_DIR/$form_filename";
 
 $imagedir     = "$OE_SITE_DIR/images";
 $educationdir = "$OE_SITE_DIR/documents/education";
 
 if (!empty($_POST['bn_save'])) {
-    //verify csrf
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
-    /** This is a feature that allows editing of configuration files. Uncomment this
-        at your own risk, since it is considered a critical security vulnerability if
-        OpenEMR is not configured correctly.
-    // Prepare array of names of editable files, relative to the site directory.
-    $my_files = array(
-    'config.php',
-    'faxcover.txt',
-    'faxtitle.eps',
-    'referral_template.html',
-    'statement.inc.php',
-    'letter_templates/custom_pdf.php',
-    );
-    // Append LBF plugin filenames to the array.
-    $lres = sqlStatement('SELECT grp_form_id FROM layout_group_properties ' .
-    "WHERE grp_form_id LIKE 'LBF%' AND grp_group_id = '' AND grp_activity = 1 ORDER BY grp_seq, grp_title");
-    while ($lrow = sqlFetchArray($lres)) {
-    $option_id = $lrow['grp_form_id']; // should start with LBF
-    $my_files[] = "LBF/$option_id.plugin.php";
-    }
-    $form_filename = $_REQUEST['form_filename'];
-    // Sanity check to prevent evildoing.
-    if (!in_array($form_filename, $my_files)) {
-    $form_filename = '';
-    }
-    $filepath = "$OE_SITE_DIR/$form_filename";
     if ($form_filename) {
         // Textareas, at least in Firefox, return a \r\n at the end of each line
         // even though only \n was originally there.  For consistency with
@@ -66,9 +57,8 @@ if (!empty($_POST['bn_save'])) {
         ));
         $form_filename = '';
     }
-    */
 
-    // Handle image uploads.
+  // Handle image uploads.
     if (is_uploaded_file($_FILES['form_image']['tmp_name']) && $_FILES['form_image']['size']) {
         $form_dest_filename = $_POST['form_dest_filename'];
         if ($form_dest_filename == '') {
@@ -77,12 +67,12 @@ if (!empty($_POST['bn_save'])) {
 
         $form_dest_filename = basename($form_dest_filename);
         if ($form_dest_filename == '') {
-            die(xlt('Cannot find a destination filename'));
+            die(htmlspecialchars(xl('Cannot find a destination filename')));
         }
 
         $path_parts = pathinfo($form_dest_filename);
         if (!in_array(strtolower($path_parts['extension']), array('gif','jpg','jpe','jpeg','png','svg'))) {
-            die(xlt('Only images files are accepted'));
+            die(xl('Only images files are accepted'));
         }
 
         $imagepath = "$imagedir/$form_dest_filename";
@@ -97,11 +87,11 @@ if (!empty($_POST['bn_save'])) {
 
         $tmp_name = $_FILES['form_image']['tmp_name'];
         if (!move_uploaded_file($_FILES['form_image']['tmp_name'], $imagepath)) {
-            die(xlt('Unable to create') . " '" . text($imagepath) . "'");
+            die(htmlspecialchars(xl('Unable to create') . " '$imagepath'"));
         }
     }
 
-    // Handle PDF uploads for patient education.
+  // Handle PDF uploads for patient education.
     if (is_uploaded_file($_FILES['form_education']['tmp_name']) && $_FILES['form_education']['size']) {
         $form_dest_filename = $_FILES['form_education']['name'];
         $form_dest_filename = strtolower(basename($form_dest_filename));
@@ -132,11 +122,6 @@ if (!empty($_POST['bn_save'])) {
  */
 
 if (isset($_POST['generate_thumbnails'])) {
-    //verify csrf
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-
     $thumb_generator = new ThumbnailGenerator();
     $results = $thumb_generator->generate_all();
 
@@ -197,11 +182,6 @@ if ($GLOBALS['secure_upload']) {
     curl_close($curl);
 
     if (isset($_POST['submit_form'])) {
-        //verify csrf
-        if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-            csrfNotVerified();
-        }
-
         $new_white_list = empty($_POST['white_list']) ? array() : $_POST['white_list'];
 
         // truncate white list from list_options table
@@ -246,7 +226,7 @@ if ($GLOBALS['secure_upload']) {
  }
 </style>
 
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative'] ?>/jquery-min-3-1-1/index.js"></script>
 
 <script language="JavaScript">
 // This is invoked when a filename selection changes in the drop-list.
@@ -262,60 +242,57 @@ function msfFileChanged() {
 <body class="body_top">
 <form method='post' action='manage_site_files.php' enctype='multipart/form-data'
  onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <center>
 
 <p>
 <table border='1' width='95%'>
 
-<?php /** This is a feature that allows editing of configuration files. Uncomment this
-at your own risk, since it is considered a critical security vulnerability if
-OpenEMR is not configured correctly. ?>
  <tr bgcolor='#dddddd' class='dehead'>
-  <td colspan='2' align='center'><?php echo xlt('Edit File in') . " " . text($OE_SITE_DIR); ?></td>
+  <td colspan='2' align='center'><?php echo htmlspecialchars(xl('Edit File in') . " $OE_SITE_DIR"); ?></td>
  </tr>
+
  <tr>
   <td valign='top' class='detail' nowrap>
    <select name='form_filename' onchange='msfFileChanged()'>
     <option value=''></option>
 <?php
 foreach ($my_files as $filename) {
-    echo "    <option value='" . attr($filename) . "'";
+    echo "    <option value='" . htmlspecialchars($filename, ENT_QUOTES) . "'";
     if ($filename == $form_filename) {
         echo " selected";
     }
-    echo ">" . text($filename) . "</option>\n";
+
+    echo ">" . htmlspecialchars($filename) . "</option>\n";
 }
 ?>
    </select>
    <br />
    <textarea name='form_filedata' rows='25' style='width:100%'><?php
     if ($form_filename) {
-        echo text(@file_get_contents($filepath));
+        echo htmlspecialchars(@file_get_contents($filepath));
     }
 ?></textarea>
   </td>
  </tr>
-<?php */ ?>
 
  <tr bgcolor='#dddddd' class='dehead'>
-  <td colspan='2' align='center'><?php echo text(xl('Upload Image to') . " $imagedir"); ?></td>
+  <td colspan='2' align='center'><?php echo htmlspecialchars(xl('Upload Image to') . " $imagedir"); ?></td>
  </tr>
 
  <tr>
   <td valign='top' class='detail' nowrap>
-    <?php echo xlt('Source File'); ?>:
+    <?php echo htmlspecialchars(xl('Source File')); ?>:
    <input type="hidden" name="MAX_FILE_SIZE" value="12000000" />
    <input type="file" name="form_image" size="40" />&nbsp;
-    <?php echo xlt('Destination Filename'); ?>:
+    <?php echo htmlspecialchars(xl('Destination Filename')) ?>:
    <select name='form_dest_filename'>
-    <option value=''>(<?php echo xlt('Use source filename'); ?>)</option>
+    <option value=''>(<?php echo htmlspecialchars(xl('Use source filename')) ?>)</option>
 <?php
   // Generate an <option> for each file already in the images directory.
   $dh = opendir($imagedir);
 if (!$dh) {
-    die(text(xl('Cannot read directory') . " '$imagedir'"));
+    die(htmlspecialchars(xl('Cannot read directory') . " '$imagedir'"));
 }
 
   $imagesslist = array();
@@ -334,8 +311,8 @@ while (false !== ($sfname = readdir($dh))) {
   closedir($dh);
   ksort($imageslist);
 foreach ($imageslist as $sfname) {
-    echo "    <option value='" . attr($sfname) . "'";
-    echo ">" . text($sfname) . "</option>\n";
+    echo "    <option value='" . htmlspecialchars($sfname, ENT_QUOTES) . "'";
+    echo ">" . htmlspecialchars($sfname) . "</option>\n";
 }
 ?>
    </select>
@@ -356,7 +333,7 @@ foreach ($imageslist as $sfname) {
 </table>
 
 <p>
-<input type='submit' name='bn_save' value='<?php echo xla('Save'); ?>' />
+<input type='submit' name='bn_save' value='<?php echo htmlspecialchars(xl('Save')) ?>' />
 </p>
 
 </center>
@@ -374,7 +351,6 @@ foreach ($imageslist as $sfname) {
             </td>
             <td  class="thumb_form" style="width:17%;border-right:none">
                 <form method='post' action='manage_site_files.php#generate_thumb'>
-                    <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
                     <input style="margin-top: 10px" type="submit" name="generate_thumbnails" value="<?php echo xla('Generate') ?>">
                 </form>
             </td>
@@ -424,9 +400,8 @@ foreach ($imageslist as $sfname) {
             </select>
         </div>
         <div class="subject-info-save">
-            <input type="button" id="submit-whitelist" value="<?php echo xla('Save'); ?>" />
+            <input type="button" id="submit-whitelist" value="<?php echo xlt('Save'); ?>" />
             <input type="hidden" name="submit_form" value="1" />
-            <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
         </div>
     </form>
 
@@ -526,3 +501,4 @@ foreach ($imageslist as $sfname) {
 
 </body>
 </html>
+

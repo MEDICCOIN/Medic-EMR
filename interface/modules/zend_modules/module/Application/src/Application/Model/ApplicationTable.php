@@ -23,7 +23,6 @@ namespace Application\Model;
 
 use Zend\Db\TableGateway\AbstractTableGateway;
 use Zend\Db\ResultSet\ResultSet;
-use OpenEMR\Common\Logging\EventAuditLogger;
 
 class ApplicationTable extends AbstractTableGateway
 {
@@ -36,7 +35,6 @@ class ApplicationTable extends AbstractTableGateway
      */
     public function __construct()
     {
-        // TODO: I can't find any reason why we grab the static adapter instead of injecting a regular DB adapter here...
         $adapter = \Zend\Db\TableGateway\Feature\GlobalAdapterFeature::getStaticAdapter();
         $this->adapter = $adapter;
         $this->resultSetPrototype = new ResultSet();
@@ -85,11 +83,11 @@ class ApplicationTable extends AbstractTableGateway
        * Logging Mechanism
        *
        * using OpenEMR log function (auditSQLEvent)
-       * @see EventAuditLogger::auditSQLEvent
+       * Path /library/log.inc
        * Logging, if the $log is true
        */
         if ($log) {
-            EventAuditLogger::instance()->auditSQLEvent($sql, $result, $params);
+            auditSQLEvent($sql, $result, $params);
         }
 
         return $return;
@@ -367,9 +365,9 @@ class ApplicationTable extends AbstractTableGateway
     {
         if ($format == "0") {
             $date_format = 'yyyy/mm/dd';
-        } elseif ($format == 1) {
+        } else if ($format == 1) {
             $date_format = 'mm/dd/yyyy';
-        } elseif ($format == 2) {
+        } else if ($format == 2) {
             $date_format = 'dd/mm/yyyy';
         } else {
             $date_format = $format;

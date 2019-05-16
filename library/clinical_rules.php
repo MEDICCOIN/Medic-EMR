@@ -7,7 +7,7 @@
  * is typically called before utilizing these functions.
  *
  * @package   OpenEMR
- * @link      https://www.open-emr.org
+ * @link      http://www.open-emr.org
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @author    Medical Information Integration, LLC
  * @author    Ensofttek, LLC
@@ -74,7 +74,7 @@ function clinical_summary_widget($patient_id, $mode, $dateTarget = '', $organize
         // Deal with plan names first
         if (isset($action['is_plan']) && $action['is_plan']) {
             echo "<br><b>";
-            echo xlt("Plan") . ": ";
+            echo htmlspecialchars(xl("Plan"), ENT_NOQUOTES) . ": ";
             echo generate_display_field(array('data_type'=>'1','list_id'=>'clinical_plans'), $action['id']);
             echo "</b><br>";
             continue;
@@ -109,7 +109,7 @@ function clinical_summary_widget($patient_id, $mode, $dateTarget = '', $organize
 
             if ((!empty($tooltip)) || (!empty($web_reference))) {
                 if (!empty($web_reference)) {
-                    $tooltip = "<a href='".attr($web_reference)."' rel='noopener' target='_blank' style='white-space: pre-line;' title='".$tooltip."'>?</a>";
+                    $tooltip = "<a href='".attr($web_reference)."' target='_blank' style='white-space: pre-line;' title='".$tooltip."'>?</a>";
                 } else {
                     $tooltip = "<span style='white-space: pre-line;' title='".$tooltip."'>?</span>";
                 }
@@ -118,9 +118,9 @@ function clinical_summary_widget($patient_id, $mode, $dateTarget = '', $organize
 
         if ($action['custom_flag']) {
             // Start link for reminders that use the custom rules input screen
-            $url = "../rules/patient_data.php?category=" . attr_url($action['category']);
-            $url .= "&item=" . attr_url($action['item']);
-            echo "<a href='" . $url . "' class='medium_modal' onclick='return top.restoreSession()'>";
+            $url = "../rules/patient_data.php?category=".htmlspecialchars($action['category'], ENT_QUOTES);
+            $url .= "&item=".htmlspecialchars($action['item'], ENT_QUOTES);
+            echo "<a href='".$url."' class='medium_modal' onclick='return top.restoreSession()'>";
         } else if ($action['clin_rem_link']) {
             // Start link for reminders that use the custom rules input screen
             $pieces_url = parse_url($action['clin_rem_link']);
@@ -231,7 +231,7 @@ function active_alert_summary($patient_id, $mode, $dateTarget = '', $organize_mo
         // Deal with plan names first
         if ($action['is_plan']) {
             $returnOutput .= "<br><b>";
-            $returnOutput .= xlt("Plan") . ": ";
+            $returnOutput .= htmlspecialchars(xl("Plan"), ENT_NOQUOTES) . ": ";
             $returnOutput .= generate_display_field(array('data_type'=>'1','list_id'=>'clinical_plans'), $action['id']);
             $returnOutput .= "</b><br>";
             continue;
@@ -417,7 +417,7 @@ function compare_log_alerts($patient_id, $current_targets, $category = 'clinical
             $new_targets_json = json_encode($new_targets);
         }
 
-        sqlStatement("INSERT INTO `clinical_rules_log` " .
+        sqlInsert("INSERT INTO `clinical_rules_log` " .
               "(`date`,`pid`,`uid`,`category`,`value`,`new_value`) " .
               "VALUES (NOW(),?,?,?,?,?)", array($patient_id,$userid,$category,$current_targets_json,$new_targets_json));
     }

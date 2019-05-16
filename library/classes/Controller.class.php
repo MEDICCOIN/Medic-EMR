@@ -15,11 +15,11 @@ class Controller extends Smarty
          $this->template_mod = "general";
          $this->_current_action = "";
          $this->_state = true;
-         $this->compile_dir = $GLOBALS['OE_SITE_DIR'] . '/documents/smarty/main';
+         $this->compile_dir = $GLOBALS['fileroot'] . "/interface/main/calendar/modules/PostCalendar/pntemplates/compiled";
          $this->compile_check = true;
          $this->plugins_dir = array(dirname(__FILE__) . "/../smarty/plugins", $GLOBALS['vendor_dir'] . "/smarty/smarty/libs/plugins");
          $this->assign("PROCESS", "true");
-         $this->assign("HEADER", "<html><head></head><body>");
+         $this->assign("HEADER", "<html><head><?php html_header_show();?></head><body>");
          $this->assign("FOOTER", "</body></html>");
          $this->assign("CONTROLLER", "controller.php?");
          $this->assign("CONTROLLER_THIS", "controller.php?" . $_SERVER['QUERY_STRING']);
@@ -52,6 +52,14 @@ class Controller extends Smarty
             $func = "set_" . $varname;
             if ((!(strpos("_", $varname) === 0)) && is_callable(array($obj,$func))) {
                 //echo "c: $func on w: "  . $var . "<br />";
+
+        //modified 01-2010 by BGM to centralize to formdata.inc.php
+        // have place several debug statements to allow standardized testing over next several months
+                if (!is_array($var)) {
+        //DEBUG LINE - error_log("Controller populate before strip: ".$var, 0);
+                    $var = strip_escape_custom($var);
+        //DEBUG LINE - error_log("Controller populate after strip: ".$var, 0);
+                }
 
                 call_user_func_array(array(&$obj,$func), array($var, $_POST));
             }
@@ -160,14 +168,14 @@ class Controller extends Smarty
         }
 
         if ($inlining) {
-            $link .= "&" . urlencode($inline_arg);
-            $link .= "&action=" . urlencode($url_parts[0]);
+            $link .= "&" . $inline_arg;
+            $link .= "&action=" . $url_parts[0];
         } else {
-            $link .= "&" . urlencode($url_parts[0]);
+            $link .= "&" . $url_parts[0];
         }
 
         foreach ($this->_args as $arg_name => $arg) {
-            $link .= "&" . urlencode($arg_name) . "=" . urlencode($arg);
+            $link .= "&" . $arg_name . "=" . $arg;
         }
 
             $link .= "&";

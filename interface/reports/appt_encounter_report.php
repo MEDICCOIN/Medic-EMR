@@ -23,7 +23,7 @@
  * @author    Rod Roark <rod@sunsetsystems.com>
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2005-2016 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -31,17 +31,10 @@
 require_once("../globals.php");
 require_once("$srcdir/patient.inc");
 require_once("../../custom/code_types.inc.php");
+require_once("$srcdir/billing.inc");
 
-
-use OpenEMR\Billing\BillingUtilities;
 use OpenEMR\Core\Header;
 use OpenEMR\Services\FacilityService;
-
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
 
 $facilityService = new FacilityService();
 
@@ -211,7 +204,7 @@ if ($_POST['form_refresh']) {
     </style>
 
     <script LANGUAGE="JavaScript">
-        $(function() {
+        $(document).ready(function() {
             oeFixedHeaderSetup(document.getElementById('mymaintable'));
             var win = top.printLogSetup ? top : opener.top;
             win.printLogSetup(document.getElementById('printbutton'));
@@ -236,7 +229,6 @@ if ($_POST['form_refresh']) {
 </div>
 
 <form method='post' id='theform' action='appt_encounter_report.php' onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <div id="report_parameters">
 
@@ -433,7 +425,7 @@ if ($res) {
             } // End IPPF stuff
         } // end while
 
-        $copays -= BillingUtilities::getPatientCopay($patient_id, $encounter);
+        $copays -= getPatientCopay($patient_id, $encounter);
 
        // The following is removed, perhaps temporarily, because gcac reporting
        // no longer depends on gcac issues.  -- Rod 2009-08-11
@@ -580,7 +572,7 @@ if ($res) {
 </form>
 <script>
 <?php if ($alertmsg) {
-    echo " alert(" . js_escape($alertmsg) . ");\n";
+    echo " alert('$alertmsg');\n";
 } ?>
 </script>
 </body>

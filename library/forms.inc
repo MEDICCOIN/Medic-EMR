@@ -1,6 +1,34 @@
 <?php
 $GLOBALS['form_exit_url'] = "javascript:parent.closeTab(window.name, false)";
 
+function getFormById($id, $cols = "*")
+{
+    $sql = "select $cols from forms where id='$id' and deleted = 0 order by date DESC limit 0,1";
+    //echo $sql . "<br />";
+    return sqlQuery($sql);
+}
+
+function getFormInfoById($id, $cols = "*")
+{
+    $sql = "select $cols from forms where id = '$id' and deleted = 0 order by date DESC limit 0,1";
+    //echo $sql . "<br />";
+    $result =  sqlQuery($sql);
+    if ($result['formdir'] == "newpatient") {
+        $result['formdir'] = "encounter";
+    }
+
+    $sql = "select * from form_" . $result['formdir'] . " where id='" . $result['form_id']  . "'";
+    //echo $sql . "<br />";
+    $result =  sqlQuery($sql);
+    //print_r($result);
+    return $result;
+}
+
+function getFormsByPid($pid, $cols = "*")
+{
+    return sqlQuery("select $cols from forms where pid = '$pid' and deleted = 0");
+}
+
 function getFormByEncounter(
     $attendant_id,
     $encounter,
@@ -11,7 +39,7 @@ function getFormByEncounter(
 
     global $attendant_type;
     $arraySqlBind = array();
-    $sql = "select " . escape_sql_column_name(process_cols_escape($cols), array('forms')) . " from forms where encounter = ? and deleted = 0 ";
+    $sql = "select $cols from forms where encounter = ? and deleted = 0 ";
     array_push($arraySqlBind, $encounter);
     if (!empty($name)) {
         $sql .= "and form_name=? ";
@@ -82,12 +110,13 @@ function addForm(
 
 function authorizeForm($id, $authorized = "1")
 {
-    sqlQuery("UPDATE forms SET authorized = ? WHERE id = ? AND deleted = 0", array($authorized, $id));
+    sqlQuery("update forms set authorized = '$authorized' where id = '$id' and deleted = 0");
 }
 
 function getEncounters($pid, $dateStart = '', $dateEnd = '', $encounterRuleType = '')
 {
-    $arraySqlBind = array();
+
+        $arraySqlBind = array();
 
     if ($encounterRuleType) {
         // Only collect certain type of encounters (list_options item from the rule_enc_types list that is mapped via enc_category_map table)
@@ -113,14 +142,13 @@ function getEncounters($pid, $dateStart = '', $dateEnd = '', $encounterRuleType 
         array_push($arraySqlBind, $pid);
     }
 
-    //Not table escaping $from since this is hard-coded above and can include more than just a table name
-    $res = sqlStatement("SELECT distinct encounter FROM " . $from . " WHERE " . $where . " ORDER by date desc", $arraySqlBind);
+        $res = sqlStatement("SELECT distinct encounter FROM $from WHERE $where ORDER by date desc;", $arraySqlBind);
 
     for ($iter=0; $row=sqlFetchArray($res); $iter++) {
         $all[$iter] = $row;
     }
 
-    return $all;
+        return $all;
 }
 
 function getEncounterDateByEncounter($encounter)
@@ -128,22 +156,22 @@ function getEncounterDateByEncounter($encounter)
     global $attendant_type;
     $table = $attendant_type == 'pid' ? 'form_encounter' : 'form_groups_encounter';
     // $sql = "select date from forms where encounter='$encounter' order by date";
-    $sql = "SELECT date FROM " . escape_table_name($table) . " WHERE encounter = ? ORDER BY date";
-    return sqlQuery($sql, array($encounter));
+    $sql = "select date from $table where encounter='$encounter' order by date";
+    return sqlQuery($sql);
 }
 
 function getProviderIdOfEncounter($encounter)
 {
         global $attendant_type;
         $table = $attendant_type == 'pid' ? 'form_encounter' : 'form_groups_encounter';
-        $sql = "SELECT provider_id FROM " . escape_table_name($table) . " WHERE encounter=? ORDER BY date";
+        $sql = "select provider_id from $table where encounter=? order by date";
         $res = sqlQuery($sql, array($encounter));
         return $res['provider_id'];
 }
 
 function getFormNameByFormdirAndFormid($formdir, $form_id)
 {
-    return sqlQuery("SELECT form_name FROM forms WHERE formdir = ? AND form_id = ? AND deleted = 0", array($formdir, $form_id));
+        return sqlQuery("select form_name from forms where formdir = '$formdir' and form_id = '$form_id' and deleted = 0");
 }
 
 function getFormIdByFormdirAndFormid($formdir, $form_id)
@@ -154,7 +182,7 @@ function getFormIdByFormdirAndFormid($formdir, $form_id)
 
 function getFormNameByFormdir($formdir)
 {
-    return sqlQuery("SELECT form_name FROM forms WHERE formdir = ? AND deleted = 0", array($formdir));
+    return sqlQuery("select form_name from forms where formdir = '$formdir' and deleted = 0");
 }
 
 function getDocumentsByEncounter($patientID = null, $encounterID = null)
@@ -174,12 +202,4 @@ function getDocumentsByEncounter($patientID = null, $encounterID = null)
     }
 
     return $allDocuments;
-}
-
-function hasFormPermission($formDir)
-{
-    // get the aco spec from registry table
-    $formRow = sqlQuery("SELECT aco_spec FROM registry WHERE directory = ?", array($formDir));
-    $permission = explode('|', $formRow['aco_spec']);
-    return acl_check($permission[0], $permission[1]);
 }

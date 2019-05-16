@@ -1,4 +1,6 @@
 <?php
+use ESign\Api;
+
 /**
  *
  * Patient custom report.
@@ -41,6 +43,7 @@ global $ignoreAuth;
 
 require_once('../../interface/globals.php');
 require_once("$srcdir/forms.inc");
+require_once("$srcdir/billing.inc");
 require_once("$srcdir/pnotes.inc");
 require_once("$srcdir/patient.inc");
 require_once("$srcdir/options.inc.php");
@@ -49,16 +52,15 @@ require_once("$srcdir/lists.inc");
 require_once("$srcdir/report.inc");
 require_once("$srcdir/classes/Document.class.php");
 require_once("$srcdir/classes/Note.class.php");
+require_once("$srcdir/formatting.inc.php");
+require_once("$srcdir/htmlspecialchars.inc.php");
+require_once("$srcdir/formdata.inc.php");
 require_once(dirname(__file__) . "/../../custom/code_types.inc.php");
 require_once $GLOBALS['srcdir'].'/ESign/Api.php';
 require_once($GLOBALS["include_root"] . "/orders/single_order_results.inc.php");
 if ($GLOBALS['gbl_portal_cms_enable']) {
     require_once($GLOBALS["include_root"] . "/cmsportal/portal.inc.php");
 }
-require_once($GLOBALS['fileroot'] . "/controllers/C_Document.class.php");
-
-use ESign\Api;
-use Mpdf\Mpdf;
 
 // For those who care that this is the patient report.
 $GLOBALS['PATIENT_REPORT_ACTIVE'] = true;
@@ -66,28 +68,15 @@ $GLOBALS['PATIENT_REPORT_ACTIVE'] = true;
 $PDF_OUTPUT = empty($_POST['pdf']) ? 0 : intval($_POST['pdf']);
 
 if ($PDF_OUTPUT) {
-    $config_mpdf = array(
-        'tempDir' => $GLOBALS['MPDF_WRITE_DIR'],
-        'mode' => $GLOBALS['pdf_language'],
-        'format' => $GLOBALS['pdf_size'],
-        'default_font_size' => '9',
-        'default_font' => 'dejavusans',
-        'margin_left' => $GLOBALS['pdf_left_margin'],
-        'margin_right' => $GLOBALS['pdf_right_margin'],
-        'margin_top' => $GLOBALS['pdf_top_margin'],
-        'margin_bottom' => $GLOBALS['pdf_bottom_margin'],
-        'margin_header' => '',
-        'margin_footer' => '',
-        'orientation' => $GLOBALS['pdf_layout'],
-        'shrink_tables_to_fit' => 1,
-        'use_kwt' => true,
-        'autoScriptToLang' => true,
-        'keep_table_proportions' => true
+    require_once("$srcdir/html2pdf/vendor/autoload.php");
+    $pdf = new HTML2PDF(
+        $GLOBALS['pdf_layout'],
+        $GLOBALS['pdf_size'],
+        $GLOBALS['pdf_language'],
+        true, // default unicode setting is true
+        'UTF-8', // default encoding setting is UTF-8
+        array($GLOBALS['pdf_left_margin'],$GLOBALS['pdf_top_margin'],$GLOBALS['pdf_right_margin'],$GLOBALS['pdf_bottom_margin'])
     );
-    $pdf = new mPDF($config_mpdf);
-    if ($_SESSION['language_direction'] == 'rtl') {
-        $pdf->SetDirectionality('rtl');
-    }
     ob_start();
 }
 
@@ -118,8 +107,7 @@ function getContent()
 {
     global $web_root, $webserver_root;
     $content = ob_get_clean();
-    // Fix a nasty html2pdf bug - it ignores document root!
-    // TODO - now use mPDF, so should test if still need this fix
+  // Fix a nasty html2pdf bug - it ignores document root!
     $i = 0;
     $wrlen = strlen($web_root);
     $wsrlen = strlen($webserver_root);
@@ -528,13 +516,13 @@ if ($printable) {
         $facility = $results->fields;
     }
 
-    // Setup Headers and Footers for mPDF only Download
-    // in HTML view it's just one line at the top of page 1
+  // Setup Headers and Footers for html2PDF only Download
+  // in HTML view it's just one line at the top of page 1
     echo '<page_header style="text-align:right;"> ' . xlt("PATIENT") . ':' . text($titleres['lname']) . ', ' . text($titleres['fname']) . ' - ' . $titleres['DOB_TS'] . '</page_header>    ';
     echo '<page_footer style="text-align:right;">' . xlt('Generated on') . ' ' . text(oeFormatShortDate()) . ' - ' . text($facility['name']) . ' ' . text($facility['phone']) . '</page_footer>';
 
     // Use logo if it exists as 'practice_logo.gif' in the site dir
-    // old code used the global custom dir which is no longer a valid
+  // old code used the global custom dir which is no longer a valid
     $practice_logo = "$OE_SITE_DIR/images/practice_logo.gif";
     if (file_exists($practice_logo)) {
         echo "<img src='$practice_logo' align='left'><br />\n";
@@ -629,10 +617,6 @@ while ($result = sqlFetchArray($inclookupres)) {
     } else {
         include_once($GLOBALS['incdir'] . "/forms/$formdir/report.php");
     }
-}
-
-if ($PDF_OUTPUT) {
-    $tmp_files_remove = array();
 }
 
 // For each form field from patient_report.php...
@@ -820,9 +804,10 @@ foreach ($ar as $key => $val) {
 
                 $d = new Document($document_id);
                 $fname = basename($d->get_url());
+                $couch_docid = $d->get_couch_docid();
+                $couch_revid = $d->get_couch_revid();
                 $extension = substr($fname, strrpos($fname, "."));
-                echo "<h1>" . xlt('Document') . " '" . text($fname) ."'</h1>";
-
+                echo "<h1>" . xl('Document') . " '" . $fname ."'</h1>";
                 $notes = $d->get_notes();
                 if (!empty($notes)) {
                     echo "<table>";
@@ -830,13 +815,13 @@ foreach ($ar as $key => $val) {
 
                 foreach ($notes as $note) {
                     echo '<tr>';
-                    echo '<td>' . xlt('Note') . ' #' . text($note->get_id()) . '</td>';
+                    echo '<td>' . xl('Note') . ' #' . $note->get_id() . '</td>';
                     echo '</tr>';
                     echo '<tr>';
-                    echo '<td>' . xlt('Date') . ': ' . text(oeFormatShortDate($note->get_date())) . '</td>';
+                    echo '<td>' . xl('Date') . ': ' . text(oeFormatShortDate($note->get_date())) . '</td>';
                     echo '</tr>';
                     echo '<tr>';
-                    echo '<td>' . text($note->get_note()) . '<br><br></td>';
+                    echo '<td>'.$note->get_note().'<br><br></td>';
                     echo '</tr>';
                 }
 
@@ -844,67 +829,91 @@ foreach ($ar as $key => $val) {
                     echo "</table>";
                 }
 
+                $url_file = $d->get_url_filepath();
+                if ($couch_docid && $couch_revid) {
+                    $url_file = $d->get_couch_url($pid, $encounter);
+                }
+
+                // Collect filename and path
+                $from_all = explode("/", $url_file);
+                $from_filename = array_pop($from_all);
+                $from_pathname_array = array();
+                for ($i=0; $i<$d->get_path_depth(); $i++) {
+                    $from_pathname_array[] = array_pop($from_all);
+                }
+
+                $from_pathname_array = array_reverse($from_pathname_array);
+                $from_pathname = implode("/", $from_pathname_array);
+
+                if ($couch_docid && $couch_revid) {
+                    $from_file = $GLOBALS['OE_SITE_DIR'] . '/documents/temp/' . $from_filename;
+                    $to_file = substr($from_file, 0, strrpos($from_file, '.')) . '_converted.jpg';
+                } else {
+                    $from_file = $GLOBALS["fileroot"] . "/sites/" . $_SESSION['site_id'] .
+                    '/documents/' . $from_pathname . '/' . $from_filename;
+                    $to_file = substr($from_file, 0, strrpos($from_file, '.')) . '_converted.jpg';
+                }
+
                 if ($extension == ".png" || $extension == ".jpg" || $extension == ".jpeg" || $extension == ".gif") {
                     if ($PDF_OUTPUT) {
                         // OK to link to the image file because it will be accessed by the
-                        // mPDF parser and not the browser.
-                        $tempDocC = new C_Document;
-                        $fileTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
-                        // tmp file in ../documents/temp since need to be available via webroot
-                        $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'].'/documents/temp', "oer");
-                        file_put_contents($from_file_tmp_web_name, $fileTemp);
-                        echo "<img src='$from_file_tmp_web_name'";
+                        // HTML2PDF parser and not the browser.
+                        $from_rel = $web_root . substr($from_file, strlen($webserver_root));
+                        echo "<img src='$from_rel'";
                         // Flag images with excessive width for possible stylesheet action.
-                        $asize = getimagesize($from_file_tmp_web_name);
+                        $asize = getimagesize($from_file);
                         if ($asize[0] > 750) {
                             echo " class='bigimage'";
                         }
-                        $tmp_files_remove[] = $from_file_tmp_web_name;
+
                         echo " /><br><br>";
                     } else {
                         echo "<img src='" . $GLOBALS['webroot'] .
-                            "/controller.php?document&retrieve&patient_id=&document_id=" .
-                            attr_url($document_id) . "&as_file=false'><br><br>";
+                        "/controller.php?document&retrieve&patient_id=&document_id=" .
+                        $document_id . "&as_file=false'><br><br>";
                     }
                 } else {
-                    // Most clinic documents are expected to be PDFs, and in that happy case
-                    // we can avoid the lengthy image conversion process.
+          // Most clinic documents are expected to be PDFs, and in that happy case
+          // we can avoid the lengthy image conversion process.
                     if ($PDF_OUTPUT && $extension == ".pdf") {
-                        echo "</div></div>\n"; // HTML to PDF conversion will fail if there are open tags.
-                        $content = getContent();
-                        $pdf->writeHTML($content); // catch up with buffer.
-                        $tempDocC = new C_Document;
-                        $pdfTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
-                        // tmp file in temporary_files_dir
-                        $from_file_tmp_name = tempnam($GLOBALS['temporary_files_dir'], "oer");
-                        file_put_contents($from_file_tmp_name, $pdfTemp);
-                        $pagecount = $pdf->setSourceFile($from_file_tmp_name);
+                                // HTML to PDF conversion will fail if there are open tags.
+                                echo "</div></div>\n";
+                                $content = getContent();
+                                // $pdf->setDefaultFont('Arial');
+                                $pdf->writeHTML($content, false);
+                                $pagecount = $pdf->pdf->setSourceFile($from_file);
                         for ($i = 0; $i < $pagecount; ++$i) {
-                            $pdf->AddPage();
-                            $itpl = $pdf->importPage($i+1);
-                            $pdf->useTemplate($itpl);
+                            $pdf->pdf->AddPage();
+                            $itpl = $pdf->pdf->importPage($i + 1, '/MediaBox');
+                            $pdf->pdf->useTemplate($itpl);
                         }
-                        unlink($from_file_tmp_name);
 
-                        // Make sure whatever follows is on a new page.
-                        $pdf->AddPage();
-
-                        // Resume output buffering and the above-closed tags.
-                        ob_start();
-
-                        echo "<div><div class='text documents'>\n";
+                                // Make sure whatever follows is on a new page.
+                                $pdf->pdf->AddPage();
+                                // Resume output buffering and the above-closed tags.
+                                ob_start();
+                                echo "<div><div class='text documents'>\n";
                     } else {
-                        if ($PDF_OUTPUT) {
-                            // OK to link to the image file because it will be accessed by the mPDF parser and not the browser.
-                            $tempDocC = new C_Document;
-                            $fileTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, false, true, true);
-                            // tmp file in ../documents/temp since need to be available via webroot
-                            $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'].'/documents/temp', "oer");
-                            file_put_contents($from_file_tmp_web_name, $fileTemp);
-                            echo "<img src='$from_file_tmp_web_name'><br><br>";
-                            $tmp_files_remove[] = $from_file_tmp_web_name;
+                        if (! is_file($to_file)) {
+                            exec("convert -density 200 \"$from_file\" -append -resize 850 \"$to_file\"");
+                        }
+
+                        if (is_file($to_file)) {
+                            if ($PDF_OUTPUT) {
+                                // OK to link to the image file because it will be accessed by the
+                                // HTML2PDF parser and not the browser.
+                                echo "<img src='$to_file'><br><br>";
+                            } else {
+                                echo "<img src='" . $GLOBALS['webroot'] .
+                                  "/controller.php?document&retrieve&patient_id=&document_id=" .
+                                  $document_id . "&as_file=false&original_file=false'><br><br>";
+                            }
                         } else {
-                            echo "<img src='" . $GLOBALS['webroot'] . "/controller.php?document&retrieve&patient_id=&document_id=" . attr_url($document_id) . "&as_file=false&original_file=false'><br><br>";
+                            echo "<b>NOTE</b>: " . xl('Document') . "'" . $fname . "' " .
+                              xl('cannot be converted to JPEG. Perhaps ImageMagick is not installed?') . "<br><br>";
+                            if ($couch_docid && $couch_revid) {
+                                unlink($from_file);
+                            }
                         }
                     }
                 } // end if-else
@@ -1064,7 +1073,8 @@ if ($printable) {
 <?php
 if ($PDF_OUTPUT) {
     $content = getContent();
-    $pdf->writeHTML($content);
+  // $pdf->setDefaultFont('Arial');
+    $pdf->writeHTML($content, false);
     if ($PDF_OUTPUT == 1) {
         $pdf->Output('report.pdf', $GLOBALS['pdf_output']); // D = Download, I = Inline
     } else {
@@ -1089,10 +1099,6 @@ if ($PDF_OUTPUT) {
 
         echo "<p>" . xlt('Report has been sent to the patient.') . "</p>\n";
         echo "</body></html>\n";
-    }
-    foreach ($tmp_files_remove as $tmp_file) {
-        // Remove the tmp files that were created
-        unlink($tmp_file);
     }
 } else {
 ?>

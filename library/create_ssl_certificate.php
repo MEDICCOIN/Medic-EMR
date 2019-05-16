@@ -74,7 +74,7 @@ function create_csr(
     }
 
     /* OpenSSL functions need the path to the openssl.cnf file */
-    $opensslConf = $GLOBALS['fileroot'] . "/library/openssl.cnf";
+    $opensslConf = $GLOBALS['webserver_root'] . "/library/openssl.cnf";
     $config = array('config' => $opensslConf);
 
     /* Create the public/private key pair */
@@ -88,27 +88,24 @@ function create_csr(
         return false;
     }
 
-    return array($csr, $privkey, $config);
+    return array($csr, $privkey);
 }
 
 
 /**
  * Create a certificate, signed by the given Certificate Authority.
+ * @param $privkey - The certificate private key
  * @param $csr     - The certificate signing request
  * @param $cacert  - The Certificate Authority to sign with, or NULL if not used.
  * @param $cakey   - The Certificate Authority private key data to sign with.
  * @return data    - A signed certificate, or false on error.
  */
-function create_crt($csr, $cacert, $cakey)
+function create_crt($privkey, $csr, $cacert, $cakey)
 {
 
-    $opensslConf = $GLOBALS['fileroot'] . "/library/openssl.cnf";
+    $opensslConf = $GLOBALS['webserver_root'] . "/library/openssl.cnf";
     $config = array('config' => $opensslConf);
 
-    // Fix server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
-    if ($cacert) {
-        $config["x509_extensions"] = "v3_req";
-    }
     $cert = openssl_csr_sign($csr, $cacert, $cakey, 3650, $config, rand(1000, 9999));
     return $cert;
 }
@@ -127,7 +124,7 @@ function create_crt($csr, $cacert, $cakey)
 function create_user_certificate($commonName, $emailAddress, $serial, $cacert, $cakey, $valid_days)
 {
 
-    $opensslConf = $GLOBALS['fileroot'] . "/library/openssl.cnf";
+    $opensslConf = $GLOBALS['webserver_root'] . "/library/openssl.cnf";
     $config = array('config' => $opensslConf);
 
     /* Generate a certificate signing request */
@@ -141,7 +138,7 @@ function create_user_certificate($commonName, $emailAddress, $serial, $cacert, $
 
     /* user id is used as serial number to sign a certificate */
     $serial = 0;
-    $res = sqlStatement("SELECT id FROM users WHERE username = ?", array($commonName));
+    $res = sqlStatement("select id from users where username='".$commonName."'");
     if ($row = sqlFetchArray($res)) {
         $serial = $row['id'];
     }

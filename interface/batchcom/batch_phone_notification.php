@@ -18,17 +18,18 @@
 // Allow phone notification as a cronjob
 require_once(dirname(__FILE__, 3)."/library/allow_cronjobs.php");
 
+use OpenEMR\Services\FacilityService;
+
 $backpic = "";
 
 //Set the working directory to the path of the file
 $current_dir = dirname($_SERVER['SCRIPT_FILENAME']);
 chdir($current_dir);
 
+
+
 require_once("../../interface/globals.php");
 require_once("$srcdir/maviq_phone_api.php");
-
-use OpenEMR\Common\Crypto\CryptoGen;
-use OpenEMR\Services\FacilityService;
 
 $facilityService = new FacilityService();
 
@@ -39,8 +40,7 @@ $before_trigger_hours = $GLOBALS['phone_notification_hour'];
 //set up the phone notification settings for external phone service
 $phone_url = $GLOBALS['phone_gateway_url'] ;
 $phone_id = $GLOBALS['phone_gateway_username'];
-$cryptoGen = new CryptoGen();
-$phone_token = $cryptoGen->decryptStandard($GLOBALS['phone_gateway_password']);
+$phone_token = $GLOBALS['phone_gateway_password'];
 $phone_time_range = $GLOBALS['phone_time_range'];
 
 //get the facility_id-message map
@@ -182,7 +182,7 @@ function cron_InsertNotificationLogEntry($prow, $phone_msg, $phone_gateway)
 
     $sql_loginsert = "INSERT INTO `notification_log` ( `iLogId` , `pid` , `pc_eid` , `message`, `type` , `patient_info` , `smsgateway_info` , `pc_eventDate` , `pc_endDate` , `pc_startTime` , `pc_endTime` , `dSentDateTime` ) VALUES ";
     $sql_loginsert .= "(NULL , ?, ?, ?, 'Phone', ?, ?, ?, ?, ?, ?, ?)";
-    $db_loginsert = ( sqlStatement($sql_loginsert, array($prow['pid'], $prow['pc_eid'], $message, $patient_info, $phone_gateway, $prow['pc_eventDate'], $prow['pc_endDate'], $prow['pc_startTime'], $prow['pc_endTime'], date('Y-m-d H:i:s'))));
+    $db_loginsert = ( sqlStatement($sql_loginsert, array($prow[pid], $prow[pc_eid], $message, $patient_info, $phone_gateway, $prow[pc_eventDate], $prow[pc_endDate], $prow[pc_startTime], $prow[pc_endTime], date("Y-m-d H:i:s"))));
 }
 
 ////////////////////////////////////////////////////////////////////

@@ -7,9 +7,9 @@
  *  Important - Ensure that display_errors=Off in php.ini settings.
  *
  * @package   OpenEMR
- * @link      https://www.open-emr.org
+ * @link      http://www.open-emr.org
  * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2007-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2007-2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -24,16 +24,11 @@ header("Cache-Control: no-cache");
 //initiate error array
 $error = array();
 
-//verify csrf
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    echo error_xml(xl('Authentication Error'));
-    csrfNotVerified(false);
-}
-
+//PENDING, need to clean this up on client side
 //ensure user has proper access
 if (!acl_check('admin', 'acl')) {
     echo error_xml(xl('ACL Administration Not Authorized'));
-    csrfNotVerified(false);
+    exit;
 }
 
 //ensure php is installed

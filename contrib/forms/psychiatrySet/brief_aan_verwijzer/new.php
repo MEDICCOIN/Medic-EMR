@@ -28,7 +28,7 @@ formHeader("Form: brief_aan_verwijzer");
 $returnurl = 'encounter_top.php';
 
 $result = getPatientData($pid, "fname,lname,pid,pubpid,phone_home,sex,pharmacy_id,DOB,DATE_FORMAT(DOB,'%Y%m%d') as DOB_YMD");
-$provider_results = sqlQuery("select * from users where username= ?", array($_SESSION{"authUser"}));
+$provider_results = sqlQuery("select * from users where username='" . $_SESSION{"authUser"} . "'");
 
 ////////////////////////////////////////////////////////////////////
 // Function:	getPatientDateOfLastEncounter
@@ -37,9 +37,9 @@ function getPatientDateOfLastEncounter($nPid)
   // get date of last encounter no codes
     $strEventDate = sqlQuery("SELECT MAX(pc_eventDate) AS max
                   FROM openemr_postcalendar_events
-                  WHERE pc_pid = ?
+                  WHERE pc_pid = $nPid
                   AND pc_apptstatus = '@'
-                  AND pc_eventDate >= '2007-01-01'", array($nPid));
+                  AND pc_eventDate >= '2007-01-01'");
 
   // now check if there was a previous encounter
     if ($strEventDate['max'] != "") {
@@ -53,30 +53,30 @@ $m_strEventDate = getPatientDateOfLastEncounter($result['pid']);
 
 // get last saved id for intakeverslag
 $vectIntakeverslagQuery = sqlQuery("SELECT id FROM form_intakeverslag
-                            WHERE pid = ?
-                            AND groupname= ?
-                            AND user=? AND
-                            authorized=? AND activity=1
+                            WHERE pid = ".$_SESSION["pid"].
+                            " AND groupname='".$_SESSION["authProvider"].
+                            "' AND user='".$_SESSION["authUser"]."' AND
+                            authorized=$userauthorized AND activity=1
                             AND autosave_flag=0
-                            ORDER by id DESC limit 1", array($_SESSION["pid"], $_SESSION["authProvider"], $_SESSION["authUser"], $userauthorized));
+                            ORDER by id DESC limit 1");
 
 // get autosave id for Psychiatrisch Onderzoek
 $vectPO = sqlQuery("SELECT id FROM form_psychiatrisch_onderzoek
-                            WHERE pid = ?
-                            AND groupname= ?
-                            AND user=? AND
-                            authorized=? AND activity=1
+                            WHERE pid = ".$_SESSION["pid"].
+                            " AND groupname='".$_SESSION["authProvider"].
+                            "' AND user='".$_SESSION["authUser"]."' AND
+                            authorized=$userauthorized AND activity=1
                             AND autosave_flag=0
-                            ORDER by id DESC limit 1", array($_SESSION["pid"], $_SESSION["authProvider"], $_SESSION["authUser"], $userauthorized));
+                            ORDER by id DESC limit 1");
 
 // get autosave id for Psychiatrisch Onderzoek
 $vectAutosaveBAV = sqlQuery("SELECT id, autosave_flag, autosave_datetime FROM form_brief_aan_verwijzer
-                            WHERE pid = ?
-                            AND groupname= ?
-                            AND user=? AND
-                            authorized=? AND activity=1
-                            AND autosave_flag=0
-                            ORDER by id DESC limit 1", array($_SESSION["pid"], $_SESSION["authProvider"], $_SESSION["authUser"], $userauthorized));
+                            WHERE pid = ".$_SESSION["pid"].
+                            " AND groupname='".$_SESSION["authProvider"].
+                            "' AND user='".$_SESSION["authUser"]."' AND
+                            authorized=$userauthorized AND activity=1
+                            AND autosave_flag=1
+                            ORDER by id DESC limit 1");
 
 //fetch data from INTAKE-VERSLAG
 $obj_iv = formFetch("form_intakeverslag", $vectIntakeverslagQuery['id']);
@@ -147,7 +147,7 @@ if ($obj_bav['advies_beleid'] != '') {
 <html>
 <head>
     <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
-    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+    <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.min.css">
 </head>
 
 
@@ -164,8 +164,8 @@ if ($obj_bav['advies_beleid'] != '') {
 
 <script type="text/javascript" src="../../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
 <script type="text/javascript" src="../../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-min-3-1-1/index.js"></script>
+<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker-2-5-4/build/jquery.datetimepicker.full.min.js"></script>
 
 <?php
 
@@ -177,7 +177,7 @@ if ($vectAutosaveBAV['id']) {
 
 ?>
 <script type="text/javascript">
-$(function(){
+$(document).ready(function(){
         autosave();
         $('.datepicker').datetimepicker({
             <?php $datetimepicker_timepicker = false; ?>

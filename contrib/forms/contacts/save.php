@@ -1,25 +1,11 @@
 <?php
-/**
- * Forms generated from formsWiz
- *
- * contacts save.php
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @author    Daniel Ehrlich <daniel.ehrlich1@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Daniel Ehrlich <daniel.ehrlich1@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
-
-
-require_once("../../globals.php");
-require_once("$srcdir/api.inc");
-require_once("$srcdir/forms.inc");
-
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
+//------------Forms generated from formsWiz
+include_once("../../globals.php");
+include_once("$srcdir/api.inc");
+include_once("$srcdir/forms.inc");
+foreach ($_POST as $k => $var) {
+    $_POST[$k] = add_escape_custom($var);
+    echo "$var\n";
 }
 
 if ($encounter == "") {
@@ -30,12 +16,9 @@ if ($_GET["mode"] == "new") {
     $newid = formSubmit("form_contacts", $_POST, $_GET["id"], $userauthorized);
     addForm($encounter, "Contacts", $newid, "contacts", $pid, $userauthorized);
 } elseif ($_GET["mode"] == "update") {
-    sqlStatement("update form_contacts set pid = ?,groupname= ?,user= ?, authorized= ?,activity=1, date = NOW(), od_base_curve= ?, od_sphere= ?, od_cylinder= ?,
-    od_axis= ?, od_diameter= ?, os_base_curve= ?, os_sphere= ?, os_cylinder= ?, os_axis= ?, os_diameter= ?, material= ?, color= ?, bifocal_type= ?, 
-    add_value= ?, va_far= ?, va_near= ?, additional_notes= ? WHERE id= ?", array($_SESSION["pid"], $_SESSION["authProvider"], $_SESSION["authUser"], $userauthorized, $_POST["od_base_curve"], $_POST["od_sphere"], $_POST["od_cylinder"],
-    $_POST["od_axis"], $_POST["od_diameter"], $_POST["os_base_curve"], $_POST["os_sphere"], $_POST["os_cylinder"], $_POST["os_axis"], $_POST["os_diameter"],
-    $_POST["material"], $_POST["color"], $_POST["bifocal_type"], $_POST["add_value"], $_POST["va_far"], $_POST["va_near"], $_POST["additional_notes"], $id));
+    sqlInsert("update form_contacts set pid = {$_SESSION["pid"]},groupname='".$_SESSION["authProvider"]."',user='".$_SESSION["authUser"]."',authorized=$userauthorized,activity=1, date = NOW(), od_base_curve='".$_POST["od_base_curve"]."', od_sphere='".$_POST["od_sphere"]."', od_cylinder='".$_POST["od_cylinder"]."', od_axis='".$_POST["od_axis"]."', od_diameter='".$_POST["od_diameter"]."', os_base_curve='".$_POST["os_base_curve"]."', os_sphere='".$_POST["os_sphere"]."', os_cylinder='".$_POST["os_cylinder"]."', os_axis='".$_POST["os_axis"]."', os_diameter='".$_POST["os_diameter"]."', material='".$_POST["material"]."', color='".$_POST["color"]."', bifocal_type='".$_POST["bifocal_type"]."', add_value='".$_POST["add_value"]."', va_far='".$_POST["va_far"]."', va_near='".$_POST["va_near"]."', additional_notes='".$_POST["additional_notes"]."' where id=$id");
 }
+
 $_SESSION["encounter"] = $encounter;
 formHeader("Redirecting....");
 formJump();

@@ -2,21 +2,28 @@
 /**
  * Display a message indicating that the user's password has/will expire.
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    ViCarePlus Team, Visolve <vicareplus_engg@visolve.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2010 ViCarePlus Team, Visolve <vicareplus_engg@visolve.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright 2010 ViCarePlus Team, Visolve <vicareplus_engg@visolve.com>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  ViCarePlus Team, Visolve <vicareplus_engg@visolve.com>
+ * @link    http://www.open-emr.org
  */
 
 
-require_once("../globals.php");
 
-if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-    csrfNotVerified();
-}
+
+include_once("../globals.php");
 
 $pwd_expires = "";
 $q = $_SESSION["authUserID"];
@@ -55,6 +62,7 @@ if (($pwd_expires == "0000-00-00") or ($pwd_expires == "")) {
 <html>
 <head>
 <meta http-equiv="Content-Language" content="en-us">
+<?php html_header_show();?>
 <link rel='stylesheet' href="<?php echo $css_header;?>" type="text/css">
 </head>
 <body class="body_bottom">

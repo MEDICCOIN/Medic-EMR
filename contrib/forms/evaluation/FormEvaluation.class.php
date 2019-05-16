@@ -1,17 +1,10 @@
 <?php
+
+
 /**
  * class FormEvaluation
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @author    Daniel Ehrlich <daniel.ehrlich1@gmail.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2018 Daniel Ehrlich <daniel.ehrlich1@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-
-
 class FormEvaluation extends ORDataObject
 {
 
@@ -70,8 +63,8 @@ class FormEvaluation extends ORDataObject
     {
         parent::populate();
 
-        $sql = "SELECT name from form_evaluation_checks where foreign_id = ?";
-        $results = sqlQ($sql, array($this->id));
+        $sql = "SELECT name from form_evaluation_checks where foreign_id = '" . add_escape_custom($this->id) . "'";
+        $results = sqlQ($sql);
 
         while ($row = sqlFetchArray($results)) {
             $this->checks[] = $row['name'];
@@ -225,7 +218,6 @@ class FormEvaluation extends ORDataObject
 
     function get_hpi()
     {
-
         return $this->hpi;
     }
 
@@ -294,12 +286,12 @@ class FormEvaluation extends ORDataObject
 
         parent::persist();
         if (is_numeric($this->id) and !empty($this->checks)) {
-            $sql = "delete FROM form_evaluation_checks WHERE foreign_id = ?";
-            sqlQuery($sql, array($this->id));
+            $sql = "delete FROM form_evaluation_checks where foreign_id = '" . $this->id . "'";
+            sqlQuery($sql);
             foreach ($this->checks as $check) {
                 if (!empty($check)) {
-                    $sql = "INSERT INTO form_evaluation_checks set foreign_id= ?, name = ?";
-                    sqlQuery($sql, array($this->id, $check));
+                    $sql = "INSERT INTO form_evaluation_checks set foreign_id='"  . add_escape_custom($this->id) . "', name = '" . add_escape_custom($check) . "'";
+                    sqlQuery($sql);
                     //echo "$sql<br>";
                 }
             }

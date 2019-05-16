@@ -1,12 +1,24 @@
 /**
- * Javascript functions for the track anything form
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Joe Slam <trackanything@produnis.de>
- * @copyright Copyright (c) 2014 Joe Slam <trackanything@produnis.de>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+* Jacacript functions for the track anything form
+*
+* Copyright (C) 2014 Joe Slam <trackanything@produnis.de>
+*
+* LICENSE: This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* as published by the Free Software Foundation; either version 2
+* of the License, or (at your option) any later version.
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>.
+*
+* @package OpenEMR
+* @author Joe Slam <trackanything@produnis.de>
+* @link http://www.open-emr.org
+*/
+
 
 //-------------- checkboxes checked checker --------------------
 // Pass the checkbox name to the function
@@ -43,8 +55,7 @@ function ta_report_plot_graph(formid,ofc_name,the_track_name,ofc_date,ofc_value)
                                      values: thevalues,
                                      items:  theitems,
                                      track:  thetrack,
-                                     thecheckboxes: checkedBoxes,
-                                     csrf_token_form: csrf_token_js
+                                     thecheckboxes: checkedBoxes
                                    },
                          dataType: "json",
                          success: function(returnData){

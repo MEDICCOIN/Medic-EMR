@@ -1,13 +1,20 @@
 /**
- * patient_data_view_model.js
+ * Copyright (C) 2016 Kevin Yeh <kevin.y@integralemr.com>
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Kevin Yeh <kevin.y@integralemr.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2016 Kevin Yeh <kevin.y@integralemr.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Kevin Yeh <kevin.y@integralemr.com>
+ * @link    http://www.open-emr.org
  */
 
 function encounter_data(id,date,category)
@@ -29,7 +36,7 @@ function patient_data_view_model(pname,pid,pubpid,str_dob)
     self.patient_picture=ko.computed(function(){
       return webroot_url + '/controller.php' +
              '?document&retrieve' +
-             '&patient_id=' + encodeURIComponent(pid) +
+             '&patient_id=' + pid +
              '&document_id=-1' +
              '&as_file=false' +
              '&original_file=true' +
@@ -47,7 +54,7 @@ function patient_data_view_model(pname,pid,pubpid,str_dob)
        for(var encIdx=0;encIdx<self.encounterArray().length;encIdx++)
        {
            var curEnc=self.encounterArray()[encIdx];
-           if(curEnc.id()==newVal)
+           if(curEnc.id()===newVal)
            {
 
                self.selectedEncounter(curEnc);

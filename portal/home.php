@@ -1,14 +1,25 @@
 <?php
 /**
- * Patient Portal
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2016-2019 Jerry Padgett <sjpadgett@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2016-2018 Jerry Padgett <sjpadgett@gmail.com>
+ *
+ * LICENSE: This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package OpenEMR
+ * @author Jerry Padgett <sjpadgett@gmail.com>
+ * @link http://www.open-emr.org
  */
-
  require_once("verify_session.php");
  require_once("$srcdir/patient.inc");
  require_once("$srcdir/options.inc.php");
@@ -25,11 +36,10 @@ if (!isset($_SESSION['portal_init'])) {
     $_SESSION['portal_init'] = true;
 }
 
-$whereto = 'profilepanel';
+ $whereto = 'profilepanel';
 if (isset($_SESSION['whereto'])) {
     $whereto = $_SESSION['whereto'];
 }
-//$whereto = 'paymentpanel';
 
  $user = isset($_SESSION['sessionUser']) ? $_SESSION['sessionUser'] : 'portal user';
  $result = getPatientData($pid);
@@ -38,21 +48,20 @@ if (isset($_SESSION['whereto'])) {
  $msgcnt = count($msgs);
  $newcnt = 0;
 foreach ($msgs as $i) {
-    if ($i['message_status'] == 'New') {
+    if ($i['message_status']=='New') {
         $newcnt += 1;
     }
 }
 
 require_once '_header.php';
-
-echo "<script>var cpid='" . attr($pid) . "';var cuser='" . attr($user) . "';var webRoot='" . $GLOBALS['web_root'] . "';var ptName='" . attr($_SESSION['ptName']) . "';</script>";
+ echo "<script>var cpid='" . attr($pid) . "';var cuser='" . attr($user) . "';var webRoot='" . $GLOBALS['web_root'] . "';var ptName='" . attr($_SESSION['ptName']) . "';</script>";
 ?>
 <script type="text/javascript">
 var webroot_url = webRoot;
 
-$(function () {
+$(document).ready(function () {
 
-    $("#profilereport").load("./get_profile.php", {}, function () {
+    $("#profilereport").load("./get_profile.php", {'embeddedScreen': true}, function () {
         $("table").addClass("table  table-responsive");
         $(".demographics td").removeClass("label");
         $(".demographics td").addClass("bold");
@@ -61,18 +70,24 @@ $(function () {
             showProfileModal()
         });
     });
+    $("#reports").load("./report/portal_patient_report.php?pid='<?php echo attr($pid) ?>'", {'embeddedScreen': true}, function () {
+        <?php if ($GLOBALS['portal_two_payments']) { ?>
+            $("#payment").load("./portal_payment.php", {'embeddedScreen': true}, function () {});
+        <?php } ?>
+    });
+    $("#medicationlist").load("./get_medications.php", {'embeddedScreen': true}, function () {
+        $("#allergylist").load("./get_allergies.php", {'embeddedScreen': true}, function () {
+            $("#problemslist").load("./get_problems.php", {'embeddedScreen': true}, function () {
+                $("#amendmentslist").load("./get_amendments.php", {'embeddedScreen': true}, function () {
+                    $("#labresults").load("./get_lab_results.php", {'embeddedScreen': true}, function () {
 
-    $("#medicationlist").load("./get_medications.php", {}, function () {});
-    $("#labresults").load("./get_lab_results.php", {}, function () {});
-    $("#amendmentslist").load("./get_amendments.php", {}, function () {});
-    $("#problemslist").load("./get_problems.php", {}, function () {});
-    $("#allergylist").load("./get_allergies.php", {}, function () {});
-    $("#reports").load("./report/portal_patient_report.php?pid='<?php echo attr($pid) ?>'", {}, function () {});
+                    });
+                });
+            });
+        });
+    });
 
-    <?php if ($GLOBALS['portal_two_payments']) { ?>
-    $("#payment").load("./portal_payment.php", {}, function () {});
-    <?php } ?>
-
+    $('.sigPad').signaturePad({drawOnly: true});
     $(".generateDoc_download").click(function () {
         $("#doc_form").submit();
     });
@@ -85,8 +100,11 @@ $(function () {
                 {text: '<?php echo xla('Help'); ?>', close: false, style: 'info', id: 'formHelp'},
                 {text: '<?php echo xla('Cancel'); ?>', close: true, style: 'default'},
                 {text: '<?php echo xla('Revert Edits'); ?>', close: false, style: 'danger', id: 'replaceAllButton'},
-                {text: '<?php echo xla('Send for Review'); ?>', close: false, style: 'success', id: 'donePatientButton'}
-                ],
+                {text: '<?php echo xla('Send for Review'); ?>',
+                    close: false,
+                    style: 'success',
+                    id: 'donePatientButton'
+                }],
             onClosed: 'reload',
             type: 'GET',
             url: webRoot + '/portal/patient/patientdata?pid=' + cpid + '&user=' + cuser
@@ -150,6 +168,7 @@ function editAppointment(mode,deid){
     };
 
     dlgopen('', 'apptModal', 610, 300, '', title, params);
+
 };
 
 </script>
@@ -166,6 +185,7 @@ function editAppointment(mode,deid){
 
                         <div class="panel-footer"></div>
                     </div>
+
                     <div class="panel panel-primary">
                         <header class="panel-heading"><?php echo xlt('Medications Allergy List'); ?>  </header>
                         <div id="allergylist" class="panel-body"></div>
@@ -196,65 +216,63 @@ function editAppointment(mode,deid){
                     </div><!-- /.col -->
 
             </div><!-- /.lists -->
-            <?php if ($GLOBALS['allow_portal_appointments']) { ?>
+
             <div class="row">
                 <div class="col-sm-6">
                     <div class="panel panel-primary collapse" id="appointmentpanel">
                         <header class="panel-heading"><?php echo xlt('Appointments'); ?>  </header>
                         <div id="appointmentslist" class="panel-body">
                         <?php
-                            $query = "SELECT e.pc_eid, e.pc_aid, e.pc_title, e.pc_eventDate, " .
-                                "e.pc_startTime, e.pc_hometext, e.pc_apptstatus, u.fname, u.lname, u.mname, " .
+                            $query = "SELECT e.pc_eid, e.pc_aid, e.pc_title, e.pc_eventDate, " . "e.pc_startTime, e.pc_hometext, e.pc_apptstatus, u.fname, u.lname, u.mname, " .
                                 "c.pc_catname " . "FROM openemr_postcalendar_events AS e, users AS u, " .
-                                "openemr_postcalendar_categories AS c WHERE " . "e.pc_pid = ? AND e.pc_eventDate >= CURRENT_DATE AND " .
-                                "u.id = e.pc_aid AND e.pc_catid = c.pc_catid " . "ORDER BY e.pc_eventDate, e.pc_startTime";
+                                "openemr_postcalendar_categories AS c WHERE " . "e.pc_pid = ? AND e.pc_eventDate >= CURRENT_DATE AND " . "u.id = e.pc_aid AND e.pc_catid = c.pc_catid " . "ORDER BY e.pc_eventDate, e.pc_startTime";
+
                             $res = sqlStatement($query, array(
                                 $pid
                             ));
 
-                        if (sqlNumRows($res) > 0) {
-                            $count = 0;
-                            echo '<table id="appttable" style="width:100%;background:#eee;" class="table table-striped fixedtable"><thead>
+                            if (sqlNumRows($res) > 0) {
+                                $count = 0;
+                                echo '<table id="appttable" style="width:100%;background:#eee;" class="table table-striped fixedtable"><thead>
                                 </thead><tbody>';
-                            while ($row = sqlFetchArray($res)) {
-                                $status_title = getListItemTitle('apptstat', $row['pc_apptstatus']);
-                                $count++;
-                                $dayname = xl(date("l", strtotime($row ['pc_eventDate'])));
-                                $dispampm = "am";
-                                $disphour = substr($row ['pc_startTime'], 0, 2) + 0;
-                                $dispmin = substr($row ['pc_startTime'], 3, 2);
-                                if ($disphour >= 12) {
-                                    $dispampm = "pm";
-                                    if ($disphour > 12) {
-                                        $disphour -= 12;
+                                while ($row = sqlFetchArray($res)) {
+                                    $status_title = getListItemTitle('apptstat', $row['pc_apptstatus']);
+                                    $count++;
+                                    $dayname = xl(date("l", strtotime($row ['pc_eventDate'])));
+                                    $dispampm = "am";
+                                    $disphour = substr($row ['pc_startTime'], 0, 2) + 0;
+                                    $dispmin = substr($row ['pc_startTime'], 3, 2);
+                                    if ($disphour >= 12) {
+                                        $dispampm = "pm";
+                                        if ($disphour > 12) {
+                                            $disphour -= 12;
+                                        }
+                                    }
+
+                                    if ($row ['pc_hometext'] != "") {
+                                        $etitle = 'Comments' . ": " . $row ['pc_hometext'] . "\r\n";
+                                    } else {
+                                        $etitle = "";
+                                    }
+
+                                    echo "<tr><td><p>";
+                                    echo "<a href='#' onclick='editAppointment(0," . htmlspecialchars($row ['pc_eid'], ENT_QUOTES) . ')' . "' title='" . htmlspecialchars($etitle, ENT_QUOTES) . "'>";
+                                    echo "<b>" . htmlspecialchars($dayname . ", " . $row ['pc_eventDate'], ENT_NOQUOTES) . "&nbsp;";
+                                    echo htmlspecialchars("$disphour:$dispmin " . $dispampm, ENT_NOQUOTES) . "</b><br>";
+                                    echo htmlspecialchars($row ['pc_catname'], ENT_NOQUOTES) . "<br><b>";
+                                    echo xlt("Provider") . ":</b> " . htmlspecialchars($row ['fname'] . " " . $row ['lname'], ENT_NOQUOTES) . "<br><b>";
+                                    echo xlt("Status") . ":</b> " . htmlspecialchars($status_title, ENT_NOQUOTES);
+                                    echo "</a></p></td></tr>";
+                                }
+
+                                if (isset($res) && $res != null) {
+                                    if ($count < 1) {
+                                        echo "&nbsp;&nbsp;" . xlt('None');
                                     }
                                 }
-
-                                if ($row ['pc_hometext'] != "") {
-                                    $etitle = 'Comments' . ": " . $row ['pc_hometext'] . "\r\n";
-                                } else {
-                                    $etitle = "";
-                                }
-
-                                echo "<tr><td><p>";
-                                echo "<a href='#' onclick='editAppointment(0," . htmlspecialchars($row ['pc_eid'], ENT_QUOTES) . ')' .
-                                    "' title='" . htmlspecialchars($etitle, ENT_QUOTES) . "'>";
-                                echo "<b>" . htmlspecialchars($dayname . ", " . $row ['pc_eventDate'], ENT_NOQUOTES) . "&nbsp;";
-                                echo htmlspecialchars("$disphour:$dispmin " . $dispampm, ENT_NOQUOTES) . "</b><br>";
-                                echo htmlspecialchars($row ['pc_catname'], ENT_NOQUOTES) . "<br><b>";
-                                echo xlt("Provider") . ":</b> " . htmlspecialchars($row ['fname'] . " " . $row ['lname'], ENT_NOQUOTES) . "<br><b>";
-                                echo xlt("Status") . ":</b> " . htmlspecialchars($status_title, ENT_NOQUOTES);
-                                echo "</a></p></td></tr>";
+                            } else { // if no appts
+                                echo xlt('No Appointments');
                             }
-
-                            if (isset($res) && $res != null) {
-                                if ($count < 1) {
-                                    echo "&nbsp;&nbsp;" . xlt('None');
-                                }
-                            }
-                        } else { // if no appts
-                            echo xlt('No Appointments');
-                        }
 
                             echo '</tbody></table>';
                         ?>
@@ -268,7 +286,6 @@ function editAppointment(mode,deid){
                     </div><!-- /.panel -->
                 </div><!-- /.col -->
             </div><!-- /.row -->
-            <?php } ?>
             <?php if ($GLOBALS['portal_two_payments']) { ?>
             <div class="row">
                <div class="col-sm-12">
@@ -281,7 +298,6 @@ function editAppointment(mode,deid){
                 </div> <!--/.col  -->
             </div>
             <?php } ?>
-            <?php if ($GLOBALS['allow_portal_chat']) { ?>
             <div class="row">
                 <div class="col-sm-12">
                     <div class="panel panel-primary collapse" style="padding-top:0;padding-bottom:0;" id="messagespanel">
@@ -292,7 +308,7 @@ function editAppointment(mode,deid){
                     </div>
                 </div><!-- /.col -->
             </div>
-            <?php } ?>
+
             <div class="row">
                 <div class="col-sm-8">
                     <div class="panel panel-primary collapse" id="reportpanel">
@@ -300,26 +316,27 @@ function editAppointment(mode,deid){
                         <div id="reports" class="panel-body"></div>
                         <div class="panel-footer"></div>
                     </div>
+
                 </div>
                 <!-- /.col -->
-                <?php if (!empty($GLOBALS['portal_onsite_document_download'])) { ?>
                 <div class="col-sm-6">
                     <div class="panel panel-primary collapse" id="downloadpanel">
                         <header class="panel-heading"> <?php echo xlt('Download Documents'); ?> </header>
                         <div id="docsdownload" class="panel-body">
+                        <?php if ($GLOBALS['portal_onsite_document_download']) { ?>
                             <div>
                                 <span class="text"><?php echo xlt('Download all patient documents');?></span>
                                 <form name='doc_form' id='doc_form' action='./get_patient_documents.php' method='post'>
                                 <input type="button" class="generateDoc_download" value="<?php echo xla('Download'); ?>" />
                                 </form>
                             </div>
+                        <?php } ?>
                         </div><!-- /.panel-body -->
                         <div class="panel-footer"></div>
                     </div>
                 </div><!-- /.col -->
-                <?php } ?>
             </div>
-            <?php if ($GLOBALS['portal_two_ledger']) { ?>
+
             <div class="row">
                 <div class="col-sm-12">
                     <div class="panel panel-primary collapse" id="ledgerpanel">
@@ -331,7 +348,7 @@ function editAppointment(mode,deid){
                     </div>
                 </div><!-- /.col -->
             </div>
-            <?php } ?>
+
             <div class="row">
                 <div class="col-sm-12">
                     <div class="panel panel-primary collapse" id="profilepanel">
@@ -347,5 +364,53 @@ function editAppointment(mode,deid){
         <!--<div class="footer-main">Onsite Patient Portal Beta v3.0 Copyright &copy By sjpadgett@gmail.com, 2016 All Rights Reserved and Recorded</div>-->
     </aside><!-- /.right-side -->
     </div><!-- ./wrapper -->
+<div id="openSignModal" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <div class="input-group">
+                    <span class="input-group-addon"
+                          onclick="getSignature(document.getElementById('patientSignaturem'))"><em> <?php echo xlt('Show Current Signature On File'); ?>
+                            <br>
+                            <?php echo xlt('As appears on documents'); ?>.</em></span> <img
+                        class="signature form-control" type="patient-signature"
+                        id="patientSignaturem" onclick="getSignature(this)"
+                        alt="Signature On File" src="">
+                </div>
+            </div>
+            <div class="modal-body">
+                <form name="signit" id="signit" class="sigPad">
+                    <input type="hidden" name="name" id="name" class="name">
+                    <ul class="sigNav">
+                        <label style='display: none;'><input style='display: none;'
+                            type="checkbox" class="" id="isAdmin" name="isAdmin" /><?php echo xlt('Is Authorizing Signature');?></label>
+                        <li class="clearButton"><a href="#clear"><button><?php echo xlt('Clear Signature');?></button></a></li>
+                    </ul>
+                    <div class="sig sigWrapper">
+                        <div class="typed"></div>
+                        <canvas class="spad" id="drawpad" width="765" height="325"
+                            style="border: 1px solid #000000; left: 0px;"></canvas>
+                        <img id="loading"
+                            style="display: none; position: absolute; TOP: 150px; LEFT: 315px; WIDTH: 100px; HEIGHT: 100px"
+                            src="sign/assets/loading.gif" /> <input type="hidden" id="output"
+                            name="output" class="output">
+                    </div>
+                    <input type="hidden" name="type" id="type"
+                        value="patient-signature">
+                    <button type="button" onclick="signDoc(this)"><?php echo xlt('Acknowledge as my Electronic Signature');?>.</button>
+                </form>
+            </div>
+        </div>
+        <!-- <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div> -->
+    </div>
+</div><!-- Modal -->
+<img id="waitend"
+    style="display: none; position: absolute; top: 100px; left: 260px; width: 100px; height: 100px"
+    src="sign/assets/loading.gif" />
+
+
 </body>
 </html>

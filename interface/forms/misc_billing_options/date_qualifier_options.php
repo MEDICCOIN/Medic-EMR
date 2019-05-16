@@ -3,16 +3,16 @@
  * Reusable data entries for new Box 14 and Box 15 date qualifiers that are part of
  * HCFA 1500 02/12 format
  *
- * For details on format refer to:n
+ * For details on format refer to:
  * <http://www.nucc.org/index.php?option=com_content&view=article&id=186&Itemid=138>
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Kevin Yeh <kevin.y@integralemr.com>
- * @author    Stephen Waite <stephen.waite@cmsvt.com>
+ * @package OpenEMR
+ * @author  Kevin Yeh <kevin.y@integralemr.com>
+ * @author Stephen Waite <stephen.waite@cmsvt.com>
  * @copyright Copyright (C) 2013 Kevin Yeh <kevin.y@integralemr.com> and OEMR <www.oemr.org>
  * @copyright Copyright (C) 2017 Stephen Waite <stephen.waite@cmsvt.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @link    http://www.open-emr.org
+ * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 function generateDateQualifierSelect($name, $options, $obj)
@@ -30,9 +30,12 @@ function generateDateQualifierSelect($name, $options, $obj)
     echo     "</select>";
 }
 
-function genReferringProviderSelect($selname, $toptext, $default = 0, $disabled = false)
+function genProviderSelect($selname, $toptext, $default = 0, $disabled = false)
 {
-    $query = "SELECT id, lname, fname FROM users WHERE npi != '' ORDER BY lname, fname";
+    $query = "SELECT id, lname, fname FROM users WHERE " .
+    "( authorized = 1 OR info LIKE '%provider%' ) AND username != '' " .
+    "AND active = 1 AND ( info IS NULL OR info NOT LIKE '%Inactive%' ) " .
+    "ORDER BY lname, fname";
     $res = sqlStatement($query);
     echo "<select name='" . attr($selname) . "'";
     if ($disabled) {

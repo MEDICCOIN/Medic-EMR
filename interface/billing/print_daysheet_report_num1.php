@@ -1,22 +1,35 @@
 <?php
-/*
- * interface/billing/print_daysheet_report.php Genetating an end of day report.
- *
- * Program for Generating an End of Day report
- *
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Terry Hill <terry@lillysystems.com>
- * @copyright Copyright (c) 2014 Terry Hill <terry@lillysystems.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+/**
+* interface/billing/print_daysheet_report.php Genetating an end of day report.
+*
+* Program for Generating an End of Day report
+*
+*
+* Copyright (C) 2014 Terry Hill <terry@lillysystems.com>
+*
+* LICENSE: This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* as published by the Free Software Foundation; either version 3
+* of the License, or (at your option) any later version.
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+*
+* @package OpenEMR
+* @author Terry Hill <terry@lillysystems.com>
+* @link http://www.open-emr.org
+*/
 
 
-require_once("../globals.php");
-require_once("$srcdir/patient.inc");
-require_once("$srcdir/../interface/reports/report.inc.php");
-require_once("$srcdir/daysheet.inc.php");
+
+
+include_once("../globals.php");
+include_once("$srcdir/patient.inc");
+include_once("$srcdir/../interface/reports/report.inc.php");
+include_once("$srcdir/daysheet.inc.php");
 
 //global variables:
 if (!isset($_GET["mode"])) {
@@ -61,6 +74,7 @@ if (!isset($_GET["mode"])) {
 
 <html>
 <head>
+<?php html_header_show();?>
 
 <link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
 

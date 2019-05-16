@@ -10,6 +10,7 @@
 <html>
 <head>
 
+{headerShow}
 
 {literal}
  <style type="text/css" title="mystyles" media="all">
@@ -44,40 +45,40 @@ a {
 <form name="patientfinder" method="post" action="{$FORM_ACTION}" onsubmit="return top.restoreSession()">
 <table>
 	<tr>
-		<td>{xlt t='Name'}</td>
+		<td>{xl t='Name'|escape:'html'}</td>
 		<td>
 			<input type="text" size="40" name="searchstring" value=""/>
 		</td>
 	</tr>
 	<tr>
 		<td>
-			<input type="submit" value="{xla t='Search'}"/>
+			<input type="submit" value="{xl t='Search'|escape:'html'}"/>
 		</td>
 	</tr>
 </table>
-<input type="hidden" name="process" value="{$PROCESS|attr}" />
-<input type="hidden" name="pid" value="{$hidden_ispid|attr}" />
+<input type="hidden" name="process" value="{$PROCESS|escape:'html'}" />
+<input type="hidden" name="pid" value="{$hidden_ispid|escape:'html'}" />
 </form>
 <table>
 {if count($result_set) > 0}
 	<tr>
-		<td>{xlt t='Results Found For Search'} '{$search_string|text}'</td>
+		<td>{xl t='Results Found For Search'|escape:'html'} '{$search_string|escape:'html'}'</td>
 	</tr>
 	<tr>
-		<td>{xlt t='Name'}</td><td>{xlt t='DOB'}</td><td>{xlt t='Patient ID'}</td>
+		<td>{xl t='Name'|escape:'html'}</td><td>{xl t='DOB'|escape:'html'}</td><td>{xl t='Patient ID'|escape:'html'}</td>
 {/if}
 {foreach  name="search_results" from=$result_set  item=result}
 	<tr>
 		<td>
-			<a href="javascript:{literal}{}{/literal}" onclick="window.opener.document.{$form_id|attr}.value='{if $ispub == true }{$result.pubpid|attr}{else}{$result.pid|attr}{/if}'; window.opener.document.{$form_name|attr}.value='{$result.name|attr}'; window.close();">{$result.name|text}</a>
+			<a href="javascript:{literal}{}{/literal}" onclick="window.opener.document.{$form_id|escape:'html'}.value='{if $ispub == true }{$result.pubpid|escape:'html'}{else}{$result.pid|escape:'html'}{/if}'; window.opener.document.{$form_name|escape:'html'}.value='{$result.name|escape:'html'}'; window.close();">{$result.name|escape:'html'}</a>
 		</td>
-		<td>{$result.DOB|text}</td>
-		<td>{$result.pubpid|text}</td>
+		<td>{$result.DOB|escape:'html'}</td>
+		<td>{$result.pubpid|escape:'html'}</td>
 	</tr>
 {foreachelse}
 	{if is_array($result_set)}
 	<tr>
-		<td>{xlt t='No Results Found For Search'} '{$search_string|text}'</td>
+		<td>{xl t='No Results Found For Search'|escape:'html'} '{$search_string|escape:'html'}'</td>
 	</tr>
 	{/if}
 {/foreach}

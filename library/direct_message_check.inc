@@ -23,13 +23,10 @@
  * @link    http://www.open-emr.org
  */
 
+require_once(dirname(__FILE__) . "/log.inc");
 require_once(dirname(__FILE__) . "/pnotes.inc");
 require_once(dirname(__FILE__) . "/documents.php");
 require_once(dirname(__FILE__) . "/gprelations.inc.php");
-
-use OpenEMR\Common\Crypto\CryptoGen;
-use OpenEMR\Common\Logging\EventAuditLogger;
-use PHPMailer\PHPMailer\PHPMailer;
 
 /**
  * Connect to a phiMail Direct Messaging server
@@ -45,8 +42,7 @@ function phimail_connect(&$phimail_error)
 
     $phimail_server = @parse_url($GLOBALS['phimail_server_address']);
     $phimail_username = $GLOBALS['phimail_username'];
-    $cryptoGen = new CryptoGen();
-    $phimail_password = $cryptoGen->decryptStandard($GLOBALS['phimail_password']);
+    $phimail_password = $GLOBALS['phimail_password'];
     $phimail_cafile = dirname(__FILE__) . '/../sites/' . $_SESSION['site_id']
       . '/documents/phimail_server_pem/phimail_server.pem';
     if (!file_exists($phimail_cafile)) {
@@ -129,8 +125,7 @@ function phimail_check()
     }
 
     $phimail_username = $GLOBALS['phimail_username'];
-    $cryptoGen = new CryptoGen();
-    $phimail_password = $cryptoGen->decryptStandard($GLOBALS['phimail_password']);
+    $phimail_password = $GLOBALS['phimail_password'];
 
     $ret = phimail_write_expect_OK($fp, "AUTH $phimail_username $phimail_password\n");
     if ($ret!==true) {
@@ -425,7 +420,7 @@ function phimail_close($fp)
 
 function phimail_logit($success, $text, $pid = 0, $event = "direct-message-check")
 {
-    EventAuditLogger::instance()->newEvent($event, "phimail-service", 0, $success, $text, $pid);
+    newEvent($event, "phimail-service", 0, $success, $text, $pid);
 }
 
 /**

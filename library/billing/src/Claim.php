@@ -38,29 +38,17 @@ class Claim
     public $invoice;           // result from get_invoice_summary()
     public $payers;            // array of arrays, for all payers
     public $copay;             // total of copays from the ar_activity table
-    public $facilityService;   // via matthew.vita orm work :)
-    public $pay_to_provider;   // to be implemented in facility ui
+    public $facilityService;
 
     // This enforces the X12 Basic Character Set. Page A2.
-    public function x12Clean($str)
+    private function x12Clean($str)
     {
-        return preg_replace('/[^A-Z0-9!"\\&\'()+,\\-.\\/;?=@ ]/', '', strtoupper($str));
+        return preg_replace('/[^A-Z0-9!"\\&\'()+,\\-.\\/;?= ]/', '', strtoupper($str));
     }
 
-    // X12 likes 9 digit zip codes also moving this from gen_x12
-    // to pursue PSR-0 and PSR-4
-    public function x12Zip($zip)
-    {
-        $zip = $this->x12Clean($zip);
-        if (strlen($zip) == 5) {
-            return $zip . "9999";
-        } else {
-            return $zip;
-        }
-    }
+// Make sure dates have no formatting and zero filled becomes blank
+// Handles date time stamp formats as well
 
-    // Make sure dates have no formatting and zero filled becomes blank
-    // Handles date time stamp formats as well
     public function cleanDate($date_field)
     {
         $cleandate = str_replace('-', '', substr($date_field, 0, 10));
@@ -83,8 +71,11 @@ class Claim
         //
         $this->payers = array();
         $this->payers[0] = array();
-        $query = "SELECT * FROM insurance_data WHERE pid = ? AND date <= ? ORDER BY type ASC, date DESC";
-        $dres = sqlStatement($query, array($this->pid, $encounter_date));
+        $query = "SELECT * FROM insurance_data WHERE " .
+        "pid = '{$this->pid}' AND " .
+        "date <= '$encounter_date' " .
+        "ORDER BY type ASC, date DESC";
+        $dres = sqlStatement($query);
         $prevtype = '';
         while ($drow = sqlFetchArray($dres)) {
             if (strcmp($prevtype, $drow['type']) == 0) {
@@ -103,7 +94,8 @@ class Claim
                 $ins = 0;
             }
 
-            $crow = sqlQuery("SELECT * FROM insurance_companies WHERE id = ?", array($drow['provider']));
+            $crow = sqlQuery("SELECT * FROM insurance_companies WHERE " .
+            "id = '" . $drow['provider'] . "'");
             $orow = new InsuranceCompany($drow['provider']);
             $this->payers[$ins] = array();
             $this->payers[$ins]['data']    = $drow;
@@ -153,12 +145,12 @@ class Claim
         $this->copay = 0;
 
         $this->facilityService = new FacilityService();
-        $this->pay_to_provider = ''; // will populate from facility someday :)
-
 
         // We need the encounter date before we can identify the payers.
-        $sql = "SELECT * FROM form_encounter WHERE pid = ? AND encounter = ?";
-        $this->encounter = sqlQuery($sql, array($this->pid, $this->encounter_id));
+        $sql = "SELECT * FROM form_encounter WHERE " .
+        "pid = '{$this->pid}' AND " .
+        "encounter = '{$this->encounter_id}'";
+        $this->encounter = sqlQuery($sql);
 
         // Sort by procedure timestamp in order to get some consistency.
         $sql = "SELECT b.id, b.date, b.code_type, b.code, b.pid, b.provider_id, " .
@@ -168,9 +160,10 @@ class Claim
         "b.ndc_info, b.notecodes, b.revenue_code, ct.ct_diag " .
         "FROM billing as b INNER JOIN code_types as ct " .
         "ON b.code_type = ct.ct_key " .
-        "WHERE ct.ct_claim = '1' AND ct.ct_active = '1' AND b.encounter = ? AND b.pid = ? AND " .
+        "WHERE ct.ct_claim = '1' AND ct.ct_active = '1' AND " .
+        "b.encounter = '{$this->encounter_id}' AND b.pid = '{$this->pid}' AND " .
         "b.activity = '1' ORDER BY b.date, b.id";
-        $res = sqlStatement($sql, array($this->encounter_id, $this->pid));
+        $res = sqlStatement($sql);
         while ($row = sqlFetchArray($res)) {
             // Save all diagnosis codes.
             if ($row['ct_diag'] == '1') {
@@ -195,38 +188,41 @@ class Claim
             // If there is a row-specific provider then get its details.
             if (!empty($row['provider_id'])) {
                 // Get service provider data for this row.
-                $sql = "SELECT * FROM users WHERE id = ?";
-                $row['provider'] = sqlQuery($sql, array($row['provider_id']));
+                $sql = "SELECT * FROM users WHERE id = '" . $row['provider_id'] . "'";
+                $row['provider'] = sqlQuery($sql);
                 // Get insurance numbers for this row's provider.
-                $sql = "SELECT * FROM insurance_numbers " .
-                "WHERE (insurance_company_id = ? OR insurance_company_id is NULL) AND provider_id = ?" .
+                $sql = "SELECT * FROM insurance_numbers WHERE " .
+                "(insurance_company_id = '" . $row['payer_id'] .
+                "' OR insurance_company_id is NULL) AND " .
+                "provider_id = '" . $row['provider_id'] . "' " .
                 "ORDER BY insurance_company_id DESC LIMIT 1";
-                $row['insurance_numbers'] = sqlQuery($sql, array($row['payer_id'], $row['provider_id']));
+                $row['insurance_numbers'] = sqlQuery($sql);
             }
 
             $this->procs[] = $row;
         }
 
         $resMoneyGot = sqlStatement("SELECT pay_amount as PatientPay,session_id as id,".
-        "date(post_time) as date FROM ar_activity WHERE pid = ? AND encounter = ? AND ".
-        "payer_type=0 AND account_code='PCP'", array($this->pid, $this->encounter_id));
+        "date(post_time) as date FROM ar_activity where pid ='{$this->pid}' and encounter ='{$this->encounter_id}' ".
+        "and payer_type=0 and account_code='PCP'");
           //new fees screen copay gives account_code='PCP'
         while ($rowMoneyGot = sqlFetchArray($resMoneyGot)) {
               $PatientPay=$rowMoneyGot['PatientPay']*-1;
               $this->copay -= $PatientPay;
         }
 
-        $sql = "SELECT * FROM x12_partners WHERE id = ?";
-        $this->x12_partner = sqlQuery($sql, array($this->procs[0]['x12_partner_id']));
+        $sql = "SELECT * FROM x12_partners WHERE " .
+        "id = '" . $this->procs[0]['x12_partner_id'] . "'";
+        $this->x12_partner = sqlQuery($sql);
 
         $this->facility = $this->facilityService->getById($this->encounter['facility_id']);
 
         /*****************************************************************
-        $provider_id = $this->procs[0]['provider_id'];
+      $provider_id = $this->procs[0]['provider_id'];
         *****************************************************************/
         $provider_id = $this->encounter['provider_id'];
-        $sql = "SELECT * FROM users WHERE id = ?";
-        $this->provider = sqlQuery($sql, array($provider_id));
+        $sql = "SELECT * FROM users WHERE id = '$provider_id'";
+        $this->provider = sqlQuery($sql);
         // Selecting the billing facility assigned  to the encounter.  If none,
         // try the first (and hopefully only) facility marked as a billing location.
         if (empty($this->encounter['billing_facility'])) {
@@ -235,32 +231,39 @@ class Claim
               $this->billing_facility = $this->facilityService->getById($this->encounter['billing_facility']);
         }
 
-        $sql = "SELECT * FROM insurance_numbers " .
-        "WHERE (insurance_company_id = ? OR insurance_company_id is NULL) AND provider_id = ? " .
+        $sql = "SELECT * FROM insurance_numbers WHERE " .
+        "(insurance_company_id = '" . $this->procs[0]['payer_id'] .
+        "' OR insurance_company_id is NULL) AND " .
+        "provider_id = '$provider_id' " .
         "ORDER BY insurance_company_id DESC LIMIT 1";
-        $this->insurance_numbers = sqlQuery($sql, array($this->procs[0]['payer_id'], $provider_id));
+        $this->insurance_numbers = sqlQuery($sql);
 
-        $sql = "SELECT * FROM patient_data WHERE pid = ? ORDER BY id LIMIT 1";
-        $this->patient_data = sqlQuery($sql, array($this->pid));
+        $sql = "SELECT * FROM patient_data WHERE " .
+        "pid = '{$this->pid}' " .
+        "ORDER BY id LIMIT 1";
+        $this->patient_data = sqlQuery($sql);
 
         $sql = "SELECT fpa.* FROM forms JOIN form_misc_billing_options AS fpa " .
-        "ON fpa.id = forms.form_id " .
-        "WHERE forms.encounter = ? AND forms.pid = ? AND forms.deleted = 0 AND forms.formdir = 'misc_billing_options' " .
+        "ON fpa.id = forms.form_id WHERE " .
+        "forms.encounter = '{$this->encounter_id}' AND " .
+        "forms.pid = '{$this->pid}' AND " .
+        "forms.deleted = 0 AND " .
+        "forms.formdir = 'misc_billing_options' " .
         "ORDER BY forms.date";
-        $this->billing_options = sqlQuery($sql, array($this->encounter_id, $this->pid));
+        $this->billing_options = sqlQuery($sql);
 
         $referrer_id = (empty($GLOBALS['MedicareReferrerIsRenderer']) ||
         $this->insurance_numbers['provider_number_type'] != '1C') ?
           $this->patient_data['ref_providerID'] : $provider_id;
-        $sql = "SELECT * FROM users WHERE id = ?";
-        $this->referrer = sqlQuery($sql, array($referrer_id));
+        $sql = "SELECT * FROM users WHERE id = '$referrer_id'";
+        $this->referrer = sqlQuery($sql);
         if (!$this->referrer) {
             $this->referrer = array();
         }
 
         $supervisor_id = $this->encounter['supervisor_id'];
-        $sql = "SELECT * FROM users WHERE id = ?";
-        $this->supervisor = sqlQuery($sql, array($supervisor_id));
+        $sql = "SELECT * FROM users WHERE id = '$supervisor_id'";
+        $this->supervisor = sqlQuery($sql);
         if (!$this->supervisor) {
             $this->supervisor = array();
         }
@@ -273,9 +276,11 @@ class Claim
         }
 
         $sql = "SELECT * FROM insurance_numbers WHERE " .
-          "(insurance_company_id = ? OR insurance_company_id is NULL) AND provider_id = ? " .
+          "(insurance_company_id = '" . $this->procs[0]['payer_id'] .
+          "' OR insurance_company_id is NULL) AND " .
+          "provider_id = '$supervisor_id' " .
           "ORDER BY insurance_company_id DESC LIMIT 1";
-        $this->supervisor_numbers = sqlQuery($sql, array($this->procs[0]['payer_id'], $supervisor_id));
+        $this->supervisor_numbers = sqlQuery($sql);
         if (!$this->supervisor_numbers) {
             $this->supervisor_numbers = array();
         }
@@ -578,7 +583,7 @@ class Claim
       * In most cases, the ISA08 and GS03 are the same. However
       *
       * In some clearing houses ISA08 and GS03 are different
-      * Example: https://www.acs-gcro.com/downloads/DOL/DOL_CG_X12N_5010_837_v1_02.pdf - Page 18
+      * Example: http://www.acs-gcro.com/downloads/DOL/DOL_CG_X12N_5010_837_v1_02.pdf - Page 18
       * In this .pdf, the ISA08 is specified to be 100000 while the GS03 is specified to be 77044
       *
       * Therefore if the x12_gs03 segement is explicitly specified we use that value,
@@ -855,9 +860,9 @@ class Claim
     {
         if (strcmp($this->claimType($ins), 'MB') == 0 && $this->payerSequence($ins) != 'P') {
             return $this->payers[$ins]['data']['policy_type'];
-        } else {
-            return '';
         }
+
+        return '';
     }
 
   // Is the patient also the subscriber?
@@ -1363,24 +1368,15 @@ class Claim
     {
         // If no box qualifier specified use "431" indicating Onset
         return empty($this->billing_options['box_14_date_qual']) ? '431' :
-            $this->billing_options['box_14_date_qual'];
+              $this->billing_options['box_14_date_qual'];
     }
 
     public function box15Qualifier()
     {
         // If no box qualifier specified use "454" indicating Initial Treatment
         return empty($this->billing_options['box_15_date_qual']) ? '454' :
-            $this->billing_options['box_15_date_qual'];
+              $this->billing_options['box_15_date_qual'];
     }
-
-    public function box17Qualifier()
-    {
-        //If no box qualifier specified use "DK" for ordering provider
-        //someday might make mbo form the place to set referring instead of demographics under choices
-        return empty($this->billing_options['provider_qualifier_code']) ? 'DK' :
-            $this->billing_options['provider_qualifier_code'];
-    }
-
   // Returns an array of unique diagnoses.  Periods are stripped by default
   // Option to keep periods is to support HCFA 1500 02/12 version
     public function diagArray($strip_periods = true)
@@ -1691,31 +1687,7 @@ class Claim
         if (empty($this->billing_prov_id['taxonomy'])) {
             return '207Q00000X';
         }
+
         return $this->x12Clean(trim($this->billing_prov_id['taxonomy']));
-    }
-
-    public function billingProviderStreet()
-    {
-        return $this->x12Clean(trim($this->billing_prov_id['street']));
-    }
-
-    public function billingProviderStreetB()
-    {
-        return $this->x12Clean(trim($this->billing_prov_id['streetb']));
-    }
-
-    public function billingProviderCity()
-    {
-        return $this->x12Clean(trim($this->billing_prov_id['city']));
-    }
-
-    public function billingProviderState()
-    {
-        return $this->x12Clean(trim($this->billing_prov_id['state']));
-    }
-
-    public function billingProviderZip()
-    {
-        return $this->x12Clean(trim($this->billing_prov_id['zip']));
     }
 }

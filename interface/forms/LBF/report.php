@@ -1,18 +1,13 @@
 <?php
-/**
- * LBF form.
- *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Rod Roark <rod@sunsetsystems.com>
- * @author    Brady Miller <brady.g.miller@gmail.com>
- * @copyright Copyright (c) 2009-2019 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
- */
+// Copyright (C) 2009-2017 Rod Roark <rod@sunsetsystems.com>
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
 
-require_once(dirname(__FILE__).'/../../globals.php');
-require_once($GLOBALS["srcdir"] . "/api.inc");
+include_once(dirname(__FILE__).'/../../globals.php');
+include_once($GLOBALS["srcdir"] . "/api.inc");
 
 // This function is invoked from printPatientForms in report.inc
 // when viewing a "comprehensive patient report".  Also from
@@ -43,7 +38,7 @@ function lbf_report($pid, $encounter, $cols, $id, $formname, $no_wrap = false)
     while ($frow = sqlFetchArray($fres)) {
         $field_id  = $frow['field_id'];
         $currvalue = '';
-        if (isOption($frow['edit_options'], 'H') !== false) {
+        if (strpos($frow['edit_options'], 'H') !== false) {
             if (isset($shrow[$field_id])) {
                 $currvalue = $shrow[$field_id];
             }

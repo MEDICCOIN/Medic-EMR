@@ -201,8 +201,11 @@ foreach($this->status_details as $row_status){
                     <input type="hidden" name="pid_ccda" id="pid_ccda" value="">
                     <input type="hidden" name="latestccda" id="latestccda" value="">
                     <?php
-                    // @see Application view_helpers for this functionality.
-                    $this->sendToHie('carecoordination/layout/encountermanager', array('hie','emr_direct','download_all'), 'hie');
+                    $arr = $this->getVariables('Application\Controller\SendtoController','sendAction');
+                    $arr['required_butons'] = array('hie','emr_direct','download_all');
+                    $arr['send_via']        = 'hie';
+                    $this->layout('carecoordination/layout/encountermanager');
+                    echo $this->partial("application/sendto/send",$arr);
                     ?>
                     <div class="se_in_3" title="<?php echo $this->listenerObject->z_xlt('Reload');?>" onclick="javascript:clearCount();document.getElementById('theform').submit();"></div>
                 </div><!-- header_wrap_left -->
@@ -308,7 +311,7 @@ foreach($this->status_details as $row_status){
                                         <input class="check_pid check_pid_<?php echo $this->escapeHtml($row['pid']);?>" type="checkbox" name="ccda_pid[]" value="<?php echo $this->escapeHtml($row['pid']);?>" <?php if($this->form_data['select_all'] ==1) echo "checked"; ?>>                                        
                                 </td>
                                 <td style="padding: 5px;">
-                                        <a href="<?php echo $this->basePath();?>/encounterccdadispatch/index?combination=<?php echo $this->escapeHtml($row['pid']);?>&view=1&recipient=self&param=<?php echo $_SESSION['authId'];?>" rel="noopener" target="_blank" style="text-decoration: none;">
+                                        <a href="<?php echo $this->basePath();?>/encounterccdadispatch/index?combination=<?php echo $this->escapeHtml($row['pid']);?>&view=1&recipient=self&param=<?php echo $_SESSION['authId'];?>" target="_blank" style="text-decoration: none;">
                                                 <img style="height:20px; cursor: pointer;" src="<?php echo $this->basePath();?>/css/icons/view.png" title="<?php echo $this->listenerObject->z_xlt('View CCDA');?>">
                                         </a>
                                 </td>
@@ -351,7 +354,7 @@ foreach($this->status_details as $row_status){
                                                                                 ?>
                                                                                 </td>
                                                                         <td title="<?php echo $this->listenerObject->z_xlt('Download CCDA file');?>">
-                                                                                <a rel="noopener" target="_blank" href="<?php echo $this->basePath();?>/encountermanager/download?id=<?php echo $this->escapeHtml($row_status['id']);?>">
+                                                                                <a target="_blank" href="<?php echo $this->basePath();?>/encountermanager/download?id=<?php echo $this->escapeHtml($row_status['id']);?>">
                                                                                         <img src="<?php echo $this->basePath();?>/css/icons/request.png" width="17px">
                                                                                 </a>
                                                                         </td>

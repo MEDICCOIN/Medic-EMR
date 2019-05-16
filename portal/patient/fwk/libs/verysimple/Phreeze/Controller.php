@@ -68,11 +68,11 @@ abstract class Controller
     
     /**
      * Constructor initializes the controller.
-     * This method cannot be overridden. If you need
+     * This method cannot be overriden. If you need
      * to do something during construction, add it to Init
      *
      * @param Phreezer $phreezer
-     *          Object persistence engine
+     *          Object persistance engine
      * @param IRenderEngine $renderEngine
      *          rendering engine
      * @param

@@ -3,14 +3,23 @@
  * library of functions useful for searching and updating fee sheet related
  * information
  *
- * @package   OpenEMR
- * @link      http://www.open-emr.org
- * @author    Kevin Yeh <kevin.y@integralemr.com>
- * @copyright Copyright (c) 2013 Kevin Yeh <kevin.y@integralemr.com> and OEMR <www.oemr.org>
- * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * Copyright (C) 2013 Kevin Yeh <kevin.y@integralemr.com> and OEMR <www.oemr.org>
+ *
+ * LICENSE: This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
+ *
+ * @package OpenEMR
+ * @author  Kevin Yeh <kevin.y@integralemr.com>
+ * @link    http://www.open-emr.org
  */
-
-
 require_once('fee_sheet_classes.php');
 require_once("$srcdir/../custom/code_types.inc.php");
 require_once("$srcdir/../library/lists.inc");
@@ -41,7 +50,7 @@ function update_issues($pid, $encounter, $diags)
     $lists_params=array();
     $encounter_params=array();
     $sqlUpdateIssueDescription="UPDATE lists SET title=?, modifydate=NOW() WHERE id=? AND TITLE!=?";
-
+    
     $sqlFindProblem = "SELECT id, title FROM lists WHERE ";
     $sqlFindProblem.= " ( (`begdate` IS NULL) OR (`begdate` IS NOT NULL AND `begdate`<=?) ) AND " ;
     array_push($lists_params, $target_date);
@@ -52,13 +61,13 @@ function update_issues($pid, $encounter, $diags)
     array_push($lists_params, "");
 
     $idx_diagnosis=count($lists_params)-1;
-
+    
     $sqlFindIssueEncounter= "SELECT encounter FROM issue_encounter WHERE pid=? AND encounter=? AND list_id=?";
     array_push($encounter_params, $pid, $encounter);
     array_push($encounter_params, "");
-
+    
     $sqlCreateIssueEncounter = " INSERT into issue_encounter(pid,list_id,encounter)values (?,?,?) ";
-
+    
     $sqlCreateProblem = " INSERT into lists(date,begdate,type,occurrence,classification,pid,diagnosis,title,modifydate) values(?,?,'medical_problem',0,0,?,?,?,NOW())";
     $idx_list_id=count($encounter_params)-1;
     foreach ($diags as $diags) {
@@ -80,14 +89,14 @@ function update_issues($pid, $encounter, $diags)
                 $list_id=$res->fields['id'];
             }
         }
-
+        
         if (!($list_id==null)) {
             // We found a problem corresponding to this diagnosis
             $encounter_params[$idx_list_id]=$list_id;
             $issue_encounter=sqlStatement($sqlFindIssueEncounter, $encounter_params);
             if (sqlNumRows($issue_encounter)==0) {
                 // An issue encounter entry didn't exist, so create it
-                sqlStatement($sqlCreateIssueEncounter, array($pid,$list_id,$encounter));
+                sqlInsert($sqlCreateIssueEncounter, array($pid,$list_id,$encounter));
             }
 
             // Check the description in the problem
@@ -97,12 +106,12 @@ function update_issues($pid, $encounter, $diags)
             // No Problem found for this diagnosis
             if ($diags->create_problem) { // TODO: per entry create
             // If the create flag is set, then create an entry for this diagnosis.
-                sqlStatement($sqlCreateProblem, array($target_date,$target_date,$pid,$diagnosis_key,$diags->description));
+                sqlInsert($sqlCreateProblem, array($target_date,$target_date,$pid,$diagnosis_key,$diags->description));
                 $newProblem=sqlStatement($sqlFindProblem, $lists_params); // requerying the database for the newly created ID, instead of using the sqlInsert return value for backwards compatbility with 4.1.0 and earlier insert ID bug.
                 if (sqlNumRows($newProblem)>0) {
                     $list_id=$newProblem->fields['id'];
                     if ($list_id>0) {
-                        sqlStatement($sqlCreateIssueEncounter, array($pid,$list_id,$encounter));
+                        sqlInsert($sqlCreateIssueEncounter, array($pid,$list_id,$encounter));
                     }
                 }
 
@@ -140,7 +149,7 @@ function create_diags($req_pid, $req_encounter, $diags)
     "pid, authorized, user, groupname, activity, billed, provider_id, " .
     "modifier, units, fee, ndc_info, justify, notecodes) values ";
     $sqlCreateDiag.=$rowParams;
-
+    
     $sqlUpdateDescription = "UPDATE billing SET code_text=? WHERE id=?";
     $findRow= " SELECT id,code_text FROM billing where activity=1 AND encounter=? AND pid=? and code_type=? and code=?";
     foreach ($diags as $diag) {
@@ -197,7 +206,7 @@ function create_procs($req_pid, $req_encounter, $procs)
         $proc->addArrayParams($insert_params);
         array_push($insert_params, $req_pid, $authorized, $_SESSION['authId'], $_SESSION['authProvider'], $provid);
         $proc->addProcParameters($insert_params);
-        sqlStatement($sql.$param, $insert_params);
+        sqlInsert($sql.$param, $insert_params);
     }
 }
 

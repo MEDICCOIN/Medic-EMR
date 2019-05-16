@@ -9,7 +9,7 @@
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2006-2016 Rod Roark <rod@sunsetsystems.com>
  * @copyright Copyright (c) 2015-2016 Terry Hill <terry@lillysystems.com>
- * @copyright Copyright (c) 2017-2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2017 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
@@ -21,12 +21,6 @@ require_once "$srcdir/options.inc.php";
 
 use OpenEMR\Core\Header;
 
-if (!empty($_POST)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
-    }
-}
-
 $form_provider  = $_POST['form_provider'];
 if ($_POST['form_refresh'] || $_POST['form_csvexport']) {
     $form_details  = $_POST['form_details']      ? true : false;
@@ -37,7 +31,7 @@ if ($_POST['form_refresh'] || $_POST['form_csvexport']) {
 function bucks($amount)
 {
     if ($amount) {
-        return oeFormatMoney($amount);
+        echo oeFormatMoney($amount);
     }
 }
 
@@ -86,7 +80,7 @@ function thisLineItem($patient_id, $encounter_id, $rowcat, $description, $transd
                     echo '"' . display_desc($product)  . '",';
                     echo '"' . $productqty             . '",';
                     echo '"';
-                    echo bucks($producttotal);
+                    bucks($producttotal);
                     echo '"' . "\n";
                 }
             } else {
@@ -116,7 +110,7 @@ function thisLineItem($patient_id, $encounter_id, $rowcat, $description, $transd
         <?php echo text($productqty); ?>
   </td>
   <td align="right">
-        <?php echo text(bucks($producttotal)); ?>
+        <?php text(bucks($producttotal)); ?>
   </td>
  </tr>
 <?php
@@ -155,7 +149,7 @@ function thisLineItem($patient_id, $encounter_id, $rowcat, $description, $transd
         <?php echo text($catqty); ?>
   </td>
   <td align="right">
-        <?php echo text(bucks($cattotal)); ?>
+        <?php text(bucks($cattotal)); ?>
   </td>
  </tr>
 <?php
@@ -188,7 +182,7 @@ function thisLineItem($patient_id, $encounter_id, $rowcat, $description, $transd
            // echo '"' . display_desc($invnumber) . '",';
             echo '"' . display_desc($qty) . '",';
             echo '"';
-            echo bucks($rowamount);
+            bucks($rowamount);
             echo '"' . "\n";
         } else {
         ?>
@@ -217,7 +211,7 @@ function thisLineItem($patient_id, $encounter_id, $rowcat, $description, $transd
         <?php } ?>
   <td class="detail">
     <?php if ($GLOBALS['sales_report_invoice'] == 0 || $GLOBALS['sales_report_invoice'] == 2) { ?>
-   <a href='../patient_file/pos_checkout.php?ptid=<?php echo attr_url($patient_id); ?>&enc=<?php echo attr_url($encounter_id); ?>'>
+   <a href='../patient_file/pos_checkout.php?ptid=<?php echo attr($patient_id); ?>&enc=<?php echo attr($encounter_id); ?>'>
     <?php echo text($invnumber); ?></a>
     <?php }
 
@@ -235,7 +229,7 @@ if ($GLOBALS['sales_report_invoice'] == 1) {
         <?php echo text($qty); ?>
       </td>
       <td align="right">
-        <?php echo text(bucks($rowamount)); ?>
+        <?php text(bucks($rowamount)); ?>
       </td>
      </tr>
     <?php
@@ -333,7 +327,7 @@ else {
     </style>
 
     <script language="JavaScript">
-        $(function() {
+        $(document).ready(function() {
             oeFixedHeaderSetup(document.getElementById('mymaintable'));
             var win = top.printLogSetup ? top : opener.top;
             win.printLogSetup(document.getElementById('printbutton'));
@@ -356,7 +350,6 @@ else {
 <span class='title'><?php echo xlt('Report'); ?> - <?php echo xlt('Sales by Item'); ?></span>
 
 <form method='post' action='sales_by_item.php' id='theform' onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
 
 <div id="report_parameters">
 <input type='hidden' name='form_refresh' id='form_refresh' value=''/>
@@ -624,7 +617,7 @@ if ($_POST['form_refresh'] || $_POST['form_csvexport']) {
             echo '"' . display_desc($product) . '",';
             echo '"' . $productqty            . '",';
             echo '"';
-            echo bucks($producttotal);
+            bucks($producttotal);
             echo '"' . "\n";
         }
     } else {
@@ -655,7 +648,7 @@ if ($_POST['form_refresh'] || $_POST['form_csvexport']) {
     <?php echo text($productqty); ?>
   </td>
   <td align="right">
-    <?php echo text(bucks($producttotal)); ?>
+    <?php text(bucks($producttotal)); ?>
   </td>
  </tr>
 
@@ -679,7 +672,7 @@ if ($_POST['form_refresh'] || $_POST['form_csvexport']) {
     <?php echo text($catqty); ?>
   </b></td>
   <td align="right"><b>
-    <?php echo text(bucks($cattotal)); ?>
+    <?php text(bucks($cattotal)); ?>
   </b></td>
  </tr>
 
@@ -699,7 +692,7 @@ if ($_POST['form_refresh'] || $_POST['form_csvexport']) {
     <?php echo text($grandqty); ?>
   </b></td>
   <td align="right"><b>
-    <?php echo text(bucks($grandtotal)); ?>
+    <?php text(bucks($grandtotal)); ?>
   </b></td>
  </tr>
     <?php $report_from_date = oeFormatShortDate($form_from_date)  ;

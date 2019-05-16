@@ -3,7 +3,7 @@
  * X12 837I
  *
  * @package OpenEMR
- * @link    https://www.open-emr.org
+ * @link    http://www.open-emr.org
  * @author  Jerry Padgett <sjpadgett@gmail.com>
  * @copyright Copyright (c) 2017 Jerry Padgett <sjpadgett@gmail.com>
  * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
@@ -157,7 +157,7 @@ function generate_x12_837I($pid, $encounter, &$log, $ub04id)
         $out .= "N4" .
             "*" . $claim->billingFacilityCity() .
             "*" . $claim->billingFacilityState() .
-            "*" . $claim->x12Zip($claim->billingFacilityZip()) .
+            "*" . stripZipCode($claim->billingFacilityZip()) .
             "~\n";
     if ($claim->billingFacilityNPI() && $claim->billingFacilityETIN()) {
         ++$edicount;
@@ -247,7 +247,7 @@ function generate_x12_837I($pid, $encounter, &$log, $ub04id)
         $out .= "N4" .
             "*" . $claim->insuredCity() .
             "*" . $claim->insuredState() .
-            "*" . $claim->x12Zip($claim->insuredZip()) .
+            "*" . stripZipCode($claim->insuredZip()) .
             "~\n";
         ++$edicount;
         $out .= "DMG" .
@@ -273,7 +273,7 @@ function generate_x12_837I($pid, $encounter, &$log, $ub04id)
             "*" . ($encounter_claim ? $claim->payerAltID() : $claim->payerID()) .
             "~\n";
     if (!$claim->payerID()) {
-        $log .= "*** Payer ID is missing for payer '" . $claim->payerName() . "'.\n";
+        $log .= "*** CMS ID is missing for payer '" . $claim->payerName() . "'.\n";
     }
 
         ++$edicount;
@@ -284,7 +284,7 @@ function generate_x12_837I($pid, $encounter, &$log, $ub04id)
         $out .= "N4" .
             "*" . $claim->payerCity() .
             "*" . $claim->payerState() .
-            "*" . $claim->x12Zip($claim->payerZip()) .
+            "*" . stripZipCode($claim->payerZip()) .
             "~\n";
 
         // Segment REF (Payer Secondary Identification) omitted.
@@ -322,7 +322,7 @@ function generate_x12_837I($pid, $encounter, &$log, $ub04id)
             $out .= "N4" .
                 "*" . $claim->patientCity() .
                 "*" . $claim->patientState() .
-                "*" . $claim->x12Zip($claim->patientZip()) .
+                "*" . stripZipCode($claim->patientZip()) .
                 "~\n";
             ++$edicount;
             $out .= "DMG" .
@@ -808,7 +808,7 @@ function generate_x12_837I($pid, $encounter, &$log, $ub04id)
         }
         if ($claim->facilityState()) {
             ++ $edicount;
-            $out .= "N4" . "*" . $claim->facilityCity() . "*" . $claim->facilityState() . "*" . $claim->x12Zip($claim->facilityZip()) . "~\n";
+            $out .= "N4" . "*" . $claim->facilityCity() . "*" . $claim->facilityState() . "*" . stripZipCode($claim->facilityZip()) . "~\n";
         }
     }
 
@@ -935,7 +935,7 @@ function generate_x12_837I($pid, $encounter, &$log, $ub04id)
         $out .= "N4" .
             "*" . $claim->insuredCity($ins) .
             "*" . $claim->insuredState($ins) .
-            "*" . $claim->x12Zip($claim->insuredZip($ins)) .
+            "*" . stripZipCode($claim->insuredZip($ins)) .
             "~\n";
 
         // Segment REF (Other Subscriber Secondary Identification) omitted.
@@ -954,7 +954,7 @@ function generate_x12_837I($pid, $encounter, &$log, $ub04id)
             "~\n";
 
         if (!$claim->payerID($ins)) {
-            $log .= "*** Payer ID is missing for payer '" . $claim->payerName($ins) . "'.\n";
+            $log .= "*** CMS ID is missing for payer '" . $claim->payerName($ins) . "'.\n";
         }
 
         ++$edicount;
@@ -966,7 +966,7 @@ function generate_x12_837I($pid, $encounter, &$log, $ub04id)
         $out .= "N4" .
             "*" . $claim->payerCity($ins) .
             "*" . $claim->payerState($ins) .
-            "*" . $claim->x12Zip($claim->payerZip($ins)) .
+            "*" . stripZipCode($claim->payerZip($ins)) .
             "~\n";
 
         // Segment DTP*573 (Claim Check or Remittance Date) omitted.
