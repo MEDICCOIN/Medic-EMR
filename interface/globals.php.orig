@@ -621,9 +621,5 @@ if (version_compare(phpversion(), "5.2.1", ">=")) {
     $GLOBALS['temporary_files_dir'] = rtrim(sys_get_temp_dir(), '/');
 }
 
-### Begin Medic Coin Module ###
-$GLOBALS['medic_usd'] = file_get_contents('http://sharedmn.mediccoin.net/coinmkc.php');
-$GLOBALS['medic_qrcode_prefix'] = 'https://explorer.mediccoin.com/qr/';
-### End Medic Coin Module ###
 // turn off PHP compatibility warnings
 ini_set("session.bug_compat_warn", "off");

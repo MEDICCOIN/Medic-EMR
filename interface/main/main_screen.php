@@ -38,6 +38,9 @@ if (isset($_POST['new_login_session_management'])) {
   // This is not a new login, so create a new session id and do NOT remove the old session
     session_regenerate_id(false);
 }
+// Create the csrf_token
+$_SESSION['csrf_token'] = createCsrfToken();
+
 
 $_SESSION["encounter"] = '';
 
@@ -93,7 +96,7 @@ if ($is_expired) {
     $map_paths_to_targets = array(
         'main_info.php' => ('cal'),
         '../new/new.php' => ('pat'),
-        '../../interface/main/finder/dynamic_finder.php' => ('pat'),
+        '../../interface/main/finder/dynamic_finder.php' => ('fin'),
         '../../interface/patient_tracker/patient_tracker.php?skip_timeout_reset=1' => ('flb'),
         '../../interface/main/messages/messages.php?form_active=1' => ('msg')
     );

@@ -3342,22 +3342,4 @@ $GLOBALS_METADATA = array(
         ),
 
     ),
-    ### Begin Medic Coin Module ###
-    'MedicCoin' => array(
-        'medic_address' => array(
-            xl('Medic Coin Receive Address'),
-            'text',
-            'MWFwbBLJeicbDqQWLbGBCgPmiLLcPzrgro',
-            xl('Setup Default Medic Coin Receive Address')
-        ),
-        'medic_currency' => array(
-            xl('Currency In Medic'),
-            array(
-                'USD' => xl('USD'),
-            ),
-            'USD',
-            xl('Convert selected currency to Medic Coin')
-        ),
-    ),
-    ### End Medic Coin Module ###
 );
