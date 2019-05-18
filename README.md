@@ -26,7 +26,7 @@ cd /Path/to/EMR
 Replace `/Path/to/EMR` with path to root of your EMR where contains folders like apis, ccr, gacl, portal, version.php
 * Patch your EMR:
 ```sh
-curl -s https://raw.githubusercontent.com/MEDICCOIN/OpenEMR-MedicEMR-Patch/master/openemr-v5.0.1-medicemr-v5.0.1.patch | patch -p2
+curl -s https://raw.githubusercontent.com/MEDICCOIN/OpenEMR-MedicEMR-Patch/master/openemr-v5.0.1.7-medicemr-v5.0.1.7.patch | patch -p2
 ```
 
 [![Build Status](https://travis-ci.org/openemr/openemr.svg?branch=master)](https://travis-ci.org/openemr/openemr)
