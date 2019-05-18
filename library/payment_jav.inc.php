@@ -521,4 +521,4 @@ function medic_validate_txid()
     return true;
 }
 /* End Medic Coin Module */
-</script>
+</script>
