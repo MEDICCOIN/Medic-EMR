@@ -16,7 +16,7 @@ You can start your MedicEMR site instantly at https://medicemr.com. It's free an
 
 If you already use OpenEMR but want to accept Medic Coin as a form of payment, you just need to patch your OpenEMR to turn it to MedicEMR.
 
-## OpenEMR 5.0.1.x to MedicEMR 5.0.1.x
+## OpenEMR 5.0.1.7 to MedicEMR 5.0.1.7
 
 * First of all, generate a backup of your EMR: databases, files. Consult your hosting documents to know how to backup your EMR.
 * Change current directory to root of your EMR:
